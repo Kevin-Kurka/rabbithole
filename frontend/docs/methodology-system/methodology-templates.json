@@ -1,0 +1,794 @@
+{
+  "methodologies": [
+    {
+      "name": "five_whys",
+      "displayName": "5 Whys Analysis",
+      "description": "Root cause analysis technique that explores cause-and-effect relationships by repeatedly asking 'Why?'",
+      "category": "analytical",
+      "icon": "help_outline",
+      "color": "#FF5722",
+      "tags": ["root-cause", "problem-solving", "toyota", "lean"],
+      "config": {
+        "maxDepth": 5,
+        "requireEvidence": true,
+        "allowBranching": true
+      },
+      "nodeTypes": [
+        {
+          "name": "problem",
+          "displayName": "Problem Statement",
+          "description": "The initial problem or issue being investigated",
+          "icon": "error_outline",
+          "color": "#F44336",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "statement": {
+                "type": "string",
+                "title": "Problem Statement",
+                "minLength": 10
+              },
+              "impact": {
+                "type": "string",
+                "title": "Impact",
+                "enum": ["Critical", "High", "Medium", "Low"]
+              },
+              "dateObserved": {
+                "type": "string",
+                "format": "date-time",
+                "title": "Date Observed"
+              },
+              "evidence": {
+                "type": "array",
+                "title": "Supporting Evidence",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["statement", "impact"]
+          },
+          "constraints": {
+            "maxInstances": 1,
+            "minInstances": 1
+          }
+        },
+        {
+          "name": "why",
+          "displayName": "Why Question",
+          "description": "A 'Why' question exploring the cause",
+          "icon": "help",
+          "color": "#FF9800",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "question": {
+                "type": "string",
+                "title": "Why Question",
+                "pattern": "^Why.*\\?$"
+              },
+              "level": {
+                "type": "integer",
+                "title": "Why Level",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "hypothesis": {
+                "type": "string",
+                "title": "Initial Hypothesis"
+              }
+            },
+            "required": ["question", "level"]
+          }
+        },
+        {
+          "name": "cause",
+          "displayName": "Identified Cause",
+          "description": "An identified cause or contributing factor",
+          "icon": "report_problem",
+          "color": "#FFC107",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Cause Description",
+                "minLength": 10
+              },
+              "category": {
+                "type": "string",
+                "title": "Category",
+                "enum": ["People", "Process", "Technology", "Environment", "Materials", "Measurement"]
+              },
+              "evidence": {
+                "type": "array",
+                "title": "Supporting Evidence",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string"},
+                    "source": {"type": "string"},
+                    "url": {"type": "string", "format": "uri"}
+                  }
+                }
+              },
+              "verificationMethod": {
+                "type": "string",
+                "title": "How to Verify"
+              }
+            },
+            "required": ["description", "category"]
+          }
+        },
+        {
+          "name": "root_cause",
+          "displayName": "Root Cause",
+          "description": "The fundamental root cause identified",
+          "icon": "foundation",
+          "color": "#4CAF50",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Root Cause Description",
+                "minLength": 20
+              },
+              "actionable": {
+                "type": "boolean",
+                "title": "Is Actionable?"
+              },
+              "preventativeMeasures": {
+                "type": "array",
+                "title": "Preventative Measures",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "title": "Confidence Level",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": ["description", "actionable"]
+          },
+          "constraints": {
+            "minInstances": 1
+          }
+        },
+        {
+          "name": "solution",
+          "displayName": "Proposed Solution",
+          "description": "A proposed solution to address the root cause",
+          "icon": "lightbulb",
+          "color": "#8BC34A",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Solution Description"
+              },
+              "implementation": {
+                "type": "string",
+                "title": "Implementation Plan"
+              },
+              "cost": {
+                "type": "number",
+                "title": "Estimated Cost"
+              },
+              "timeframe": {
+                "type": "string",
+                "title": "Implementation Timeframe"
+              },
+              "successCriteria": {
+                "type": "array",
+                "title": "Success Criteria",
+                "items": {"type": "string"}
+              }
+            },
+            "required": ["description"]
+          }
+        }
+      ],
+      "edgeTypes": [
+        {
+          "name": "causes",
+          "displayName": "Causes",
+          "description": "Indicates a causal relationship",
+          "isDirected": true,
+          "validSourceTypes": ["problem", "cause"],
+          "validTargetTypes": ["why"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow",
+          "lineColor": "#FF5722"
+        },
+        {
+          "name": "answers",
+          "displayName": "Answers",
+          "description": "Provides an answer to a why question",
+          "isDirected": true,
+          "validSourceTypes": ["why"],
+          "validTargetTypes": ["cause"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow",
+          "lineColor": "#FFA000"
+        },
+        {
+          "name": "leads_to",
+          "displayName": "Leads To",
+          "description": "Shows progression to next why level",
+          "isDirected": true,
+          "validSourceTypes": ["cause"],
+          "validTargetTypes": ["why"],
+          "lineStyle": "dashed",
+          "arrowStyle": "arrow",
+          "lineColor": "#FF9800"
+        },
+        {
+          "name": "identifies",
+          "displayName": "Identifies",
+          "description": "Identifies the root cause",
+          "isDirected": true,
+          "validSourceTypes": ["cause"],
+          "validTargetTypes": ["root_cause"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow",
+          "lineColor": "#4CAF50"
+        },
+        {
+          "name": "addresses",
+          "displayName": "Addresses",
+          "description": "Solution addresses the root cause",
+          "isDirected": true,
+          "validSourceTypes": ["solution"],
+          "validTargetTypes": ["root_cause"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow",
+          "lineColor": "#8BC34A"
+        }
+      ],
+      "workflow": {
+        "steps": [
+          {
+            "id": "define_problem",
+            "type": "NODE_CREATION",
+            "title": "Define the Problem",
+            "description": "Start by clearly stating the problem you're investigating",
+            "config": {
+              "nodeType": "problem",
+              "required": true
+            },
+            "helpText": "Be specific and factual. Avoid assumptions or jumping to conclusions."
+          },
+          {
+            "id": "first_why",
+            "type": "NODE_CREATION",
+            "title": "Ask the First Why",
+            "description": "Why did this problem occur?",
+            "config": {
+              "nodeType": "why",
+              "defaultProperties": {
+                "level": 1
+              }
+            }
+          },
+          {
+            "id": "first_cause",
+            "type": "NODE_CREATION",
+            "title": "Identify First-Level Cause",
+            "description": "What is the immediate cause of the problem?",
+            "config": {
+              "nodeType": "cause"
+            }
+          },
+          {
+            "id": "connect_first",
+            "type": "EDGE_CREATION",
+            "title": "Connect Problem to First Why",
+            "description": "Link your problem to the first why question",
+            "config": {
+              "edgeType": "causes",
+              "sourceNodeType": "problem",
+              "targetNodeType": "why"
+            }
+          },
+          {
+            "id": "iterate_whys",
+            "type": "INSTRUCTION",
+            "title": "Continue Asking Why",
+            "description": "For each cause identified, ask 'Why?' again. Repeat this process up to 5 times or until you reach a root cause.",
+            "config": {
+              "allowLoop": true,
+              "maxIterations": 4
+            }
+          },
+          {
+            "id": "identify_root",
+            "type": "NODE_CREATION",
+            "title": "Identify Root Cause",
+            "description": "Mark the fundamental cause you've discovered",
+            "config": {
+              "nodeType": "root_cause"
+            }
+          },
+          {
+            "id": "propose_solution",
+            "type": "NODE_CREATION",
+            "title": "Propose Solutions",
+            "description": "Create solutions that address the root cause",
+            "config": {
+              "nodeType": "solution",
+              "allowMultiple": true
+            }
+          },
+          {
+            "id": "validation",
+            "type": "VALIDATION",
+            "title": "Validate Analysis",
+            "description": "Ensure your analysis is complete and logical",
+            "config": {
+              "rules": [
+                {
+                  "type": "node_count",
+                  "nodeType": "why",
+                  "min": 1,
+                  "max": 5,
+                  "message": "5 Whys analysis should have between 1 and 5 'Why' questions"
+                },
+                {
+                  "type": "node_exists",
+                  "nodeType": "root_cause",
+                  "message": "Analysis must identify at least one root cause"
+                },
+                {
+                  "type": "path_exists",
+                  "from": "problem",
+                  "to": "root_cause",
+                  "message": "There must be a clear path from problem to root cause"
+                }
+              ]
+            }
+          }
+        ],
+        "initialCanvasState": {
+          "nodes": [
+            {
+              "id": "initial_problem",
+              "type": "problem",
+              "position": {"x": 400, "y": 100},
+              "properties": {
+                "statement": "Enter your problem statement here",
+                "impact": "Medium"
+              }
+            }
+          ],
+          "edges": [],
+          "layout": "hierarchical"
+        }
+      }
+    },
+    {
+      "name": "fishbone_ishikawa",
+      "displayName": "Fishbone (Ishikawa) Diagram",
+      "description": "Cause-and-effect diagram that identifies many possible causes for an effect or problem",
+      "category": "analytical",
+      "icon": "account_tree",
+      "color": "#2196F3",
+      "tags": ["cause-effect", "ishikawa", "quality", "manufacturing"],
+      "config": {
+        "categories": ["People", "Process", "Materials", "Equipment", "Environment", "Measurement"],
+        "layoutStyle": "fishbone",
+        "requireEvidence": true
+      },
+      "nodeTypes": [
+        {
+          "name": "effect",
+          "displayName": "Effect/Problem",
+          "description": "The problem or effect being analyzed",
+          "icon": "report_problem",
+          "color": "#F44336",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Problem Description"
+              },
+              "measurableImpact": {
+                "type": "string",
+                "title": "Measurable Impact"
+              },
+              "frequency": {
+                "type": "string",
+                "title": "Frequency of Occurrence"
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date",
+                "title": "When First Observed"
+              }
+            },
+            "required": ["description"]
+          },
+          "constraints": {
+            "maxInstances": 1,
+            "minInstances": 1
+          },
+          "visualConfig": {
+            "shape": "diamond",
+            "width": 150,
+            "height": 100
+          }
+        },
+        {
+          "name": "category_spine",
+          "displayName": "Category",
+          "description": "Major category of causes",
+          "icon": "category",
+          "color": "#2196F3",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Category Name",
+                "enum": ["People", "Process", "Materials", "Equipment", "Environment", "Measurement", "Other"]
+              },
+              "description": {
+                "type": "string",
+                "title": "Category Description"
+              }
+            },
+            "required": ["name"]
+          },
+          "constraints": {
+            "maxInstances": 8
+          }
+        },
+        {
+          "name": "primary_cause",
+          "displayName": "Primary Cause",
+          "description": "Major contributing factor within a category",
+          "icon": "warning",
+          "color": "#FF9800",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Cause Description"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["High", "Medium", "Low"]
+              },
+              "evidence": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "required": ["description"]
+          }
+        },
+        {
+          "name": "secondary_cause",
+          "displayName": "Secondary Cause",
+          "description": "Contributing factor to a primary cause",
+          "icon": "info",
+          "color": "#FFC107",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "title": "Cause Description"
+              },
+              "verified": {
+                "type": "boolean",
+                "title": "Has Been Verified"
+              }
+            },
+            "required": ["description"]
+          }
+        }
+      ],
+      "edgeTypes": [
+        {
+          "name": "contributes_to",
+          "displayName": "Contributes To",
+          "description": "Shows causal contribution",
+          "isDirected": true,
+          "validSourceTypes": ["category_spine", "primary_cause", "secondary_cause"],
+          "validTargetTypes": ["effect", "primary_cause"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow"
+        },
+        {
+          "name": "belongs_to",
+          "displayName": "Belongs To",
+          "description": "Categorizes a cause",
+          "isDirected": true,
+          "validSourceTypes": ["primary_cause"],
+          "validTargetTypes": ["category_spine"],
+          "lineStyle": "solid"
+        }
+      ]
+    },
+    {
+      "name": "timeline_analysis",
+      "displayName": "Timeline Analysis",
+      "description": "Chronological investigation of events and their relationships over time",
+      "category": "investigative",
+      "icon": "timeline",
+      "color": "#9C27B0",
+      "tags": ["temporal", "chronological", "investigation", "forensics"],
+      "config": {
+        "timeFormat": "ISO8601",
+        "allowParallelEvents": true,
+        "requireTimestamps": true
+      },
+      "nodeTypes": [
+        {
+          "name": "event",
+          "displayName": "Event",
+          "description": "A specific occurrence at a point in time",
+          "icon": "event",
+          "color": "#673AB7",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "title": "Event Title"
+              },
+              "description": {
+                "type": "string",
+                "title": "Detailed Description"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "title": "When It Occurred"
+              },
+              "duration": {
+                "type": "object",
+                "properties": {
+                  "value": {"type": "number"},
+                  "unit": {"type": "string", "enum": ["seconds", "minutes", "hours", "days"]}
+                }
+              },
+              "location": {
+                "type": "string",
+                "title": "Where It Occurred"
+              },
+              "participants": {
+                "type": "array",
+                "title": "People/Entities Involved",
+                "items": {"type": "string"}
+              },
+              "significance": {
+                "type": "string",
+                "enum": ["Critical", "Major", "Minor", "Informational"]
+              },
+              "verified": {
+                "type": "boolean",
+                "title": "Verification Status"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string"},
+                    "reference": {"type": "string"},
+                    "reliability": {"type": "string", "enum": ["Primary", "Secondary", "Tertiary"]}
+                  }
+                }
+              }
+            },
+            "required": ["title", "timestamp", "significance"]
+          }
+        },
+        {
+          "name": "period",
+          "displayName": "Time Period",
+          "description": "A span of time containing multiple events",
+          "icon": "date_range",
+          "color": "#7E57C2",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Period Name"
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "characteristics": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "required": ["name", "startDate"]
+          }
+        },
+        {
+          "name": "milestone",
+          "displayName": "Milestone",
+          "description": "A significant point marking progress or change",
+          "icon": "flag",
+          "color": "#4CAF50",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Milestone Name"
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "impact": {
+                "type": "string",
+                "title": "Impact Description"
+              },
+              "completed": {
+                "type": "boolean"
+              }
+            },
+            "required": ["name", "date"]
+          }
+        },
+        {
+          "name": "actor",
+          "displayName": "Actor/Participant",
+          "description": "Person or entity involved in events",
+          "icon": "person",
+          "color": "#FF5722",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["Individual", "Organization", "System", "Unknown"]
+              },
+              "role": {
+                "type": "string"
+              },
+              "activeFrom": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "activeTo": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["name", "type"]
+          }
+        }
+      ],
+      "edgeTypes": [
+        {
+          "name": "precedes",
+          "displayName": "Precedes",
+          "description": "Temporal ordering of events",
+          "isDirected": true,
+          "validSourceTypes": ["event", "milestone"],
+          "validTargetTypes": ["event", "milestone"],
+          "lineStyle": "solid",
+          "arrowStyle": "arrow",
+          "propertiesSchema": {
+            "type": "object",
+            "properties": {
+              "timeDelta": {
+                "type": "object",
+                "properties": {
+                  "value": {"type": "number"},
+                  "unit": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "causes",
+          "displayName": "Causes",
+          "description": "Causal relationship between events",
+          "isDirected": true,
+          "validSourceTypes": ["event"],
+          "validTargetTypes": ["event"],
+          "lineStyle": "dashed",
+          "arrowStyle": "arrow",
+          "lineColor": "#FF5722"
+        },
+        {
+          "name": "participates_in",
+          "displayName": "Participates In",
+          "description": "Actor participation in events",
+          "isDirected": true,
+          "validSourceTypes": ["actor"],
+          "validTargetTypes": ["event"],
+          "lineStyle": "dotted",
+          "arrowStyle": "arrow"
+        },
+        {
+          "name": "occurs_during",
+          "displayName": "Occurs During",
+          "description": "Event occurs within a time period",
+          "isDirected": true,
+          "validSourceTypes": ["event", "milestone"],
+          "validTargetTypes": ["period"],
+          "lineStyle": "solid"
+        }
+      ],
+      "workflow": {
+        "steps": [
+          {
+            "id": "define_scope",
+            "type": "INSTRUCTION",
+            "title": "Define Investigation Scope",
+            "description": "Establish the time range and focus of your timeline analysis"
+          },
+          {
+            "id": "add_key_events",
+            "type": "NODE_CREATION",
+            "title": "Add Key Events",
+            "description": "Start adding the most significant events you're investigating",
+            "config": {
+              "nodeType": "event",
+              "allowMultiple": true
+            }
+          },
+          {
+            "id": "establish_sequence",
+            "type": "EDGE_CREATION",
+            "title": "Establish Temporal Sequence",
+            "description": "Connect events in chronological order",
+            "config": {
+              "edgeType": "precedes"
+            }
+          },
+          {
+            "id": "identify_actors",
+            "type": "NODE_CREATION",
+            "title": "Identify Key Actors",
+            "description": "Add people and organizations involved",
+            "config": {
+              "nodeType": "actor",
+              "allowMultiple": true
+            }
+          },
+          {
+            "id": "link_actors",
+            "type": "EDGE_CREATION",
+            "title": "Link Actors to Events",
+            "description": "Show who was involved in which events",
+            "config": {
+              "edgeType": "participates_in"
+            }
+          },
+          {
+            "id": "analyze_causality",
+            "type": "INSTRUCTION",
+            "title": "Analyze Causal Relationships",
+            "description": "Look for cause-and-effect relationships between events"
+          }
+        ]
+      }
+    }
+  ]
+}

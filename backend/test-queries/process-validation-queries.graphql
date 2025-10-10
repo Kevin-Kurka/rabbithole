@@ -1,0 +1,348 @@
+# =====================================================
+# Process Validation System - Test Queries
+# Demonstrates egalitarian, objective promotion criteria
+# =====================================================
+
+# =====================================================
+# QUERIES - Read Operations (No Auth Required)
+# =====================================================
+
+# Query: Get promotion eligibility for a graph
+# Shows all objective scores transparently
+query GetPromotionEligibility {
+  getPromotionEligibility(graphId: "550e8400-e29b-41d4-a716-446655440000") {
+    graph_id
+    methodology_completion_score
+    consensus_score
+    evidence_quality_score
+    challenge_resolution_score
+    overall_score
+    is_eligible
+    blocking_reason
+    missing_requirements
+    calculated_at
+  }
+}
+
+# Query: Get methodology progress
+# Tracks objective completion of workflow steps
+query GetMethodologyProgress {
+  getMethodologyProgress(graphId: "550e8400-e29b-41d4-a716-446655440000") {
+    graph_id
+    methodology_id
+    methodology_name
+    total_steps
+    completed_steps
+    required_steps
+    completed_required_steps
+    completion_percentage
+    required_completion_percentage
+    is_methodology_complete
+    workflow_steps {
+      step_id
+      step_name
+      step_description
+      step_order
+      is_required
+      is_completed
+      completed_at
+      completed_by
+    }
+    calculated_at
+  }
+}
+
+# Query: Get consensus status
+# Shows voting results without authority interpretation
+query GetConsensusStatus {
+  getConsensusStatus(graphId: "550e8400-e29b-41d4-a716-446655440000") {
+    graph_id
+    total_votes
+    weighted_consensus_score
+    unweighted_consensus_score
+    approve_votes
+    reject_votes
+    neutral_votes
+    minimum_votes_threshold
+    has_sufficient_votes
+    consensus_reached
+    last_vote_at
+    calculated_at
+  }
+}
+
+# Query: Get all consensus votes
+# Transparent view of all votes and reasoning
+query GetConsensusVotes {
+  getConsensusVotes(graphId: "550e8400-e29b-41d4-a716-446655440000") {
+    id
+    graph_id
+    user_id
+    voter {
+      id
+      username
+    }
+    vote_value
+    reasoning
+    vote_weight
+    voter_reputation_score
+    created_at
+    updated_at
+  }
+}
+
+# Query: Get user reputation
+# Objective calculation based on participation and quality
+query GetUserReputation {
+  getUserReputation(userId: "123e4567-e89b-12d3-a456-426614174000") {
+    user_id
+    evidence_quality_score
+    total_evidence_submitted
+    verified_evidence_count
+    rejected_evidence_count
+    consensus_participation_rate
+    total_votes_cast
+    vote_alignment_score
+    methodology_completions
+    challenges_raised
+    challenges_resolved
+    overall_reputation_score
+    calculated_at
+  }
+}
+
+# =====================================================
+# MUTATIONS - Write Operations (Auth Required)
+# =====================================================
+
+# Mutation: Submit consensus vote
+# Anyone can vote - weighted by reputation
+mutation SubmitConsensusVote {
+  submitConsensusVote(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+    voteValue: 0.9
+    reasoning: "Graph demonstrates thorough methodology completion, strong evidence quality, and no unresolved challenges. All objective criteria exceed 80% threshold."
+  ) {
+    id
+    graph_id
+    user_id
+    voter {
+      id
+      username
+    }
+    vote_value
+    reasoning
+    vote_weight
+    voter_reputation_score
+    created_at
+    updated_at
+  }
+}
+
+# Mutation: Update existing vote
+mutation UpdateConsensusVote {
+  submitConsensusVote(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+    voteValue: 0.85
+    reasoning: "Revised vote after reviewing additional evidence. Slightly lowering score due to minor gaps in methodology documentation."
+  ) {
+    id
+    graph_id
+    vote_value
+    reasoning
+    vote_weight
+    updated_at
+  }
+}
+
+# Mutation: Reject vote (score < 0.5)
+mutation RejectVote {
+  submitConsensusVote(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+    voteValue: 0.3
+    reasoning: "Graph has unresolved challenges and incomplete methodology steps. Not ready for promotion."
+  ) {
+    id
+    graph_id
+    vote_value
+    reasoning
+  }
+}
+
+# Mutation: Mark workflow step complete
+# Triggers eligibility recalculation
+mutation MarkWorkflowStepComplete {
+  markWorkflowStepComplete(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+    stepId: "670e8400-e29b-41d4-a716-446655440001"
+  ) {
+    id
+    graph_id
+    step_id
+    step_name
+    completed_by
+    completed_at
+    is_verified
+  }
+}
+
+# Mutation: Request promotion evaluation
+# Automatically promotes if eligible - no human approval!
+mutation RequestPromotionEvaluation {
+  requestPromotionEvaluation(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+  ) {
+    graph_id
+    promotion_successful
+    previous_level
+    new_level
+    promotion_message
+    failure_reason
+    eligibility_breakdown {
+      methodology_completion_score
+      consensus_score
+      evidence_quality_score
+      challenge_resolution_score
+      overall_score
+      is_eligible
+      blocking_reason
+      missing_requirements
+    }
+    detailed_requirements
+    evaluated_at
+    evaluated_by
+  }
+}
+
+# =====================================================
+# SUBSCRIPTIONS - Real-time Updates
+# =====================================================
+
+# Subscription: Listen to eligibility updates
+# Real-time UI updates as criteria change
+subscription PromotionEligibilityUpdated {
+  promotionEligibilityUpdated(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+  ) {
+    graph_id
+    methodology_completion_score
+    consensus_score
+    evidence_quality_score
+    challenge_resolution_score
+    overall_score
+    is_eligible
+    blocking_reason
+    missing_requirements
+    calculated_at
+  }
+}
+
+# Subscription: Listen to promotion events
+# Notifies when graphs level up
+subscription GraphPromoted {
+  graphPromoted(
+    graphId: "550e8400-e29b-41d4-a716-446655440000"
+  ) {
+    id
+    graph_id
+    graph_name
+    previous_level
+    new_level
+    promoted_at
+    promotion_reason
+  }
+}
+
+# =====================================================
+# EXAMPLE WORKFLOWS
+# =====================================================
+
+# Workflow 1: Check if graph is ready for promotion
+# Step 1: Get eligibility status
+# Step 2: If not eligible, review missing requirements
+# Step 3: Complete missing steps
+# Step 4: Request promotion evaluation
+# Step 5: Automatic promotion if criteria met!
+
+# Workflow 2: Participate in consensus voting
+# Step 1: Review graph and methodology progress
+# Step 2: Check evidence quality
+# Step 3: Verify no open challenges
+# Step 4: Submit vote with reasoning
+# Step 5: Vote contributes to consensus score
+
+# Workflow 3: Track progress in real-time
+# Step 1: Subscribe to eligibility updates
+# Step 2: UI shows live progress bars
+# Step 3: User completes workflow steps
+# Step 4: UI updates automatically
+# Step 5: Notification when promotion ready
+
+# =====================================================
+# EGALITARIAN PRINCIPLES DEMONSTRATED
+# =====================================================
+
+# ✓ No Authority Checks
+#   - Anyone can view eligibility scores
+#   - Anyone can submit votes
+#   - No curator approval required
+
+# ✓ Objective Math
+#   - Clear formulas: completed_steps / total_steps
+#   - Weighted averages for consensus
+#   - Binary challenge resolution (0 or 1)
+#   - All scores >= 0.8 → eligible
+
+# ✓ Transparent
+#   - All scores visible to everyone
+#   - Vote reasoning public
+#   - Exact criteria documented
+#   - Audit log of all promotions
+
+# ✓ Automatic
+#   - Promotion happens when criteria met
+#   - No human gatekeepers
+#   - No discretion or interpretation
+#   - Math-based decisions only
+
+# ✓ Auditable
+#   - All votes logged with reasoning
+#   - All promotions logged with scores
+#   - All step completions tracked
+#   - Full transparency for community
+
+# =====================================================
+# SCORE CALCULATION FORMULAS
+# =====================================================
+
+# Methodology Completion Score:
+#   completed_required_steps / total_required_steps
+#   Must be >= 0.8 (80% of required steps)
+
+# Consensus Score:
+#   SUM(vote_value * vote_weight) / SUM(vote_weight)
+#   Must be >= 0.8 and have >= 3 votes
+
+# Evidence Quality Score:
+#   AVG(evidence.confidence) for all evidence in graph
+#   Must be >= 0.8
+
+# Challenge Resolution Score:
+#   1.0 if no open challenges
+#   0.0 if any open challenges exist
+#   Binary - no interpretation needed
+
+# Overall Score:
+#   MIN(methodology, consensus, evidence, challenges)
+#   All criteria must meet 0.8 threshold
+
+# Vote Weight:
+#   MAX(user.overall_reputation_score, 0.5)
+#   Everyone has minimum weight of 0.5
+#   Higher quality contributions → higher weight
+
+# Reputation Score:
+#   evidence_quality * 0.4 +
+#   vote_alignment * 0.3 +
+#   methodology_completions * 0.2 +
+#   challenge_resolution_ratio * 0.1

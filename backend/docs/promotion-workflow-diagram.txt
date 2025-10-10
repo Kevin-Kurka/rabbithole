@@ -1,0 +1,240 @@
+# Level 0 Promotion Workflow - Egalitarian Process
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                          LEVEL 1: INVESTIGATION CANVAS                               │
+│                                                                                       │
+│  User Creates Graph ──► Select Methodology ──► AI Guides Process                     │
+│         │                     │                         │                            │
+│         │                     ▼                         ▼                            │
+│         │              ┌──────────────┐          ┌──────────────┐                   │
+│         │              │  Scientific  │          │   Prompts    │                   │
+│         │              │   Method     │          │   Missing    │                   │
+│         │              │   ------     │          │    Steps     │                   │
+│         │              │  Legal Disc. │          └──────────────┘                   │
+│         │              │  Toulmin Arg │                                             │
+│         │              └──────────────┘                                             │
+│         │                                                                            │
+│         ▼                                                                            │
+│  ┌──────────────────────────────────────────────────────────────────┐              │
+│  │                    Build Investigation Graph                       │              │
+│  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │              │
+│  │  │ Nodes  │  │ Edges  │  │Evidence│  │Sources │  │ Claims │    │              │
+│  │  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘    │              │
+│  └──────────────────────────────────────────────────────────────────┘              │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                         OBJECTIVE CRITERIA VALIDATION                                │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐   │
+│  │                        REAL-TIME CRITERIA DASHBOARD                          │   │
+│  │                                                                              │   │
+│  │  Methodology Completion:  [████████████░░░░░] 85%  (100% required)         │   │
+│  │  Evidence Quality:        [████████░░░░░░░░░] 0.65 (≥0.70 required)       │   │
+│  │  Source Diversity:        [████████░░░░░░░░░] 2/3  sources                │   │
+│  │  Community Agreement:     [███████████░░░░░░] 75%  (≥80% required)        │   │
+│  │  Participation Count:     [████████░░░░░░░░░] 4/5  users                  │   │
+│  │  Open Challenges:         [██████████░░░░░░░] 1    (0 required)           │   │
+│  │                                                                              │   │
+│  │  Status: NOT ELIGIBLE - 3 criteria not met                                  │   │
+│  └─────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                       │
+│                          Parallel Processing Paths                                   │
+│         ┌─────────────────────────┴──────────────────────────┐                      │
+│         ▼                         ▼                          ▼                      │
+│  ┌──────────────┐         ┌──────────────┐          ┌──────────────┐              │
+│  │  Methodology │         │   Evidence   │          │  Community   │              │
+│  │   Checker    │         │  Validator   │          │   Voting     │              │
+│  │              │         │              │          │              │              │
+│  │  ✓ Steps     │         │  ✓ Sources   │          │  ◆ Weighted  │              │
+│  │  ✓ Nodes     │         │  ✓ Quality   │          │  ◆ Evidence  │              │
+│  │  ✓ Edges     │         │  ✓ Diversity │          │  ◆ No Roles  │              │
+│  └──────────────┘         └──────────────┘          └──────────────┘              │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                            COMMUNITY CONSENSUS PHASE                                 │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│   ┌────────────┐                                              ┌────────────┐        │
+│   │   User A   │ ◄──── All Users Equal Starting Weight ────► │   User B   │        │
+│   │  Weight: 1 │                                              │  Weight: 1 │        │
+│   └─────┬──────┘                                              └─────┬──────┘        │
+│         │                                                            │                │
+│         ▼                                                            ▼                │
+│   Provides Evidence                                            No Evidence           │
+│   High Quality (0.8)                                          Provided              │
+│   3 Sources                                                                         │
+│         │                                                            │                │
+│         ▼                                                            ▼                │
+│   Final Weight: 2.4                                           Final Weight: 0.1     │
+│   (1.0 × 1.7 × 1.3)                                          (1.0 × 0.1 × 1.0)    │
+│         │                                                            │                │
+│         └────────────────────┬───────────────────────────────────────┘              │
+│                              ▼                                                       │
+│                    ┌──────────────────┐                                            │
+│                    │ Weighted Voting  │                                            │
+│                    │   Pool Forms     │                                            │
+│                    │                  │                                            │
+│                    │ Support:   42.5  │                                            │
+│                    │ Oppose:    14.2  │                                            │
+│                    │ Consensus: 75%   │                                            │
+│                    └──────────────────┘                                            │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                            CHALLENGE RESOLUTION PHASE                                │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│     Open Challenge Detected                                                          │
+│            │                                                                          │
+│            ▼                                                                          │
+│     ┌──────────────────────────┐                                                    │
+│     │  Challenge: Source       │                                                    │
+│     │  Credibility Issue       │                                                    │
+│     │                          │                                                    │
+│     │  Evidence Provided: ✓    │                                                    │
+│     │  Community Review: 72hr  │                                                    │
+│     └───────────┬──────────────┘                                                    │
+│                 │                                                                     │
+│                 ▼                                                                     │
+│     ┌──────────────────────────────────────┐                                       │
+│     │   Structured Debate (Toulmin Model)   │                                       │
+│     │                                        │                                       │
+│     │   Original Claim    vs    Challenge   │                                       │
+│     │   ─────────────          ───────────  │                                       │
+│     │   Grounds: [███]     Rebuttal: [███]  │                                       │
+│     │   Warrant: [███]     Evidence: [███]  │                                       │
+│     │   Backing: [███]     Support:  [███]  │                                       │
+│     └──────────────┬─────────────────────────┘                                      │
+│                    │                                                                  │
+│                    ▼                                                                  │
+│     Community Votes on Challenge                                                     │
+│     (Weighted by Evidence Quality)                                                   │
+│                    │                                                                  │
+│         ┌──────────┴──────────┐                                                     │
+│         ▼                     ▼                                                     │
+│   Challenge Accepted    Challenge Rejected                                          │
+│   (Returns to Level 1)  (Proceed to Check)                                         │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                          ANTI-GAMING SECURITY CHECKS                                 │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│   ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐           │
+│   │   IP Clustering  │    │  Account Age     │    │ Behavior Pattern │           │
+│   │     Analysis     │    │  Verification    │    │    Detection     │           │
+│   │                  │    │                  │    │                  │           │
+│   │  Max 3 per IP    │    │  Min 7 days      │    │  Anomaly Score   │           │
+│   └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘           │
+│            │                        │                        │                       │
+│            └────────────────────────┴────────────────────────┘                       │
+│                                     │                                                │
+│                                     ▼                                                │
+│                          ┌──────────────────┐                                       │
+│                          │  Risk Score < 0.3│                                       │
+│                          │   (Low Risk)     │                                       │
+│                          └─────────┬────────┘                                       │
+│                                    │                                                 │
+│                          ┌─────────┴─────────┐                                      │
+│                          ▼                   ▼                                      │
+│                    PASS: Continue       FAIL: Flag/Block                            │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                         AUTOMATIC PROMOTION DECISION                                 │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│                     ┌────────────────────────────┐                                  │
+│                     │  ALL CRITERIA MET CHECK   │                                  │
+│                     │                            │                                  │
+│                     │  ✓ Methodology = 100%      │                                  │
+│                     │  ✓ Evidence ≥ 0.70        │                                  │
+│                     │  ✓ Sources ≥ 3            │                                  │
+│                     │  ✓ Consensus ≥ 80%        │                                  │
+│                     │  ✓ Participants ≥ 5       │                                  │
+│                     │  ✓ Challenges = 0         │                                  │
+│                     │  ✓ Gaming Risk < 0.3      │                                  │
+│                     └────────────┬───────────────┘                                  │
+│                                  │                                                   │
+│                     ┌────────────┴────────────┐                                     │
+│                     ▼                         ▼                                     │
+│           ╔═══════════════════╗     ┌──────────────────┐                          │
+│           ║  PROMOTED TO      ║     │  Remain Level 1  │                          │
+│           ║    LEVEL 0        ║     │  Show Missing    │                          │
+│           ║                   ║     │   Criteria       │                          │
+│           ║  Veracity = 1.0   ║     └──────────────────┘                          │
+│           ║  Immutable Truth  ║                                                    │
+│           ╚═══════════════════╝                                                    │
+│                     │                                                               │
+│                     ▼                                                               │
+│           ┌──────────────────┐                                                     │
+│           │  Audit Trail     │                                                     │
+│           │  Created with:   │                                                     │
+│           │  - Timestamp     │                                                     │
+│           │  - All Evidence  │                                                     │
+│           │  - All Votes     │                                                     │
+│           │  - Methodology   │                                                     │
+│           │  - Participants  │                                                     │
+│           └──────────────────┘                                                     │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                           POST-PROMOTION MONITORING                                  │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│   ┌──────────────────────────────────────────────────────────────────┐             │
+│   │                    Retroactive Validation Schedule                │             │
+│   │                                                                   │             │
+│   │   High Traffic Content:    Every 30 days                        │             │
+│   │   Medium Traffic Content:  Every 90 days                        │             │
+│   │   Low Traffic Content:     Every 180 days                       │             │
+│   │                                                                   │             │
+│   │   Community can always flag for immediate review                 │             │
+│   └──────────────────────────────────────────────────────────────────┘             │
+│                                                                                       │
+│   If Issues Found:                                                                   │
+│   ┌──────────────┐                                                                  │
+│   │  Rollback    │ ──► Demote to Level 1                                          │
+│   │  Mechanism   │ ──► Reset Veracity to 0.5                                      │
+│   │  Activated   │ ──► Create Investigation Case                                   │
+│   └──────────────┘ ──► Notify All Participants                                    │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+KEY PRINCIPLES DEMONSTRATED:
+═══════════════════════════════════════════════════════════════════════════════════════
+
+1. NO CURATOR ROLES: No single authority makes promotion decisions
+2. OBJECTIVE CRITERIA: Mathematical thresholds, not subjective judgment
+3. TRANSPARENT PROCESS: Real-time visibility of all requirements
+4. EQUAL PARTICIPATION: All users start with equal weight
+5. EVIDENCE-BASED WEIGHTING: Influence earned through quality contributions
+6. AI GUIDANCE ONLY: AI suggests but never decides
+7. AUTOMATIC PROMOTION: System executes when criteria met
+8. COMMUNITY OWNERSHIP: Consensus drives truth validation
+9. ANTI-GAMING PROTECTION: Multiple layers prevent manipulation
+10. AUDIT TRAIL: Complete transparency and accountability
+
+═══════════════════════════════════════════════════════════════════════════════════════
+```
+
+---
+
+**Document Version**: 1.0.0
+**Last Updated**: 2025-10-09

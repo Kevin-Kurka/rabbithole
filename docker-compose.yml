@@ -6,13 +6,14 @@ services:
     restart: always
     environment:
       POSTGRES_DB: rabbithole_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d rabbithole_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rabbithole_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,11 +26,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      message-queue:
+      redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/rabbithole_db
-      RABBITMQ_URL: amqp://message-queue
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rabbithole_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      VECTORIZATION_QUEUE_NAME: vectorization_queue
 
   frontend:
     build:
@@ -41,11 +47,52 @@ services:
     depends_on:
       - api
 
-  message-queue:
-    image: rabbitmq:3-management
+  redis:
+    image: redis:7-alpine
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbithole-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  vectorization-worker:
+    build:
+      context: ./backend
+    command: npm run worker:start
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rabbithole_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      VECTORIZATION_QUEUE_NAME: vectorization_queue
+      NODE_ENV: production
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  rabbitmq_data:
+  rabbitmq_logs:

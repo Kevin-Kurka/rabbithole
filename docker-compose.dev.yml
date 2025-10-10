@@ -1,0 +1,42 @@
+# Docker Compose override for local development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+version: '3.8'
+
+services:
+  api:
+    volumes:
+      - ./backend/src:/usr/src/app/src
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm start
+
+  vectorization-worker:
+    volumes:
+      - ./backend/src:/usr/src/app/src
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run worker:dev
+
+  rabbitmq:
+    environment:
+      # Enable additional plugins for development
+      RABBITMQ_PLUGINS: rabbitmq_management,rabbitmq_prometheus
+    ports:
+      - "15692:15692"  # Prometheus metrics
+
+  # Development-only services
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbithole-rabbitmq-exporter
+    environment:
+      RABBIT_URL: http://rabbitmq:15672
+      RABBIT_USER: admin
+      RABBIT_PASSWORD: admin
+    ports:
+      - "9419:9419"
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped

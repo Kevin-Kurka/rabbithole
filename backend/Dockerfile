@@ -3,11 +3,17 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
+COPY tsconfig.json ./
 
 RUN npm install
+RUN npm install @types/uuid
 
-COPY . .
+# Install RabbitMQ client for vectorization worker
+RUN npm install amqplib @types/amqplib
 
-RUN npm run build
+COPY src ./src
 
-CMD ["node", "dist/index.js"]
+# Don't build, use ts-node directly
+# RUN npm run build
+
+CMD ["npm", "start"]

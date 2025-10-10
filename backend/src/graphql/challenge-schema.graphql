@@ -1,0 +1,438 @@
+# ================================================
+# Challenge System GraphQL Schema
+# ================================================
+# Phase 2: Community-driven challenge system for Level 1 nodes and edges
+# Enables users to challenge claims with counter-evidence and participate
+# in community moderation through voting and resolution.
+# ================================================
+
+# ================================================
+# Enums
+# ================================================
+
+enum ChallengeTypeCode {
+    FACTUAL_ERROR
+    MISSING_CONTEXT
+    BIAS
+    SOURCE_CREDIBILITY
+    LOGICAL_FALLACY
+    OUTDATED_INFORMATION
+    MISLEADING_REPRESENTATION
+    CONFLICT_OF_INTEREST
+    METHODOLOGICAL_FLAW
+    OTHER
+}
+
+enum ChallengeSeverity {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+enum ChallengeStatus {
+    OPEN
+    VOTING
+    CLOSED
+    RESOLVED
+    WITHDRAWN
+}
+
+enum ChallengeResolution {
+    PENDING
+    ACCEPTED
+    REJECTED
+    PARTIALLY_ACCEPTED
+    MODIFIED
+    WITHDRAWN
+    EXPIRED
+}
+
+enum ChallengeVoteType {
+    SUPPORT
+    REJECT
+    ABSTAIN
+}
+
+enum ReputationTier {
+    NOVICE      # 0-99 points
+    CONTRIBUTOR # 100-499 points
+    TRUSTED     # 500-1999 points
+    EXPERT      # 2000-9999 points
+    AUTHORITY   # 10000+ points
+}
+
+enum NotificationType {
+    CHALLENGE_CREATED
+    CHALLENGE_VOTING_STARTED
+    CHALLENGE_VOTING_ENDING
+    CHALLENGE_RESOLVED
+    CHALLENGE_COMMENTED
+    VOTE_REQUESTED
+    EVIDENCE_ADDED
+    RESOLUTION_APPEALED
+}
+
+enum SpamReportType {
+    SPAM
+    HARASSMENT
+    FALSE_INFORMATION
+    DUPLICATE
+    OFF_TOPIC
+    OTHER
+}
+
+# ================================================
+# Core Types
+# ================================================
+
+type ChallengeType {
+    id: ID!
+    typeCode: ChallengeTypeCode!
+    displayName: String!
+    description: String!
+    icon: String
+    color: String
+    
+    # Requirements and impact
+    minReputationRequired: Int!
+    evidenceRequired: Boolean!
+    maxVeracityImpact: Float!
+    
+    # Voting configuration
+    minVotesRequired: Int!
+    acceptanceThreshold: Float!
+    votingDurationHours: Int!
+    
+    # Guidelines
+    guidelines: String
+    exampleChallenges: JSON
+    
+    # Status
+    isActive: Boolean!
+    
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type UserReputation {
+    userId: ID!
+    user: User!
+    
+    # Core reputation metrics
+    reputationScore: Int!
+    reputationTier: ReputationTier!
+    
+    # Challenge statistics
+    challengesSubmitted: Int!
+    challengesAccepted: Int!
+    challengesRejected: Int!
+    challengesPending: Int!
+    
+    # Voting statistics
+    votesCast: Int!
+    votesAgreedWithOutcome: Int!
+    
+    # Resolution statistics
+    resolutionsPerformed: Int!
+    resolutionsOverturned: Int!
+    
+    # Quality metrics
+    accuracyRate: Float!
+    participationRate: Float!
+    
+    # Restrictions
+    isBanned: Boolean!
+    banReason: String
+    bannedUntil: DateTime
+    warningCount: Int!
+    
+    # Rate limiting
+    challengesToday: Int!
+    dailyLimit: Int!
+    
+    # Achievements
+    badges: [Badge!]!
+    achievements: [Achievement!]!
+    
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    lastActiveAt: DateTime!
+}
+
+type Challenge {
+    id: ID!
+    
+    # Target (either node or edge)
+    targetNode: Node
+    targetEdge: Edge
+    targetType: String! # "node" or "edge"
+    
+    # Challenge details
+    challengeType: ChallengeType!
+    title: String!
+    description: String!
+    severity: ChallengeSeverity!
+    
+    # Evidence
+    evidence: [ChallengeEvidence!]!
+    supportingSources: [SourceReference!]!
+    
+    # Status and voting
+    status: ChallengeStatus!
+    votingStartsAt: DateTime!
+    votingEndsAt: DateTime!
+    voteCount: Int!
+    supportVotes: Int!
+    rejectVotes: Int!
+    supportPercentage: Float!
+    
+    # Resolution
+    resolution: ChallengeResolution
+    resolutionReason: String
+    resolvedBy: User
+    resolvedAt: DateTime
+    veracityImpact: Float!
+    
+    # Participants
+    challenger: User!
+    votes: [ChallengeVote!]!
+    comments: [ChallengeComment!]!
+    
+    # Moderation
+    isSpam: Boolean!
+    spamReports: Int!
+    visibility: String!
+    
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type ChallengeEvidence {
+    id: ID!
+    challenge: Challenge!
+    
+    # Evidence reference (if linked to existing)
+    existingEvidence: Evidence
+    
+    # Or inline evidence
+    evidenceType: String # supporting, refuting, clarifying
+    sourceUrl: String
+    sourceTitle: String
+    content: String!
+    excerpt: String
+    
+    # Scoring
+    credibilityScore: Float!
+    relevanceScore: Float!
+    
+    # Verification
+    isVerified: Boolean!
+    verifiedBy: User
+    verifiedAt: DateTime
+    
+    # Metadata
+    submittedBy: User!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type ChallengeVote {
+    id: ID!
+    challenge: Challenge!
+    user: User!
+    
+    # Vote details
+    vote: ChallengeVoteType!
+    confidence: Float!
+    reason: String
+    evidenceEvaluation: JSON
+    
+    # Vote weight (based on reputation)
+    weight: Float!
+    
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type ChallengeComment {
+    id: ID!
+    challenge: Challenge!
+    user: User!
+    parentComment: ChallengeComment
+    
+    # Content
+    content: String!
+    isEdited: Boolean!
+    editedAt: DateTime
+    
+    # Moderation
+    isHidden: Boolean!
+    hiddenReason: String
+    hiddenBy: User
+    
+    # Reactions
+    upvotes: Int!
+    downvotes: Int!
+    replies: [ChallengeComment!]!
+    
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type ChallengeResolution {
+    id: ID!
+    challenge: Challenge!
+    
+    # Resolution details
+    resolutionType: ChallengeResolution!
+    resolutionSummary: String!
+    detailedReasoning: String
+    evidenceAssessment: JSON
+    
+    # Impact
+    veracityImpact: Float!
+    modificationsMade: JSON
+    
+    # Voting results
+    totalVotes: Int!
+    supportVotes: Int!
+    rejectVotes: Int!
+    abstainVotes: Int!
+    weightedSupportPercentage: Float!
+    
+    # Authority
+    resolvedBy: User!
+    resolverRole: String! # moderator, admin, automated, community
+    
+    # Appeals
+    isAppealable: Boolean!
+    appealDeadline: DateTime
+    wasAppealed: Boolean!
+    appealChallenge: Challenge
+    
+    # Metadata
+    createdAt: DateTime!
+}
+
+type Badge {
+    id: ID!
+    name: String!
+    description: String!
+    icon: String!
+    rarity: String! # common, rare, epic, legendary
+    awardedAt: DateTime!
+}
+
+type Achievement {
+    id: ID!
+    title: String!
+    description: String!
+    progress: Int!
+    target: Int!
+    completed: Boolean!
+    completedAt: DateTime
+    rewardPoints: Int!
+}
+
+type SourceReference {
+    url: String!
+    title: String!
+    authors: [String!]
+    publicationDate: Date
+    credibilityScore: Float
+}
+
+# ================================================
+# Input Types
+# ================================================
+
+input CreateChallengeInput {
+    targetNodeId: ID
+    targetEdgeId: ID
+    challengeTypeCode: ChallengeTypeCode!
+    title: String!
+    description: String!
+    severity: ChallengeSeverity!
+    evidenceIds: [ID!]
+    supportingSources: [SourceReferenceInput!]
+}
+
+input ChallengeVoteInput {
+    challengeId: ID!
+    vote: ChallengeVoteType!
+    confidence: Float
+    reason: String
+    evidenceEvaluation: JSON
+}
+
+input SourceReferenceInput {
+    url: String!
+    title: String!
+    authors: [String!]
+    publicationDate: Date
+}
+
+# ================================================
+# Queries
+# ================================================
+
+extend type Query {
+    # Challenge queries
+    challenge(id: ID!): Challenge
+    challenges(
+        status: [ChallengeStatus!]
+        limit: Int
+        offset: Int
+    ): [Challenge!]!
+    
+    # Active challenges
+    activeChallenges(limit: Int): [Challenge!]!
+    
+    # My challenges
+    myChallenges: [Challenge!]!
+    
+    # Reputation
+    myReputation: UserReputation
+    userReputation(userId: ID!): UserReputation
+    reputationLeaderboard(limit: Int): [UserReputation!]!
+}
+
+# ================================================
+# Mutations
+# ================================================
+
+extend type Mutation {
+    # Challenge lifecycle
+    createChallenge(input: CreateChallengeInput!): Challenge!
+    withdrawChallenge(id: ID!, reason: String): Challenge!
+    
+    # Voting
+    voteOnChallenge(input: ChallengeVoteInput!): ChallengeVote!
+    
+    # Resolution
+    resolveChallenge(
+        challengeId: ID!
+        resolution: ChallengeResolution!
+        reason: String!
+    ): ChallengeResolution!
+}
+
+# ================================================
+# Subscriptions
+# ================================================
+
+extend type Subscription {
+    # Real-time challenge updates
+    challengeCreated(targetNodeId: ID, targetEdgeId: ID): Challenge!
+    challengeUpdated(id: ID!): Challenge!
+    challengeResolved(id: ID!): ChallengeResolution!
+    
+    # Voting updates
+    challengeVoteAdded(challengeId: ID!): ChallengeVote!
+}

@@ -1,0 +1,280 @@
+/**
+ * Graph Canvas Styles
+ *
+ * Additional styles for the GraphCanvas component including
+ * animations and custom styling for React Flow elements.
+ */
+
+/* Edge dash animation for low-confidence edges */
+@keyframes dashdraw {
+  0% {
+    stroke-dashoffset: 10;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* React Flow custom styling overrides */
+.react-flow__node {
+  cursor: grab;
+}
+
+.react-flow__node.selected {
+  cursor: grabbing;
+}
+
+.react-flow__node-custom,
+.react-flow__node-default,
+.react-flow__node-methodology {
+  /* Handled by GraphNode component */
+}
+
+.react-flow__edge-custom,
+.react-flow__edge-default {
+  /* Handled by GraphEdge component */
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 3px;
+}
+
+/* Handle styling */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  background-color: var(--handle-bg);
+}
+
+.react-flow__handle-connecting {
+  background-color: #3b82f6;
+}
+
+.react-flow__handle-valid {
+  background-color: #10b981;
+}
+
+/* Controls styling */
+.react-flow__controls {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls-button {
+  background-color: #3f3f46;
+  border-bottom: 1px solid #52525b;
+  color: #fafafa;
+}
+
+.react-flow__controls-button:hover:not(:disabled) {
+  background-color: #52525b;
+}
+
+.react-flow__controls-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(39, 39, 42, 0.7);
+}
+
+.react-flow__minimap-node {
+  stroke: none;
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid #3b82f6;
+}
+
+/* Context menu */
+.context-menu {
+  animation: contextMenuIn 0.15s ease-out;
+}
+
+@keyframes contextMenuIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Kbd tag styling for keyboard shortcuts */
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  background-color: #3f3f46;
+  border: 1px solid #52525b;
+  border-radius: 3px;
+  color: #fafafa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Node drag ghost */
+.react-flow__node.dragging {
+  opacity: 0.7;
+  cursor: grabbing;
+}
+
+/* Edge label */
+.react-flow__edge-text {
+  fill: #fafafa;
+  font-size: 11px;
+}
+
+/* Background pattern */
+.react-flow__background-pattern {
+  fill: #71717a;
+}
+
+/* Attribution */
+.react-flow__attribution {
+  display: none;
+}
+
+/* Loading state */
+.graph-canvas-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #27272a;
+  color: #fafafa;
+}
+
+.graph-canvas-loading::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 4px solid #3f3f46;
+  border-top-color: #fafafa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.graph-canvas-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #27272a;
+  color: #ef4444;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Veracity legend */
+.veracity-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+}
+
+.veracity-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 12px;
+  color: #e4e4e7;
+}
+
+.veracity-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+/* Node selection ring */
+.react-flow__node.selected::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* Accessibility: Focus indicators */
+.react-flow__node:focus,
+.react-flow__edge:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .react-flow__node,
+  .react-flow__edge-path {
+    stroke-width: 3px;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke-width: 4px;
+  }
+
+  .react-flow__handle {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .react-flow__edge-path {
+    animation: none !important;
+  }
+
+  .context-menu {
+    animation: none;
+  }
+
+  .graph-canvas-loading::after {
+    animation: none;
+    border-top-color: transparent;
+  }
+}
+
+/* Print styles */
+@media print {
+  .react-flow__controls,
+  .react-flow__minimap,
+  .context-menu {
+    display: none !important;
+  }
+
+  .react-flow__viewport {
+    transform: none !important;
+  }
+}

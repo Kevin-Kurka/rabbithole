@@ -1,0 +1,549 @@
+========================================
+Rabbit Hole Database Migration Report
+========================================
+Started at: Thu Oct  9 10:05:06 PDT 2025
+
+[INFO] Step 1: Verifying prerequisites...
+[ERROR] Postgres container 'rabbithole-postgres-1' is not running.
+[INFO] Starting containers with docker-compose...
+[SUCCESS] Prerequisites verified successfully
+[INFO] Step 2: Creating migration tracking table...
+CREATE TABLE
+[SUCCESS] Migration tracking table ready
+[INFO] Step 3: Checking which migrations have been applied...
+[INFO] Applied migrations:
+[INFO]   - None (fresh database)
+[INFO] Step 4: Creating database backup before migrations...
+[SUCCESS] Backup created: /Users/kmk/rabbithole/backups/rabbithole_backup_20251009_100506.sql (size: 4.0K)
+[INFO] Step 5: Applying pending migrations...
+[INFO] Applying migration 001: Initial schema - base tables
+CREATE EXTENSION
+CREATE EXTENSION
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE VIEW
+CREATE VIEW
+CREATE VIEW
+CREATE VIEW
+INSERT 0 1
+[SUCCESS] Migration 001 applied successfully (0ms)
+[INFO] Creating migration 002: Level 0/1 system verification
+[INFO] Applying migration 002: Level 0/1 system verification
+DO
+DO
+NOTICE:  relation "idx_nodes_is_level_0" already exists, skipping
+CREATE INDEX
+NOTICE:  relation "idx_edges_is_level_0" already exists, skipping
+CREATE INDEX
+CREATE VIEW
+CREATE VIEW
+INSERT 0 1
+[SUCCESS] Migration 002 applied successfully (0ms)
+[INFO] Applying migration 003: Veracity scoring system
+CREATE TABLE
+CREATE TABLE
+ERROR:  cannot use subquery in check constraint
+LINE 53:         (target_node_id IS NULL OR NOT EXISTS (
+                                                ^
+CREATE TABLE
+CREATE TABLE
+ERROR:  relation "public.Evidence" does not exist
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ERROR:  relation "public.EvidenceVotes" does not exist
+ERROR:  relation "public.EvidenceVotes" does not exist
+ERROR:  relation "public.EvidenceVotes" does not exist
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ERROR:  syntax error at or near "current_date"
+LINE 4:     current_date TIMESTAMPTZ DEFAULT now()
+            ^
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+ERROR:  relation "public.Evidence" does not exist
+CREATE TRIGGER
+ERROR:  relation "public.EvidenceVotes" does not exist
+CREATE FUNCTION
+ERROR:  relation "public.Evidence" does not exist
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+ERROR:  relation "public.Evidence" does not exist
+CREATE VIEW
+ERROR:  relation "public.Evidence" does not exist
+LINE 26: FROM public."Evidence" e
+              ^
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+ERROR:  role "readonly_user" does not exist
+INSERT 0 1
+[SUCCESS] Migration 003 applied successfully (1000ms)
+[INFO] Running test suite for migration 003...
+BEGIN
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 3
+ERROR:  column reference "is_level_0" is ambiguous
+LINE 1: SELECT is_level_0                         FROM public."Nodes...
+               ^
+DETAIL:  It could refer to either a PL/pgSQL variable or a table column.
+QUERY:  SELECT is_level_0                         FROM public."Nodes" WHERE id = target_id
+CONTEXT:  PL/pgSQL function calculate_veracity_score(text,uuid) line 11 at SQL statement
+PL/pgSQL function inline_code_block line 6 at assignment
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  syntax error at or near "PERFORM"
+LINE 1: PERFORM pg_sleep(0.1);
+        ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  syntax error at or near "PERFORM"
+LINE 1: PERFORM pg_sleep(0.1);
+        ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  syntax error at or near "PERFORM"
+LINE 1: PERFORM update_source_credibility('00000000-0000-0000-0000-0...
+        ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+[SUCCESS] Migration 003 tests passed
+[INFO] Applying migration 004: Challenge system
+NOTICE:  extension "uuid-ossp" already exists, skipping
+CREATE EXTENSION
+CREATE TABLE
+INSERT 0 10
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+NOTICE:  constraint "challenges_status_check" of relation "Challenges" does not exist, skipping
+ALTER TABLE
+ALTER TABLE
+ERROR:  cannot use subquery in check constraint
+ERROR:  relation "public.Evidence" does not exist
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ERROR:  relation "public.ChallengeEvidence" does not exist
+ERROR:  relation "public.ChallengeEvidence" does not exist
+ERROR:  relation "public.ChallengeEvidence" does not exist
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+ERROR:  relation "public.ChallengeEvidence" does not exist
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE VIEW
+CREATE VIEW
+CREATE VIEW
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+INSERT 0 1
+INSERT 0 1
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+ERROR:  role "readonly_user" does not exist
+INSERT 0 1
+[SUCCESS] Migration 004 applied successfully (0ms)
+[INFO] Applying migration 005: Evidence management system
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+ERROR:  syntax error at or near "WHERE"
+LINE 69: ...ne_primary_file_per_evidence UNIQUE (evidence_id) WHERE is_p...
+                                                              ^
+ERROR:  syntax error at or near "WHERE"
+LINE 32:         WHERE target_node_id IS NOT NULL AND detached_at IS ...
+                 ^
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.Evidence" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+ERROR:  relation "public.EvidenceReviewVotes" does not exist
+ERROR:  relation "public.EvidenceReviewVotes" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceAuditLog" does not exist
+ERROR:  relation "public.EvidenceDuplicates" does not exist
+ERROR:  relation "public.EvidenceDuplicates" does not exist
+ERROR:  relation "public.EvidenceDuplicates" does not exist
+ERROR:  relation "public.EvidenceSearchIndex" does not exist
+ERROR:  relation "public.EvidenceSearchIndex" does not exist
+ERROR:  relation "public.EvidenceSearchIndex" does not exist
+ERROR:  relation "public.EvidenceSearchIndex" does not exist
+ERROR:  relation "public.EvidenceSearchIndex" does not exist
+CREATE FUNCTION
+ERROR:  syntax error at or near "FILTER"
+LINE 30: ...[EXTRACT(YEAR FROM em.publication_date)::INTEGER] FILTER (WH...
+                                                              ^
+CREATE FUNCTION
+CREATE FUNCTION
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceAttachments" does not exist
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+CREATE FUNCTION
+ERROR:  relation "public.EvidenceReviewVotes" does not exist
+CREATE FUNCTION
+ERROR:  relation "public.EvidenceMetadata" does not exist
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.EvidenceReviews" does not exist
+CREATE FUNCTION
+ERROR:  relation "public.EvidenceFiles" does not exist
+CREATE FUNCTION
+ERROR:  relation "public.EvidenceFiles" does not exist
+ERROR:  relation "public.Evidence" does not exist
+LINE 45: FROM public."Evidence" e
+              ^
+ERROR:  relation "public.Evidence" does not exist
+LINE 24: FROM public."Evidence" e
+              ^
+ERROR:  role "backend_app" does not exist
+ERROR:  role "backend_app" does not exist
+ERROR:  role "readonly_user" does not exist
+ERROR:  role "backend_app" does not exist
+INSERT 0 1
+[SUCCESS] Migration 005 applied successfully (0ms)
+[INFO] Running test suite for migration 005...
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (00000000-0000-0000-0000-000000000004, 00000000-0000-0000-0000-000000000003, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.65401+00, 2025-10-09 17:05:13.65401+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (33333333-3333-3333-3333-333333333331, 22222222-2222-2222-2222-222222222222, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.656695+00, 2025-10-09 17:05:13.656695+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (dddddddd-dddd-dddd-dddd-dddddddddddd, cccccccc-cccc-cccc-cccc-cccccccccccc, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.658083+00, 2025-10-09 17:05:13.658083+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+INSERT 0 5
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (f3333333-3333-3333-3333-333333333333, f2222222-2222-2222-2222-222222222222, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.659413+00, 2025-10-09 17:05:13.659413+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (d3333333-3333-3333-3333-333333333333, d2222222-2222-2222-2222-222222222222, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.661303+00, 2025-10-09 17:05:13.661303+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+ERROR:  invalid input syntax for type uuid: "s0000000-0000-0000-0000-000000000000"
+LINE 2: VALUES ('s0000000-0000-0000-0000-000000000000'::uuid, 'searc...
+                ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  syntax error at or near "PERFORM"
+LINE 1: PERFORM update_evidence_search_index('s4444444-4444-4444-444...
+        ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ERROR:  null value in column "node_type_id" of relation "Nodes" violates not-null constraint
+DETAIL:  Failing row contains (a3333333-3333-3333-3333-333333333333, a2222222-2222-2222-2222-222222222222, null, null, null, null, 0, null, null, f, null, 2025-10-09 17:05:13.664216+00, 2025-10-09 17:05:13.664216+00).
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+BEGIN
+ERROR:  invalid input syntax for type uuid: "v0000000-0000-0000-0000-000000000000"
+LINE 2: VALUES ('v0000000-0000-0000-0000-000000000000'::uuid, 'view_...
+                ^
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+ERROR:  relation "public.EvidenceFiles" does not exist
+LINE 2: SELECT * FROM public."EvidenceFiles"
+                      ^
+ERROR:  relation "public.EvidenceAttachments" does not exist
+LINE 2: SELECT * FROM public."EvidenceAttachments"
+                      ^
+ERROR:  relation "public.EvidenceMetadata" does not exist
+LINE 2: SELECT * FROM public."EvidenceMetadata"
+                      ^
+ERROR:  relation "public.EvidenceAttachments" does not exist
+LINE 1: INSERT INTO public."EvidenceAttachments" (
+                    ^
+QUERY:  INSERT INTO public."EvidenceAttachments" (
+            evidence_id,
+            target_node_id,
+            target_edge_id,
+            attached_by
+        )
+        VALUES (
+            '00000000-0000-0000-0000-000000000001'::uuid,
+            '00000000-0000-0000-0000-000000000001'::uuid,
+            '00000000-0000-0000-0000-000000000001'::uuid,
+            '00000000-0000-0000-0000-000000000001'::uuid
+        )
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at SQL statement
+ERROR:  relation "public.EvidenceReviews" does not exist
+LINE 1: INSERT INTO public."EvidenceReviews" (
+                    ^
+QUERY:  INSERT INTO public."EvidenceReviews" (
+            evidence_id,
+            reviewer_id,
+            quality_score
+        )
+        VALUES (
+            '00000000-0000-0000-0000-000000000001'::uuid,
+            '00000000-0000-0000-0000-000000000001'::uuid,
+            1.5  -- Invalid
+        )
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at SQL statement
+DO
+NOTICE:  ============================================
+NOTICE:  Evidence Management System Test Summary
+NOTICE:  ============================================
+NOTICE:  
+NOTICE:  All constraint and functional tests completed.
+NOTICE:  Review output above for detailed test results.
+NOTICE:  
+NOTICE:  To run performance tests, use EXPLAIN ANALYZE
+NOTICE:  on the performance testing section (TEST 9).
+NOTICE:  
+NOTICE:  ============================================
+[SUCCESS] Migration 005 tests passed
+[INFO] Step 6: Verifying data integrity...
+[SUCCESS] No foreign key violations found
+[INFO] Table statistics:
+[INFO]   - Users: 1 rows
+[INFO]   - Graphs: 0 rows
+[INFO]   - Nodes: 0 rows
+[INFO]   - Edges: 0 rows
+[INFO]   - Sources: 0 rows
+[INFO]   - Evidence: 0 rows
+[INFO]   - Challenges: 0 rows
+[INFO] Step 7: Generating migration summary...
+
+========================================
+Migration Summary
+========================================
+ version |          description          |          applied_at           | execution_time_ms 
+---------+-------------------------------+-------------------------------+-------------------
+ 001     | Initial schema - base tables  | 2025-10-09 17:05:12.67566+00  |                 0
+ 002     | Level 0/1 system verification | 2025-10-09 17:05:12.853377+00 |                 0
+ 003     | Veracity scoring system       | 2025-10-09 17:05:13.06963+00  |              1000
+ 004     | Challenge system              | 2025-10-09 17:05:13.39507+00  |                 0
+ 005     | Evidence management system    | 2025-10-09 17:05:13.579505+00 |                 0
+(5 rows)
+
+[INFO] Database size:  9773 kB
+
+Database size:  9773 kB
+
+========================================
+Completed at: Thu Oct  9 10:05:14 PDT 2025
+========================================
+
+Backup location: /Users/kmk/rabbithole/backups/rabbithole_backup_20251009_100506.sql
+Report location: /Users/kmk/rabbithole/migration_report.txt
+[SUCCESS] All migrations completed successfully!
+[INFO] Full report saved to: /Users/kmk/rabbithole/migration_report.txt
+[INFO] Backup saved to: /Users/kmk/rabbithole/backups/rabbithole_backup_20251009_100506.sql

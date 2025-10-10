@@ -1,0 +1,543 @@
+# Methodology System GraphQL Schema Extensions
+
+# ================================================
+# Enums
+# ================================================
+
+enum MethodologyCategory {
+    ANALYTICAL
+    CREATIVE
+    STRATEGIC
+    INVESTIGATIVE
+    SYSTEMS
+    CUSTOM
+}
+
+enum MethodologyStatus {
+    DRAFT
+    PRIVATE
+    SHARED
+    PUBLISHED
+    DEPRECATED
+}
+
+enum WorkflowStepType {
+    INSTRUCTION
+    NODE_CREATION
+    EDGE_CREATION
+    VALIDATION
+    BRANCH
+    COMPLETION
+}
+
+enum EdgeLineStyle {
+    SOLID
+    DASHED
+    DOTTED
+}
+
+enum EdgeArrowStyle {
+    ARROW
+    NONE
+    CIRCLE
+    DIAMOND
+}
+
+# ================================================
+# Core Types
+# ================================================
+
+type Methodology {
+    id: ID!
+    name: String!
+    description: String
+    category: MethodologyCategory!
+    status: MethodologyStatus!
+    version: Int!
+    isSystem: Boolean!
+    icon: String
+    color: String
+    tags: [String!]
+    config: JSON
+
+    # Statistics
+    usageCount: Int!
+    rating: Float
+
+    # Relationships
+    creator: User
+    parentMethodology: Methodology
+    nodeTypes: [MethodologyNodeType!]!
+    edgeTypes: [MethodologyEdgeType!]!
+    workflow: MethodologyWorkflow
+    template: MethodologyTemplate
+
+    # Metadata
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    publishedAt: DateTime
+}
+
+type MethodologyNodeType {
+    id: ID!
+    methodology: Methodology!
+    name: String!
+    displayName: String!
+    description: String
+    icon: String
+    color: String
+
+    # Schema
+    propertiesSchema: JSON!
+    defaultProperties: JSON
+    requiredProperties: [String!]
+
+    # Configuration
+    constraints: NodeConstraints
+    suggestions: NodeSuggestions
+    visualConfig: VisualConfig
+
+    displayOrder: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type MethodologyEdgeType {
+    id: ID!
+    methodology: Methodology!
+    name: String!
+    displayName: String!
+    description: String
+
+    # Directionality
+    isDirected: Boolean!
+    isBidirectional: Boolean!
+
+    # Valid connections
+    validSourceTypes: [String!]!
+    validTargetTypes: [String!]!
+
+    # Cardinality
+    sourceCardinality: Cardinality
+    targetCardinality: Cardinality
+
+    # Visual
+    lineStyle: EdgeLineStyle!
+    lineColor: String
+    arrowStyle: EdgeArrowStyle!
+
+    # Schema
+    propertiesSchema: JSON
+    defaultProperties: JSON
+
+    displayOrder: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type MethodologyWorkflow {
+    id: ID!
+    methodology: Methodology!
+    steps: [WorkflowStep!]!
+    initialCanvasState: CanvasState
+
+    # Configuration
+    isLinear: Boolean!
+    allowSkip: Boolean!
+    requireCompletion: Boolean!
+
+    # Help
+    instructions: String
+    exampleGraph: Graph
+    tutorialUrl: String
+
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type WorkflowStep {
+    id: String!
+    type: WorkflowStepType!
+    title: String!
+    description: String
+
+    # Step configuration
+    config: JSON
+    validation: ValidationRule
+
+    # Navigation
+    nextStepId: String
+    previousStepId: String
+    branches: [WorkflowBranch!]
+
+    # UI hints
+    helpText: String
+    exampleData: JSON
+}
+
+type WorkflowBranch {
+    condition: JSON!
+    targetStepId: String!
+}
+
+type MethodologyTemplate {
+    id: ID!
+    methodology: Methodology!
+    title: String!
+    summary: String!
+    thumbnailUrl: String
+    previewData: JSON
+
+    # Marketplace
+    price: Float!
+    currency: String!
+    downloadCount: Int!
+    forkCount: Int!
+    isFeatured: Boolean!
+    isVerified: Boolean!
+
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type UserMethodologyProgress {
+    id: ID!
+    user: User!
+    graph: Graph!
+    methodology: Methodology!
+
+    # Progress
+    currentStep: Int!
+    completedSteps: [String!]!
+    stepData: JSON
+    status: String!
+    completionPercentage: Int!
+
+    # Timestamps
+    startedAt: DateTime!
+    lastActiveAt: DateTime!
+    completedAt: DateTime
+}
+
+type MethodologyPermission {
+    id: ID!
+    methodology: Methodology!
+    user: User!
+
+    # Permissions
+    canView: Boolean!
+    canFork: Boolean!
+    canEdit: Boolean!
+    canDelete: Boolean!
+
+    # Metadata
+    sharedBy: User
+    sharedAt: DateTime!
+    expiresAt: DateTime
+}
+
+# ================================================
+# Supporting Types
+# ================================================
+
+type NodeConstraints {
+    maxInstances: Int
+    minInstances: Int
+    requiredProperties: [String!]
+    uniqueProperties: [String!]
+    validationRules: [ValidationRule!]
+}
+
+type NodeSuggestions {
+    recommendedConnections: [ConnectionSuggestion!]
+    nextActions: [String!]
+    relatedNodeTypes: [String!]
+}
+
+type ConnectionSuggestion {
+    targetNodeType: String!
+    edgeType: String!
+    reason: String
+}
+
+type VisualConfig {
+    shape: String
+    width: Float
+    height: Float
+    borderStyle: String
+    borderWidth: Float
+    fontSize: Float
+}
+
+type Cardinality {
+    min: Int
+    max: Int
+}
+
+type ValidationRule {
+    type: String!
+    config: JSON!
+    errorMessage: String
+}
+
+type CanvasState {
+    nodes: [InitialNode!]
+    edges: [InitialEdge!]
+    layout: String
+}
+
+type InitialNode {
+    id: String!
+    type: String!
+    position: Position!
+    properties: JSON
+}
+
+type InitialEdge {
+    id: String!
+    type: String!
+    sourceId: String!
+    targetId: String!
+    properties: JSON
+}
+
+type Position {
+    x: Float!
+    y: Float!
+}
+
+# ================================================
+# Inputs
+# ================================================
+
+input CreateMethodologyInput {
+    name: String!
+    description: String
+    category: MethodologyCategory!
+    icon: String
+    color: String
+    tags: [String!]
+    config: JSON
+}
+
+input UpdateMethodologyInput {
+    name: String
+    description: String
+    status: MethodologyStatus
+    icon: String
+    color: String
+    tags: [String!]
+    config: JSON
+}
+
+input CreateMethodologyNodeTypeInput {
+    methodologyId: ID!
+    name: String!
+    displayName: String!
+    description: String
+    icon: String
+    color: String
+    propertiesSchema: JSON!
+    defaultProperties: JSON
+    requiredProperties: [String!]
+    constraints: JSON
+    suggestions: JSON
+    visualConfig: JSON
+}
+
+input CreateMethodologyEdgeTypeInput {
+    methodologyId: ID!
+    name: String!
+    displayName: String!
+    description: String
+    isDirected: Boolean!
+    validSourceTypes: [String!]!
+    validTargetTypes: [String!]!
+    sourceCardinality: JSON
+    targetCardinality: JSON
+    lineStyle: EdgeLineStyle
+    lineColor: String
+    arrowStyle: EdgeArrowStyle
+    propertiesSchema: JSON
+    defaultProperties: JSON
+}
+
+input CreateWorkflowInput {
+    methodologyId: ID!
+    steps: JSON!
+    initialCanvasState: JSON
+    isLinear: Boolean
+    allowSkip: Boolean
+    requireCompletion: Boolean
+    instructions: String
+    tutorialUrl: String
+}
+
+input MethodologyFilterInput {
+    category: MethodologyCategory
+    status: MethodologyStatus
+    isSystem: Boolean
+    creatorId: ID
+    tags: [String!]
+    search: String
+}
+
+input ShareMethodologyInput {
+    methodologyId: ID!
+    userId: ID!
+    canView: Boolean
+    canFork: Boolean
+    canEdit: Boolean
+    canDelete: Boolean
+    expiresAt: DateTime
+}
+
+# ================================================
+# Queries
+# ================================================
+
+extend type Query {
+    # Methodology queries
+    methodology(id: ID!): Methodology
+    methodologies(filter: MethodologyFilterInput, limit: Int, offset: Int): [Methodology!]!
+    methodologyByName(name: String!): Methodology
+    systemMethodologies: [Methodology!]!
+    myMethodologies: [Methodology!]!
+    sharedWithMe: [Methodology!]!
+
+    # Template marketplace
+    methodologyTemplates(
+        featured: Boolean
+        verified: Boolean
+        category: MethodologyCategory
+        search: String
+        sortBy: String
+        limit: Int
+        offset: Int
+    ): [MethodologyTemplate!]!
+
+    # Progress tracking
+    myMethodologyProgress(graphId: ID!): UserMethodologyProgress
+    methodologyStats(methodologyId: ID!): MethodologyStatistics
+
+    # Validation
+    validateNodeAgainstMethodology(
+        nodeType: String!
+        properties: JSON!
+        methodologyId: ID!
+    ): ValidationResult!
+
+    validateEdgeAgainstMethodology(
+        edgeType: String!
+        sourceNodeType: String!
+        targetNodeType: String!
+        methodologyId: ID!
+    ): ValidationResult!
+}
+
+# ================================================
+# Mutations
+# ================================================
+
+extend type Mutation {
+    # Methodology CRUD
+    createMethodology(input: CreateMethodologyInput!): Methodology!
+    updateMethodology(id: ID!, input: UpdateMethodologyInput!): Methodology!
+    deleteMethodology(id: ID!): Boolean!
+    forkMethodology(id: ID!, newName: String!): Methodology!
+    publishMethodology(id: ID!): Methodology!
+
+    # Node and Edge Types
+    createMethodologyNodeType(input: CreateMethodologyNodeTypeInput!): MethodologyNodeType!
+    updateMethodologyNodeType(id: ID!, input: JSON!): MethodologyNodeType!
+    deleteMethodologyNodeType(id: ID!): Boolean!
+
+    createMethodologyEdgeType(input: CreateMethodologyEdgeTypeInput!): MethodologyEdgeType!
+    updateMethodologyEdgeType(id: ID!, input: JSON!): MethodologyEdgeType!
+    deleteMethodologyEdgeType(id: ID!): Boolean!
+
+    # Workflow
+    createWorkflow(input: CreateWorkflowInput!): MethodologyWorkflow!
+    updateWorkflow(id: ID!, input: JSON!): MethodologyWorkflow!
+    deleteWorkflow(id: ID!): Boolean!
+
+    # Progress tracking
+    startMethodologyWorkflow(graphId: ID!, methodologyId: ID!): UserMethodologyProgress!
+    updateWorkflowProgress(
+        graphId: ID!
+        stepId: String!
+        stepData: JSON
+    ): UserMethodologyProgress!
+    completeWorkflowStep(graphId: ID!, stepId: String!): UserMethodologyProgress!
+    abandonWorkflow(graphId: ID!): Boolean!
+
+    # Sharing and permissions
+    shareMethodology(input: ShareMethodologyInput!): MethodologyPermission!
+    revokeMethodologyAccess(methodologyId: ID!, userId: ID!): Boolean!
+
+    # Templates
+    createMethodologyTemplate(
+        methodologyId: ID!
+        title: String!
+        summary: String!
+        price: Float
+    ): MethodologyTemplate!
+
+    # Rating
+    rateMethodology(methodologyId: ID!, rating: Float!): Methodology!
+}
+
+# ================================================
+# Subscriptions
+# ================================================
+
+extend type Subscription {
+    # Real-time methodology updates
+    methodologyUpdated(id: ID!): Methodology!
+
+    # Workflow progress updates
+    workflowProgressUpdated(graphId: ID!): UserMethodologyProgress!
+
+    # Collaborative methodology editing
+    methodologyNodeTypeAdded(methodologyId: ID!): MethodologyNodeType!
+    methodologyEdgeTypeAdded(methodologyId: ID!): MethodologyEdgeType!
+
+    # Marketplace updates
+    newMethodologyPublished(category: MethodologyCategory): Methodology!
+}
+
+# ================================================
+# Additional Types for Statistics
+# ================================================
+
+type MethodologyStatistics {
+    totalGraphs: Int!
+    completedWorkflows: Int!
+    averageCompletionTime: Float
+    commonPatterns: [PatternAnalysis!]
+    userSatisfaction: Float
+}
+
+type PatternAnalysis {
+    pattern: String!
+    frequency: Int!
+    description: String
+}
+
+type ValidationResult {
+    isValid: Boolean!
+    errors: [ValidationError!]
+    warnings: [ValidationWarning!]
+}
+
+type ValidationError {
+    field: String!
+    message: String!
+    code: String!
+}
+
+type ValidationWarning {
+    field: String!
+    message: String!
+    suggestion: String
+}

@@ -1,0 +1,434 @@
+# GraphRAG Test Queries
+# Copy and paste these into GraphQL Playground at http://localhost:4000/graphql
+
+# ==============================================================================
+# 1. VECTOR SEARCH ONLY
+# ==============================================================================
+# Find nodes similar to a query using vector embeddings
+
+query FindSimilarNodes {
+  findSimilarNodes(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What are the root causes of the problem?"
+    limit: 5
+  }) {
+    id
+    nodeType
+    similarity
+    weight
+    props
+    meta
+  }
+}
+
+# ==============================================================================
+# 2. BASIC GRAPHRAG QUERY
+# ==============================================================================
+# Ask a question and get an AI-generated answer with citations
+
+mutation AskBasicQuestion {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What are the main findings in this investigation?"
+    topK: 5
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 3. FULL GRAPHRAG WITH SUBGRAPH
+# ==============================================================================
+# Get answer, citations, AND the full subgraph used for context
+
+mutation AskWithSubgraph {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "Based on the evidence, what are the top 3 causes?"
+    topK: 5
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+    subgraph {
+      anchorNodeIds
+      nodes {
+        id
+        nodeType
+        depth
+        weight
+        props
+        meta
+      }
+      edges {
+        id
+        sourceNodeId
+        targetNodeId
+        edgeType
+        props
+      }
+    }
+  }
+}
+
+# ==============================================================================
+# 4. FOCUSED ANALYSIS (SELECTED NODES)
+# ==============================================================================
+# Search within specific nodes and their neighbors
+
+mutation AnalyzeSelectedNodes {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "How does this evidence support the hypothesis?"
+    selectedNodeIds: ["NODE_ID_1", "NODE_ID_2", "NODE_ID_3"]
+    topK: 3
+    expansionDepth: 1
+  }) {
+    answer
+    citedNodes {
+      id
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 5. ROOT CAUSE ANALYSIS (5 WHYS)
+# ==============================================================================
+# For 5 Whys methodology graphs
+
+mutation FindRootCause {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What is the root cause based on the 5 whys analysis?"
+    topK: 8
+    expansionDepth: 3
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 6. EVIDENCE VALIDATION
+# ==============================================================================
+# Check what evidence supports or contradicts a hypothesis
+
+mutation ValidateHypothesis {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What evidence supports or contradicts the main hypothesis?"
+    selectedNodeIds: ["HYPOTHESIS_NODE_ID"]
+    topK: 10
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 7. PATTERN DISCOVERY (TIMELINE)
+# ==============================================================================
+# Find temporal patterns or sequences
+
+mutation FindTemporalPatterns {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What temporal patterns or sequences emerge from the timeline?"
+    topK: 15
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 8. METHODOLOGY COMPLIANCE (FISHBONE)
+# ==============================================================================
+# Check if all methodology elements are covered
+
+mutation CheckMethodologyCoverage {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "Are all 6Ms (Man, Machine, Material, Method, Measurement, Environment) adequately covered?"
+    topK: 12
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 9. RELATIONSHIP ANALYSIS
+# ==============================================================================
+# Explore how concepts relate to each other
+
+mutation AnalyzeRelationships {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "How are the key concepts interconnected in this analysis?"
+    topK: 10
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+    subgraph {
+      edges {
+        sourceNodeId
+        targetNodeId
+        edgeType
+        props
+      }
+    }
+  }
+}
+
+# ==============================================================================
+# 10. GAP ANALYSIS
+# ==============================================================================
+# Identify missing information or evidence
+
+mutation FindGaps {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What information or evidence is missing from this investigation?"
+    topK: 8
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 11. DEEP DIVE (HIGH EXPANSION)
+# ==============================================================================
+# Use maximum expansion for comprehensive context
+
+mutation DeepDiveAnalysis {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "Provide a comprehensive analysis of all findings and their relationships"
+    topK: 20
+    expansionDepth: 3
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 12. QUICK INSIGHT (LOW EXPANSION)
+# ==============================================================================
+# Fast query for immediate insights
+
+mutation QuickInsight {
+  askAssistant(input: {
+    graphId: "YOUR_GRAPH_ID_HERE"
+    query: "What's the most important finding?"
+    topK: 3
+    expansionDepth: 1
+  }) {
+    answer
+    citedNodes {
+      id
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 13. CUSTOMER CHURN ANALYSIS EXAMPLE
+# ==============================================================================
+# Real-world example for customer retention analysis
+
+mutation AnalyzeChurn {
+  askAssistant(input: {
+    graphId: "CHURN_ANALYSIS_GRAPH_ID"
+    query: "What are the top 3 reasons for customer churn based on the evidence?"
+    topK: 10
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# 14. SYSTEM FAILURE ANALYSIS EXAMPLE
+# ==============================================================================
+# Real-world example for incident investigation
+
+mutation InvestigateFailure {
+  askAssistant(input: {
+    graphId: "INCIDENT_GRAPH_ID"
+    query: "What sequence of events led to the system failure?"
+    topK: 8
+    expansionDepth: 3
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+    subgraph {
+      nodes {
+        id
+        nodeType
+        depth
+        props
+      }
+      edges {
+        sourceNodeId
+        targetNodeId
+        edgeType
+      }
+    }
+  }
+}
+
+# ==============================================================================
+# 15. SWOT ANALYSIS EXAMPLE
+# ==============================================================================
+# Real-world example for strategic planning
+
+mutation AnalyzeSWOT {
+  askAssistant(input: {
+    graphId: "SWOT_GRAPH_ID"
+    query: "What strategies can we derive by matching our strengths with opportunities?"
+    topK: 12
+    expansionDepth: 2
+  }) {
+    answer
+    citedNodes {
+      id
+      relevance
+      props
+    }
+  }
+}
+
+# ==============================================================================
+# HELPER QUERIES
+# ==============================================================================
+
+# Get all graphs to find graph IDs
+query GetAllGraphs {
+  graphs {
+    id
+    name
+    description
+    methodology
+    privacy
+    createdAt
+  }
+}
+
+# Get nodes in a graph to find node IDs
+query GetGraphNodes($graphId: ID!) {
+  graph(id: $graphId) {
+    id
+    name
+    nodes {
+      id
+      props
+      meta
+    }
+  }
+}
+
+# Check if nodes have embeddings
+query CheckEmbeddingCoverage($graphId: ID!) {
+  graph(id: $graphId) {
+    id
+    nodes {
+      id
+      props
+      # Note: 'ai' field is not exposed in GraphQL schema
+      # Use SQL to check: SELECT COUNT(*) FROM "Nodes" WHERE graph_id = $graphId AND ai IS NOT NULL
+    }
+  }
+}
+
+# ==============================================================================
+# TESTING WORKFLOW
+# ==============================================================================
+
+# 1. First, get your graph ID
+# query GetAllGraphs { ... }
+
+# 2. Check nodes in that graph
+# query GetGraphNodes($graphId: "YOUR_GRAPH_ID") { ... }
+
+# 3. Test vector search
+# query FindSimilarNodes { ... }
+
+# 4. Test basic GraphRAG
+# mutation AskBasicQuestion { ... }
+
+# 5. Test with full subgraph
+# mutation AskWithSubgraph { ... }
+
+# 6. Try focused analysis
+# mutation AnalyzeSelectedNodes { ... }
+
+# ==============================================================================
+# TROUBLESHOOTING QUERIES
+# ==============================================================================
+
+# If you get "No similar nodes found", check:
+# - Are nodes embedded? (Run: npm run worker:dev)
+# - Is Ollama running? (Run: ollama serve)
+# - Are models installed? (Run: ollama list)
+
+# If you get "Cannot connect to Ollama":
+# - Check Ollama is running: curl http://localhost:11434/api/tags
+# - Check .env has correct OLLAMA_URL
+
+# If you get "Graph not found":
+# - Run GetAllGraphs query to see available graphs
+# - Use the correct graph ID format (UUID)
