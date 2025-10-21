@@ -31,6 +31,9 @@ export class CommentInput {
 
   @Field()
   text!: string;
+
+  @Field(() => ID, { nullable: true })
+  parentCommentId?: string; // For threaded replies
 }
 
 @InputType()

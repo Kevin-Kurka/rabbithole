@@ -32,6 +32,12 @@ export class Graph {
   @Field()
   updated_at!: Date;
 
+  @Field(() => ID, { nullable: true })
+  parent_graph_id?: string;
+
+  @Field({ nullable: true })
+  fork_metadata?: string;
+
   @Field(() => [Node])
   nodes!: Node[];
 

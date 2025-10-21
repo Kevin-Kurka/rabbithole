@@ -88,9 +88,9 @@ export const CREATE_NODE_MUTATION = gql`
       id
       weight
       props
-      level
-      createdAt
-      updatedAt
+      is_level_0
+      created_at
+      updated_at
     }
   }
 `;
@@ -104,8 +104,8 @@ export const UPDATE_NODE_MUTATION = gql`
       id
       props
       weight
-      level
-      updatedAt
+      is_level_0
+      updated_at
     }
   }
 `;
@@ -134,9 +134,9 @@ export const CREATE_EDGE_MUTATION = gql`
       }
       weight
       props
-      level
-      createdAt
-      updatedAt
+      is_level_0
+      created_at
+      updated_at
     }
   }
 `;
@@ -150,8 +150,8 @@ export const UPDATE_EDGE_MUTATION = gql`
       id
       props
       weight
-      level
-      updatedAt
+      is_level_0
+      updated_at
     }
   }
 `;

@@ -1,0 +1,295 @@
+name: Security Scan
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        component: [backend, frontend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.component }}
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: ./${{ matrix.component }}
+        run: |
+          echo "## ${{ matrix.component }} - npm audit" >> $GITHUB_STEP_SUMMARY
+          npm audit --json > audit-result.json || true
+
+          # Parse and display results
+          if [ -f audit-result.json ]; then
+            CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-result.json)
+            HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-result.json)
+            MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-result.json)
+            LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-result.json)
+
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
+            echo "| Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Fail on critical or high vulnerabilities
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "❌ Critical or high severity vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+              npm audit
+              exit 1
+            else
+              echo "✅ No critical or high severity vulnerabilities" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-${{ matrix.component }}
+          path: ${{ matrix.component }}/audit-result.json
+          retention-days: 30
+
+  docker-scan:
+    name: Docker Image Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+
+    strategy:
+      matrix:
+        component: [backend, frontend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.component }}
+          file: ./${{ matrix.component }}/Dockerfile
+          push: false
+          tags: rabbithole-${{ matrix.component }}:scan
+          load: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: rabbithole-${{ matrix.component }}:scan
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: rabbithole-${{ matrix.component }}:scan
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+  code-scan:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  license-scan:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        component: [backend, frontend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.component }}
+        run: npm ci
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        working-directory: ./${{ matrix.component }}
+        run: |
+          echo "## ${{ matrix.component }} - License Check" >> $GITHUB_STEP_SUMMARY
+
+          # Generate license report
+          license-checker --json --out licenses.json
+
+          # Check for problematic licenses
+          PROBLEMATIC_LICENSES="GPL-3.0|AGPL-3.0|LGPL-3.0"
+
+          if license-checker --summary | grep -E "$PROBLEMATIC_LICENSES"; then
+            echo "⚠️ Found potentially problematic licenses:" >> $GITHUB_STEP_SUMMARY
+            license-checker --summary | grep -E "$PROBLEMATIC_LICENSES" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review and ensure compatibility with project license." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No problematic licenses found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-${{ matrix.component }}
+          path: ${{ matrix.component }}/licenses.json
+          retention-days: 30
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-3.0, AGPL-3.0
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-scan, secret-scan, license-scan]
+    if: always()
+
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "# Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Analysis | ${{ needs.code-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| License Check | ${{ needs.license-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.dependency-scan.result }}" != "success" ] || \
+             [ "${{ needs.code-scan.result }}" != "success" ] || \
+             [ "${{ needs.secret-scan.result }}" != "success" ]; then
+            echo "⚠️ **Security issues detected!** Please review the scan results." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ **All security scans passed**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create issue for security vulnerabilities
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🔒 Security Scan Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## Security Scan Results
+
+            One or more security scans have failed. Please review the details in the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}).
+
+            ### Failed Checks
+            - Dependency Scan: ${{ needs.dependency-scan.result }}
+            - Code Analysis: ${{ needs.code-scan.result }}
+            - Secret Scan: ${{ needs.secret-scan.result }}
+            - License Check: ${{ needs.license-scan.result }}
+
+            ### Action Required
+            1. Review the workflow logs
+            2. Fix identified vulnerabilities
+            3. Update dependencies if needed
+            4. Re-run security scan
+
+            **Priority**: High
+            **Labels**: security, automated
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'automated', 'high-priority']
+            });

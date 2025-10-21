@@ -68,7 +68,7 @@ function getUserColor(userId: string): string {
 /**
  * useCollaboration Hook
  */
-export function useCollaboration(graphId: string): UseCollaborationResult {
+export function useCollaboration(graphId: string | undefined): UseCollaborationResult {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -78,10 +78,10 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
   const pendingCursorUpdate = useRef<CursorPosition | null>(null);
   const throttleTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Validate graphId - skip subscriptions if empty or invalid
+  // Validate graphId - skip operations if empty or invalid
   const isValidGraphId = Boolean(graphId && graphId.trim() !== '');
 
-  // GraphQL Mutations
+  // GraphQL Mutations - MUST be called unconditionally (Rules of Hooks)
   const [updatePresenceMutation] = useMutation(UPDATE_PRESENCE_MUTATION);
   const [sendChatMessageMutation] = useMutation(SEND_CHAT_MESSAGE_MUTATION);
 
@@ -185,12 +185,12 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
   // Send chat message
   const sendChatMessage = useCallback(
     async (message: string) => {
-      if (!message.trim()) return;
+      if (!isValidGraphId || !message.trim()) return;
 
       try {
         await sendChatMessageMutation({
           variables: {
-            graphId,
+            graphId: graphId!,
             message: message.trim(),
           },
         });
@@ -199,12 +199,14 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
         throw error;
       }
     },
-    [graphId, sendChatMessageMutation]
+    [graphId, isValidGraphId, sendChatMessageMutation]
   );
 
   // Update cursor position (throttled)
   const updateCursor = useCallback(
     (x: number, y: number) => {
+      if (!isValidGraphId) return;
+
       const now = Date.now();
       pendingCursorUpdate.current = { x, y };
 
@@ -214,7 +216,7 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
 
         updatePresenceMutation({
           variables: {
-            graphId,
+            graphId: graphId!,
             cursor: { x, y },
           },
         }).catch((error) => {
@@ -230,7 +232,7 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
 
             updatePresenceMutation({
               variables: {
-                graphId,
+                graphId: graphId!,
                 cursor: pendingCursorUpdate.current,
               },
             }).catch((error) => {
@@ -244,7 +246,7 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
         }, CURSOR_THROTTLE_MS);
       }
     },
-    [graphId, updatePresenceMutation]
+    [graphId, isValidGraphId, updatePresenceMutation]
   );
 
   // Join graph on mount
@@ -255,7 +257,7 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
       try {
         await updatePresenceMutation({
           variables: {
-            graphId,
+            graphId: graphId!,
             cursor: null,
           },
         });
@@ -278,14 +280,14 @@ export function useCollaboration(graphId: string): UseCollaborationResult {
       // Send leave signal (cursor: null signals leaving)
       updatePresenceMutation({
         variables: {
-          graphId,
+          graphId: graphId!,
           cursor: null,
         },
       }).catch((error) => {
         console.error('Failed to leave graph:', error);
       });
     };
-  }, [graphId, updatePresenceMutation]);
+  }, [graphId, isValidGraphId, updatePresenceMutation]);
 
   return {
     activeUsers,

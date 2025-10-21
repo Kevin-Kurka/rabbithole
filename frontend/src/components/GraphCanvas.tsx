@@ -76,8 +76,16 @@ import GraphNode from './GraphNode';
 import GraphEdge from './GraphEdge';
 import ContextMenu from './ContextMenu';
 import RemoteCursor from './RemoteCursor';
+import LayoutControls from './LayoutControls';
 import { ActiveUser } from '@/types/collaboration';
 import { theme } from '@/styles/theme';
+import {
+  LayoutEngine,
+  LayoutType,
+  LayoutConfig,
+  interpolateNodePositions,
+} from '@/utils/layouts';
+import { getGraphColor } from '@/utils/graphColors';
 
 import '@xyflow/react/dist/style.css';
 import '@/styles/graph-canvas.css';
@@ -108,9 +116,11 @@ const MAX_HISTORY_SIZE = 50;
  * GraphCanvas inner component (requires ReactFlowProvider)
  */
 function GraphCanvasInner({
-  graphId,
+  graphIds,
   onSave,
   onError,
+  onNodeSelect,
+  onEdgeSelect,
   readOnly = false,
   initialNodes = [],
   initialEdges = [],
@@ -138,19 +148,69 @@ function GraphCanvasInner({
     nodes: GraphCanvasNode[];
     edges: GraphCanvasEdge[];
   } | null>(null);
+  const [currentLayout, setCurrentLayout] = useState<LayoutType>(LayoutType.MANUAL);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Refs
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const animationFrameRef = useRef<number | null>(null);
+  const { screenToFlowPosition, fitView } = useReactFlow();
 
-  // GraphQL
-  const { data: graphData, loading: graphLoading, error: graphError } = useQuery(
-    GRAPH_QUERY,
-    {
-      variables: { id: graphId },
-      skip: !graphId,
+  // GraphQL - Fetch graphs individually (max 5 concurrent graphs supported)
+  // Using fixed number of hooks to comply with React rules of hooks
+  const graph1 = useQuery(GRAPH_QUERY, {
+    variables: { id: graphIds[0] },
+    skip: !graphIds[0],
+  });
+  const graph2 = useQuery(GRAPH_QUERY, {
+    variables: { id: graphIds[1] },
+    skip: !graphIds[1],
+  });
+  const graph3 = useQuery(GRAPH_QUERY, {
+    variables: { id: graphIds[2] },
+    skip: !graphIds[2],
+  });
+  const graph4 = useQuery(GRAPH_QUERY, {
+    variables: { id: graphIds[3] },
+    skip: !graphIds[3],
+  });
+  const graph5 = useQuery(GRAPH_QUERY, {
+    variables: { id: graphIds[4] },
+    skip: !graphIds[4],
+  });
+
+  // Collect active queries
+  const graphQueries = useMemo(() => {
+    const queries = [];
+    if (graphIds[0]) queries.push({ graphId: graphIds[0], result: graph1 });
+    if (graphIds[1]) queries.push({ graphId: graphIds[1], result: graph2 });
+    if (graphIds[2]) queries.push({ graphId: graphIds[2], result: graph3 });
+    if (graphIds[3]) queries.push({ graphId: graphIds[3], result: graph4 });
+    if (graphIds[4]) queries.push({ graphId: graphIds[4], result: graph5 });
+    return queries;
+  }, [graphIds, graph1, graph2, graph3, graph4, graph5]);
+
+  // Determine the "primary" writable graph (first Level 1 graph in the list)
+  // New nodes/edges will be created in this graph
+  const primaryWritableGraphId = useMemo(() => {
+    // Find the first Level 1 (writable) graph from loaded data
+    for (const { graphId, result } of graphQueries) {
+      if (result.data?.graph && result.data.graph.level === 1) {
+        return graphId;
+      }
     }
-  );
+    // Fallback: if no Level 1 graph found, return empty string (will disable mutations)
+    return '';
+  }, [graphQueries]);
+
+  // Aggregate loading and error states
+  const graphLoading = graphQueries.some((q) => q.result.loading);
+  const graphError = graphQueries.find((q) => q.result.error)?.result.error;
+
+  // Extract graph data for use in dependencies (stable references)
+  const graphDataList = useMemo(() => {
+    return graphQueries.map((q) => q.result.data?.graph).filter(Boolean);
+  }, [graphQueries]);
 
   const [createNode] = useMutation(CREATE_NODE_MUTATION);
   const [updateNode] = useMutation(UPDATE_NODE_MUTATION);
@@ -159,13 +219,15 @@ function GraphCanvasInner({
   const [updateEdgeMutation] = useMutation(UPDATE_EDGE_MUTATION);
   const [deleteEdgeMutation] = useMutation(DELETE_EDGE_MUTATION);
 
-  // Subscriptions for real-time updates
+  // Subscriptions for real-time updates (subscribe to primary graph for now)
+  // TODO: Implement multi-graph subscriptions properly
   useSubscription(NODE_UPDATED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.nodeUpdated) {
         const updatedNode = data.data.nodeUpdated;
+        const graphColor = getGraphColor(primaryWritableGraphId, graphIds);
         setNodes((nds) =>
           nds.map((n) =>
             n.id === updatedNode.id
@@ -175,6 +237,8 @@ function GraphCanvasInner({
                     ...n.data,
                     weight: updatedNode.weight,
                     level: updatedNode.level,
+                    graphId: primaryWritableGraphId,
+                    graphColor,
                     ...JSON.parse(updatedNode.props || '{}'),
                   },
                 }
@@ -186,8 +250,8 @@ function GraphCanvasInner({
   });
 
   useSubscription(NODE_CREATED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.nodeCreated) {
         const newNode = data.data.nodeCreated;
@@ -219,8 +283,8 @@ function GraphCanvasInner({
   });
 
   useSubscription(NODE_DELETED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.nodeDeleted) {
         const deletedId = data.data.nodeDeleted.id;
@@ -233,8 +297,8 @@ function GraphCanvasInner({
   });
 
   useSubscription(EDGE_UPDATED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.edgeUpdated) {
         const updatedEdge = data.data.edgeUpdated;
@@ -258,8 +322,8 @@ function GraphCanvasInner({
   });
 
   useSubscription(EDGE_CREATED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.edgeCreated) {
         const newEdge = data.data.edgeCreated;
@@ -290,8 +354,8 @@ function GraphCanvasInner({
   });
 
   useSubscription(EDGE_DELETED_SUBSCRIPTION, {
-    variables: { graphId },
-    skip: !graphId,
+    variables: { graphId: primaryWritableGraphId },
+    skip: !primaryWritableGraphId,
     onData: ({ data }) => {
       if (data?.data?.edgeDeleted) {
         const deletedId = data.data.edgeDeleted.id;
@@ -300,56 +364,88 @@ function GraphCanvasInner({
     },
   });
 
-  // Load graph data from backend
+  // Track if initial load has happened
+  const initialLoadRef = useRef(false);
+
+  // Load and merge graph data from multiple graphs
   useEffect(() => {
-    if (graphData?.graph && !graphLoading) {
-      const loadedNodes: GraphCanvasNode[] = graphData.graph.nodes.map(
-        (node: any) => {
-          const props = JSON.parse(node.props || '{}');
-          return {
-            id: node.id,
-            type: 'custom',
-            position: { x: props.x || Math.random() * 500, y: props.y || Math.random() * 500 },
-            data: {
-              label: props.label || 'Node',
-              weight: node.weight || 0.5,
-              level: node.level ?? GraphLevel.LEVEL_1,
-              isLocked: node.level === GraphLevel.LEVEL_0,
-              methodology: methodologyId,
-              metadata: props.metadata,
-              ...props,
-            },
-          };
+    if (!graphLoading && graphDataList.length > 0) {
+      // Merge nodes and edges from all loaded graphs
+      const allLoadedNodes: GraphCanvasNode[] = [];
+      const allLoadedEdges: GraphCanvasEdge[] = [];
+
+      graphQueries.forEach(({ graphId, result }) => {
+        if (result.data?.graph) {
+          const graphColor = getGraphColor(graphId, graphIds);
+
+          // Map nodes with graph color indicator
+          const graphNodes: GraphCanvasNode[] = result.data.graph.nodes.map(
+            (node: any) => {
+              const props = JSON.parse(node.props || '{}');
+              return {
+                id: node.id,
+                type: 'custom',
+                position: { x: props.x || Math.random() * 500, y: props.y || Math.random() * 500 },
+                data: {
+                  label: props.label || 'Node',
+                  weight: node.weight || 0.5,
+                  level: node.level ?? GraphLevel.LEVEL_1,
+                  isLocked: node.level === GraphLevel.LEVEL_0,
+                  methodology: methodologyId,
+                  graphId, // Track which graph this node belongs to
+                  graphColor, // Color indicator for this graph
+                  metadata: props.metadata,
+                  ...props,
+                },
+              };
+            }
+          );
+
+          // Map edges with graph color indicator
+          const graphEdges: GraphCanvasEdge[] = result.data.graph.edges.map(
+            (edge: any) => {
+              const props = JSON.parse(edge.props || '{}');
+              return {
+                id: edge.id,
+                source: edge.from.id,
+                target: edge.to.id,
+                type: 'custom',
+                animated: false,
+                data: {
+                  label: props.label,
+                  weight: edge.weight || 0.5,
+                  level: edge.level ?? GraphLevel.LEVEL_1,
+                  isLocked: edge.level === GraphLevel.LEVEL_0,
+                  graphId, // Track which graph this edge belongs to
+                  graphColor, // Color indicator for this graph
+                  metadata: props.metadata,
+                  ...props,
+                },
+              };
+            }
+          );
+
+          allLoadedNodes.push(...graphNodes);
+          allLoadedEdges.push(...graphEdges);
         }
-      );
+      });
 
-      const loadedEdges: GraphCanvasEdge[] = graphData.graph.edges.map(
-        (edge: any) => {
-          const props = JSON.parse(edge.props || '{}');
-          return {
-            id: edge.id,
-            source: edge.from.id,
-            target: edge.to.id,
-            type: 'custom',
-            data: {
-              label: props.label,
-              weight: edge.weight || 0.5,
-              level: edge.level ?? GraphLevel.LEVEL_1,
-              isLocked: edge.level === GraphLevel.LEVEL_0,
-              metadata: props.metadata,
-              ...props,
-            },
-          };
-        }
-      );
+      setNodes(allLoadedNodes);
+      setEdges(allLoadedEdges);
 
-      setNodes(loadedNodes);
-      setEdges(loadedEdges);
-
-      // Initialize history
-      addToHistory(loadedNodes, loadedEdges, 'initial');
+      // Initialize history only once
+      if (!initialLoadRef.current && (allLoadedNodes.length > 0 || allLoadedEdges.length > 0)) {
+        initialLoadRef.current = true;
+        setHistory([{
+          nodes: JSON.parse(JSON.stringify(allLoadedNodes)),
+          edges: JSON.parse(JSON.stringify(allLoadedEdges)),
+          timestamp: Date.now(),
+          action: 'initial',
+        }]);
+        setHistoryIndex(0);
+      }
     }
-  }, [graphData, graphLoading, methodologyId]);
+  }, [graphDataList, graphLoading, graphIds, methodologyId]);
 
   // Error handling
   useEffect(() => {
@@ -445,24 +541,75 @@ function GraphCanvasInner({
     [readOnly]
   );
 
+  // Handle node click for selection
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: GraphCanvasNode) => {
+      console.log('Node clicked:', node);
+      if (onNodeSelect) {
+        console.log('Calling onNodeSelect with:', node);
+        onNodeSelect(node);
+      }
+      // Deselect edge when node is selected
+      if (onEdgeSelect) {
+        onEdgeSelect(null);
+      }
+    },
+    [onNodeSelect, onEdgeSelect]
+  );
+
+  // Handle edge click for selection
+  const onEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: GraphCanvasEdge) => {
+      console.log('Edge clicked:', edge);
+      if (onEdgeSelect) {
+        console.log('Calling onEdgeSelect with:', edge);
+        onEdgeSelect(edge);
+      }
+      // Deselect node when edge is selected
+      if (onNodeSelect) {
+        onNodeSelect(null);
+      }
+    },
+    [onEdgeSelect, onNodeSelect]
+  );
+
+  // Handle pane click to deselect
+  const onPaneClick = useCallback(() => {
+    console.log('Pane clicked - deselecting');
+    if (onNodeSelect) {
+      onNodeSelect(null);
+    }
+    if (onEdgeSelect) {
+      onEdgeSelect(null);
+    }
+  }, [onNodeSelect, onEdgeSelect]);
+
   // Handle new connections
   const onConnect = useCallback(
     (connection: Connection) => {
-      if (readOnly) return;
+      console.log('onConnect called:', connection);
+      if (readOnly) {
+        console.log('Canvas is read-only, aborting edge creation');
+        return;
+      }
 
       if (connection.source && connection.target) {
+        console.log('Creating edge from', connection.source, 'to', connection.target);
+
         // Check if source or target is locked
         const sourceNode = nodes.find((n) => n.id === connection.source);
         const targetNode = nodes.find((n) => n.id === connection.target);
 
         if (sourceNode?.data.isLocked || targetNode?.data.isLocked) {
+          console.log('Cannot create edge - source or target is locked');
           return; // Cannot create edge from/to locked nodes
         }
 
+        console.log('Creating edge mutation...');
         createEdgeMutation({
           variables: {
             input: {
-              graphId,
+              graphId: primaryWritableGraphId,
               from: connection.source,
               to: connection.target,
               props: JSON.stringify({ label: '' }),
@@ -470,6 +617,7 @@ function GraphCanvasInner({
           },
         })
           .then((result) => {
+            console.log('Edge creation result:', result);
             if (result.data?.createEdge) {
               const newEdge = result.data.createEdge;
               setEdges((eds) =>
@@ -489,12 +637,16 @@ function GraphCanvasInner({
                 )
               );
               addToHistory(nodes, edges, 'create_edge');
+              console.log('Edge added to canvas');
             }
           })
-          .catch((err) => onError?.(err));
+          .catch((err) => {
+            console.error('Failed to create edge:', err);
+            onError?.(err);
+          });
       }
     },
-    [readOnly, nodes, edges, graphId, createEdgeMutation, onError, addToHistory]
+    [readOnly, nodes, edges, primaryWritableGraphId, createEdgeMutation, onError, addToHistory]
   );
 
   // Handle node/edge context menu
@@ -643,9 +795,12 @@ function GraphCanvasInner({
 
       switch (actionId) {
         case ContextMenuAction.CREATE_NODE: {
+          console.log('Creating new node...');
           const position = contextMenu.x && contextMenu.y
             ? screenToFlowPosition({ x: contextMenu.x, y: contextMenu.y })
             : { x: 250, y: 250 };
+
+          console.log('Position:', position);
 
           const props = {
             label: 'New Node',
@@ -653,14 +808,24 @@ function GraphCanvasInner({
             y: position.y,
           };
 
+          console.log('Creating node with props:', props);
+          console.log('GraphId:', primaryWritableGraphId);
+
           createNode({
             variables: {
               input: {
-                graphId,
+                graphId: primaryWritableGraphId,
                 props: JSON.stringify(props),
               },
             },
-          }).catch((err) => onError?.(err));
+          })
+            .then((result) => {
+              console.log('Node created successfully:', result);
+            })
+            .catch((err) => {
+              console.error('Failed to create node:', err);
+              onError?.(err);
+            });
           break;
         }
 
@@ -714,7 +879,7 @@ function GraphCanvasInner({
               createNode({
                 variables: {
                   input: {
-                    graphId,
+                    graphId: primaryWritableGraphId,
                     props: JSON.stringify(props),
                   },
                 },
@@ -752,7 +917,7 @@ function GraphCanvasInner({
               createNode({
                 variables: {
                   input: {
-                    graphId,
+                    graphId: primaryWritableGraphId,
                     props: JSON.stringify(props),
                   },
                 },
@@ -778,7 +943,7 @@ function GraphCanvasInner({
       nodes,
       edges,
       clipboard,
-      graphId,
+      primaryWritableGraphId,
       readOnly,
       createNode,
       deleteNodeMutation,
@@ -858,11 +1023,108 @@ function GraphCanvasInner({
     handleContextMenuAction,
   ]);
 
-  // Save callback
+  // Layout change handler with animation
+  const handleLayoutChange = useCallback(
+    (config: LayoutConfig) => {
+      if (readOnly || nodes.length === 0) return;
+
+      try {
+        // Apply layout algorithm
+        const layoutResult = LayoutEngine.applyLayout(nodes, edges, config);
+        const targetNodes = layoutResult.nodes;
+
+        setCurrentLayout(config.type);
+
+        // Animate transition if enabled
+        if (config.animated && config.animationDuration) {
+          setIsAnimating(true);
+          const startTime = performance.now();
+          const duration = config.animationDuration;
+          const startNodes = [...nodes];
+
+          const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Ease-in-out function
+            const eased =
+              progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            const interpolated = interpolateNodePositions(
+              startNodes,
+              targetNodes,
+              eased
+            );
+
+            setNodes(interpolated);
+
+            if (progress < 1) {
+              animationFrameRef.current = requestAnimationFrame(animate);
+            } else {
+              setNodes(targetNodes);
+              setIsAnimating(false);
+              addToHistory(targetNodes, edges, `layout_${config.type}`);
+
+              // Fit view after layout
+              setTimeout(() => {
+                fitView({ padding: 0.1, duration: 500 });
+              }, 100);
+            }
+          };
+
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          // Apply immediately without animation
+          setNodes(targetNodes);
+          addToHistory(targetNodes, edges, `layout_${config.type}`);
+
+          setTimeout(() => {
+            fitView({ padding: 0.1, duration: 500 });
+          }, 100);
+        }
+      } catch (error) {
+        console.error('Layout error:', error);
+        if (onError) {
+          onError(
+            error instanceof Error ? error : new Error('Layout failed')
+          );
+        }
+      }
+    },
+    [nodes, edges, readOnly, fitView, addToHistory, onError]
+  );
+
+  // Cleanup animation on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Save callback - debounced to avoid excessive calls
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (onSave) {
-      onSave(nodes, edges);
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Debounce save calls by 500ms
+      saveTimeoutRef.current = setTimeout(() => {
+        onSave(nodes, edges);
+      }, 500);
     }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [nodes, edges, onSave]);
 
   if (graphLoading) {
@@ -907,6 +1169,9 @@ function GraphCanvasInner({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
+        onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
@@ -975,6 +1240,16 @@ function GraphCanvasInner({
       {activeUsers.map((user) => (
         <RemoteCursor key={user.userId} user={user} />
       ))}
+
+      {/* Layout Controls */}
+      {!readOnly && (
+        <LayoutControls
+          nodes={nodes}
+          edges={edges}
+          currentLayout={currentLayout}
+          onLayoutChange={handleLayoutChange}
+        />
+      )}
     </div>
   );
 }

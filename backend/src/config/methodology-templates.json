@@ -1,0 +1,456 @@
+{
+  "templates": [
+    {
+      "methodologyId": "scientific-method",
+      "name": "Scientific Method",
+      "initialNodes": [
+        {
+          "id": "hypothesis",
+          "type": "methodology",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Hypothesis",
+            "description": "State your hypothesis - What do you think will happen and why?",
+            "nodeType": "hypothesis",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 1,
+              "methodologyPhase": "hypothesis"
+            }
+          }
+        },
+        {
+          "id": "experiment",
+          "type": "methodology",
+          "position": { "x": 350, "y": 100 },
+          "data": {
+            "label": "Experiment Design",
+            "description": "Design your experiment to test the hypothesis",
+            "nodeType": "experiment",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 2,
+              "methodologyPhase": "experiment"
+            }
+          }
+        },
+        {
+          "id": "data-collection",
+          "type": "methodology",
+          "position": { "x": 600, "y": 100 },
+          "data": {
+            "label": "Data Collection",
+            "description": "Collect and record experimental data",
+            "nodeType": "data",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 3,
+              "methodologyPhase": "data-collection"
+            }
+          }
+        },
+        {
+          "id": "analysis",
+          "type": "methodology",
+          "position": { "x": 350, "y": 300 },
+          "data": {
+            "label": "Analysis",
+            "description": "Analyze the data and identify patterns",
+            "nodeType": "analysis",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 4,
+              "methodologyPhase": "analysis"
+            }
+          }
+        },
+        {
+          "id": "conclusion",
+          "type": "methodology",
+          "position": { "x": 350, "y": 500 },
+          "data": {
+            "label": "Conclusion",
+            "description": "Draw conclusions - Does the data support your hypothesis?",
+            "nodeType": "conclusion",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 5,
+              "methodologyPhase": "conclusion"
+            }
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "e1",
+          "source": "hypothesis",
+          "target": "experiment",
+          "type": "custom",
+          "data": {
+            "label": "informs",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e2",
+          "source": "experiment",
+          "target": "data-collection",
+          "type": "custom",
+          "data": {
+            "label": "generates",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e3",
+          "source": "data-collection",
+          "target": "analysis",
+          "type": "custom",
+          "data": {
+            "label": "feeds into",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e4",
+          "source": "analysis",
+          "target": "conclusion",
+          "type": "custom",
+          "data": {
+            "label": "leads to",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        }
+      ]
+    },
+    {
+      "methodologyId": "legal-discovery",
+      "name": "Legal Discovery",
+      "initialNodes": [
+        {
+          "id": "identification",
+          "type": "methodology",
+          "position": { "x": 100, "y": 150 },
+          "data": {
+            "label": "Identification",
+            "description": "Identify potentially relevant documents and data sources",
+            "nodeType": "identification",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 1,
+              "methodologyPhase": "identification"
+            }
+          }
+        },
+        {
+          "id": "preservation",
+          "type": "methodology",
+          "position": { "x": 350, "y": 150 },
+          "data": {
+            "label": "Preservation",
+            "description": "Preserve evidence to prevent alteration or destruction",
+            "nodeType": "preservation",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 2,
+              "methodologyPhase": "preservation"
+            }
+          }
+        },
+        {
+          "id": "collection",
+          "type": "methodology",
+          "position": { "x": 600, "y": 150 },
+          "data": {
+            "label": "Collection",
+            "description": "Collect relevant documents and data",
+            "nodeType": "collection",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 3,
+              "methodologyPhase": "collection"
+            }
+          }
+        },
+        {
+          "id": "review",
+          "type": "methodology",
+          "position": { "x": 350, "y": 350 },
+          "data": {
+            "label": "Review",
+            "description": "Review and analyze collected materials for relevance",
+            "nodeType": "review",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 4,
+              "methodologyPhase": "review"
+            }
+          }
+        },
+        {
+          "id": "production",
+          "type": "methodology",
+          "position": { "x": 350, "y": 550 },
+          "data": {
+            "label": "Production",
+            "description": "Produce relevant documents to opposing party",
+            "nodeType": "production",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 5,
+              "methodologyPhase": "production"
+            }
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "e1",
+          "source": "identification",
+          "target": "preservation",
+          "type": "custom",
+          "data": {
+            "label": "requires",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e2",
+          "source": "preservation",
+          "target": "collection",
+          "type": "custom",
+          "data": {
+            "label": "enables",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e3",
+          "source": "collection",
+          "target": "review",
+          "type": "custom",
+          "data": {
+            "label": "provides",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e4",
+          "source": "review",
+          "target": "production",
+          "type": "custom",
+          "data": {
+            "label": "determines",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        }
+      ]
+    },
+    {
+      "methodologyId": "toulmin-argumentation",
+      "name": "Toulmin Argumentation",
+      "initialNodes": [
+        {
+          "id": "claim",
+          "type": "methodology",
+          "position": { "x": 350, "y": 100 },
+          "data": {
+            "label": "Claim",
+            "description": "State your central claim or thesis",
+            "nodeType": "claim",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 1,
+              "methodologyPhase": "claim"
+            }
+          }
+        },
+        {
+          "id": "grounds",
+          "type": "methodology",
+          "position": { "x": 100, "y": 250 },
+          "data": {
+            "label": "Grounds",
+            "description": "Provide evidence and data supporting your claim",
+            "nodeType": "grounds",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 2,
+              "methodologyPhase": "grounds"
+            }
+          }
+        },
+        {
+          "id": "warrant",
+          "type": "methodology",
+          "position": { "x": 350, "y": 250 },
+          "data": {
+            "label": "Warrant",
+            "description": "Explain how the grounds support the claim",
+            "nodeType": "warrant",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 3,
+              "methodologyPhase": "warrant"
+            }
+          }
+        },
+        {
+          "id": "backing",
+          "type": "methodology",
+          "position": { "x": 600, "y": 250 },
+          "data": {
+            "label": "Backing",
+            "description": "Provide additional support for the warrant",
+            "nodeType": "backing",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 4,
+              "methodologyPhase": "backing"
+            }
+          }
+        },
+        {
+          "id": "qualifier",
+          "type": "methodology",
+          "position": { "x": 200, "y": 400 },
+          "data": {
+            "label": "Qualifier",
+            "description": "Specify the strength or limitations of your claim",
+            "nodeType": "qualifier",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 5,
+              "methodologyPhase": "qualifier"
+            }
+          }
+        },
+        {
+          "id": "rebuttal",
+          "type": "methodology",
+          "position": { "x": 500, "y": 400 },
+          "data": {
+            "label": "Rebuttal",
+            "description": "Address potential counter-arguments",
+            "nodeType": "rebuttal",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 6,
+              "methodologyPhase": "rebuttal"
+            }
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "e1",
+          "source": "grounds",
+          "target": "claim",
+          "type": "custom",
+          "data": {
+            "label": "supports",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e2",
+          "source": "warrant",
+          "target": "claim",
+          "type": "custom",
+          "data": {
+            "label": "justifies",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e3",
+          "source": "backing",
+          "target": "warrant",
+          "type": "custom",
+          "data": {
+            "label": "strengthens",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e4",
+          "source": "qualifier",
+          "target": "claim",
+          "type": "custom",
+          "data": {
+            "label": "qualifies",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e5",
+          "source": "rebuttal",
+          "target": "claim",
+          "type": "custom",
+          "data": {
+            "label": "challenges",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        }
+      ]
+    }
+  ]
+}

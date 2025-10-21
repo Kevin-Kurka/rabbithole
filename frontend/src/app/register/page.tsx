@@ -1,11 +1,9 @@
 "use client";
-
 import { useState } from 'react';
 import { gql, useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-
 const REGISTER_MUTATION = gql`
   mutation Register($input: UserInput!) {
     register(input: $input) {
@@ -15,7 +13,6 @@ const REGISTER_MUTATION = gql`
     }
   }
 `;
-
 export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -24,42 +21,32 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [register, { loading }] = useMutation(REGISTER_MUTATION);
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (username.length < 3) {
       newErrors.username = 'Username must be at least 3 characters';
     }
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-
     if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       return;
     }
-
     try {
       const result = await register({
         variables: { input: { username, email, password } }
       });
-
       if (result.data?.register) {
         // Auto-login after successful registration
         const signInResult = await signIn('credentials', {
@@ -67,7 +54,6 @@ export default function RegisterPage() {
           password,
           redirect: false,
         });
-
         if (signInResult?.ok) {
           router.push('/graph');
         } else {
@@ -84,7 +70,6 @@ export default function RegisterPage() {
       }
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 py-12 px-4">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-700">
@@ -97,14 +82,12 @@ export default function RegisterPage() {
             Join the collaborative investigation platform
           </p>
         </div>
-
         {/* General Error */}
         {errors.submit && (
           <div className="mb-6 p-3 bg-red-900/20 border border-red-700 rounded-lg">
             <p className="text-sm text-red-400">{errors.submit}</p>
           </div>
         )}
-
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -127,7 +110,6 @@ export default function RegisterPage() {
               <p className="mt-1 text-sm text-red-400">{errors.username}</p>
             )}
           </div>
-
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
               Email address
@@ -148,7 +130,6 @@ export default function RegisterPage() {
               <p className="mt-1 text-sm text-red-400">{errors.email}</p>
             )}
           </div>
-
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
               Password
@@ -172,7 +153,6 @@ export default function RegisterPage() {
               Must be at least 6 characters
             </p>
           </div>
-
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
               Confirm Password
@@ -193,7 +173,6 @@ export default function RegisterPage() {
               <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
             )}
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -202,7 +181,6 @@ export default function RegisterPage() {
             {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
-
         {/* Login Link */}
         <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}

@@ -28,6 +28,131 @@ interface Context {
 @Resolver()
 export class ProcessValidationResolver {
   /**
+   * QUERY: Get all promotion events (public ledger)
+   * Returns paginated list of all Level 0 promotions
+   * No authentication required - this is a public audit trail
+   */
+  @Query(() => [PromotionEvent])
+  async promotionEvents(
+    @Ctx() { pool }: Context,
+    @Arg('limit', () => Number, { nullable: true, defaultValue: 50 }) limit: number,
+    @Arg('offset', () => Number, { nullable: true, defaultValue: 0 }) offset: number,
+    @Arg('startDate', () => String, { nullable: true }) startDate?: string,
+    @Arg('endDate', () => String, { nullable: true }) endDate?: string,
+    @Arg('methodology', () => String, { nullable: true }) methodology?: string
+  ): Promise<PromotionEvent[]> {
+    // Build WHERE clause based on filters
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+    let paramIndex = 1;
+
+    if (startDate) {
+      whereClauses.push(`pe.promoted_at >= $${paramIndex}`);
+      queryParams.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      whereClauses.push(`pe.promoted_at <= $${paramIndex}`);
+      queryParams.push(endDate);
+      paramIndex++;
+    }
+
+    if (methodology) {
+      whereClauses.push(`g.methodology = $${paramIndex}`);
+      queryParams.push(methodology);
+      paramIndex++;
+    }
+
+    const whereClause = whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(' AND ')}`
+      : '';
+
+    // Add pagination params
+    queryParams.push(limit);
+    const limitParam = `$${paramIndex}`;
+    paramIndex++;
+
+    queryParams.push(offset);
+    const offsetParam = `$${paramIndex}`;
+
+    const result = await pool.query(
+      `SELECT
+        pe.id,
+        pe.graph_id,
+        pe.graph_name,
+        pe.previous_level,
+        pe.new_level,
+        pe.promoted_at,
+        pe.promotion_reason
+       FROM public."PromotionEvents" pe
+       LEFT JOIN public."Graphs" g ON pe.graph_id = g.id
+       ${whereClause}
+       ORDER BY pe.promoted_at DESC
+       LIMIT ${limitParam} OFFSET ${offsetParam}`,
+      queryParams
+    );
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      graph_id: row.graph_id,
+      graph_name: row.graph_name,
+      previous_level: row.previous_level,
+      new_level: row.new_level,
+      promoted_at: row.promoted_at,
+      promotion_reason: row.promotion_reason,
+    }));
+  }
+
+  /**
+   * QUERY: Get total count of promotion events (for pagination)
+   */
+  @Query(() => Number)
+  async promotionEventsCount(
+    @Ctx() { pool }: Context,
+    @Arg('startDate', () => String, { nullable: true }) startDate?: string,
+    @Arg('endDate', () => String, { nullable: true }) endDate?: string,
+    @Arg('methodology', () => String, { nullable: true }) methodology?: string
+  ): Promise<number> {
+    // Build WHERE clause based on filters
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+    let paramIndex = 1;
+
+    if (startDate) {
+      whereClauses.push(`pe.promoted_at >= $${paramIndex}`);
+      queryParams.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      whereClauses.push(`pe.promoted_at <= $${paramIndex}`);
+      queryParams.push(endDate);
+      paramIndex++;
+    }
+
+    if (methodology) {
+      whereClauses.push(`g.methodology = $${paramIndex}`);
+      queryParams.push(methodology);
+      paramIndex++;
+    }
+
+    const whereClause = whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(' AND ')}`
+      : '';
+
+    const result = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM public."PromotionEvents" pe
+       LEFT JOIN public."Graphs" g ON pe.graph_id = g.id
+       ${whereClause}`,
+      queryParams
+    );
+
+    return parseInt(result.rows[0]?.count || '0');
+  }
+
+  /**
    * QUERY: Get promotion eligibility for a graph
    * Returns objective scores across all criteria
    * No authority checks - transparent to everyone

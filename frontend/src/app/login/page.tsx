@@ -1,34 +1,40 @@
 "use client";
-
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { theme } from '@/styles/theme';
-
+import { useEffect } from 'react';
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  // Store user ID in sessionStorage when session is available
+  useEffect(() => {
+    if (session?.user?.id) {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('userId', session.user.id);
+      }
+    }
+  }, [session]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
-
       if (result?.error) {
         setError('Invalid email or password. Please try again.');
       } else if (result?.ok) {
-        router.push('/graph');
+        // Wait a moment for session to be set
+        setTimeout(() => router.push('/graph'), 100);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -36,20 +42,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
   const handleDemoLogin = async () => {
     setError('');
     setLoading(true);
-
     try {
       const result = await signIn('credentials', {
         email: 'test@example.com',
         password: 'test',
         redirect: false,
       });
-
       if (result?.ok) {
-        router.push('/graph');
+        // Wait a moment for session to be set
+        setTimeout(() => router.push('/graph'), 100);
       } else {
         setError('Demo login failed. Please try manual login.');
       }
@@ -59,7 +63,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
   return (
     <div
       style={{ backgroundColor: theme.colors.bg.secondary }}
@@ -82,7 +85,6 @@ export default function LoginPage() {
             Collaborative knowledge graph platform
           </p>
         </div>
-
         {/* Error Message */}
         {error && (
           <div
@@ -96,7 +98,6 @@ export default function LoginPage() {
             <p style={{ color: theme.colors.text.tertiary }} className="text-sm">{error}</p>
           </div>
         )}
-
         {/* Demo Login Button */}
         <button
           onClick={handleDemoLogin}
@@ -116,7 +117,6 @@ export default function LoginPage() {
         >
           {loading ? 'Signing in...' : '🚀 Try Demo (No signup needed)'}
         </button>
-
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -134,7 +134,6 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
-
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -162,7 +161,6 @@ export default function LoginPage() {
               placeholder="you@example.com"
             />
           </div>
-
           <div>
             <label
               htmlFor="password"
@@ -188,7 +186,6 @@ export default function LoginPage() {
               placeholder="••••••••"
             />
           </div>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input
@@ -217,7 +214,6 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -237,7 +233,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-
         {/* Register Link */}
         <p style={{ color: theme.colors.text.tertiary }} className="mt-6 text-center text-sm">
           Don't have an account?{' '}

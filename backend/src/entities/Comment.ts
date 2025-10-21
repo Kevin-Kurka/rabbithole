@@ -12,6 +12,24 @@ export class Comment {
   @Field(() => User)
   author!: User;
 
+  @Field(() => ID, { nullable: true })
+  parentCommentId?: string;
+
+  @Field(() => Comment, { nullable: true })
+  parentComment?: Comment;
+
+  @Field(() => [Comment], { nullable: true })
+  replies?: Comment[];
+
+  @Field(() => ID, { nullable: true })
+  targetNodeId?: string;
+
+  @Field(() => ID, { nullable: true })
+  targetEdgeId?: string;
+
   @Field()
   createdAt!: Date;
+
+  @Field()
+  updatedAt!: Date;
 }

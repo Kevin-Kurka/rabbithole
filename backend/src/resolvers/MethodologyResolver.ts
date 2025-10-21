@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Arg, Ctx, Subscription, Root, FieldResolver, Int, ID } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, Subscription, Root, FieldResolver, Int, ID, ObjectType, Field } from 'type-graphql';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';
 import { Methodology, MethodologyStatus } from '../entities/Methodology';
@@ -21,17 +21,34 @@ import {
   ShareMethodologyInput,
   UpdateWorkflowProgressInput
 } from './MethodologyInput';
+import { MethodologyTemplateService } from '../services/MethodologyTemplateService';
 
 const METHODOLOGY_UPDATED = 'METHODOLOGY_UPDATED';
 const METHODOLOGY_NODE_TYPE_ADDED = 'METHODOLOGY_NODE_TYPE_ADDED';
 const METHODOLOGY_EDGE_TYPE_ADDED = 'METHODOLOGY_EDGE_TYPE_ADDED';
 const WORKFLOW_PROGRESS_UPDATED = 'WORKFLOW_PROGRESS_UPDATED';
 const NEW_METHODOLOGY_PUBLISHED = 'NEW_METHODOLOGY_PUBLISHED';
+const TEMPLATE_APPLIED = 'TEMPLATE_APPLIED';
 
 interface Context {
   pool: Pool;
   pubSub: PubSubEngine;
   userId?: string; // Add authentication context when implemented
+}
+
+@ObjectType()
+class ApplyTemplateResult {
+  @Field(() => [String])
+  nodeIds!: string[];
+
+  @Field(() => [String])
+  edgeIds!: string[];
+
+  @Field(() => String)
+  graphId!: string;
+
+  @Field(() => String)
+  methodologyId!: string;
 }
 
 @Resolver(Methodology)
@@ -940,6 +957,80 @@ export class MethodologyResolver {
     );
 
     return result.rows[0];
+  }
+
+  // ================================================
+  // Mutations - Template Application
+  // ================================================
+
+  @Mutation(() => ApplyTemplateResult)
+  async applyMethodologyTemplate(
+    @Arg('graphId', () => ID) graphId: string,
+    @Arg('methodologyId', () => ID) methodologyId: string,
+    @Ctx() { pool, pubSub, userId }: Context
+  ): Promise<ApplyTemplateResult> {
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Verify user owns the graph
+    const graphCheck = await pool.query(
+      'SELECT owner_id FROM public."Graphs" WHERE id = $1',
+      [graphId]
+    );
+
+    if (graphCheck.rows.length === 0) {
+      throw new Error('Graph not found');
+    }
+
+    if (graphCheck.rows[0].owner_id !== userId) {
+      throw new Error('Unauthorized: You do not own this graph');
+    }
+
+    // Check if methodology exists
+    const methodologyCheck = await pool.query(
+      'SELECT id, name FROM public."Methodologies" WHERE id = $1',
+      [methodologyId]
+    );
+
+    if (methodologyCheck.rows.length === 0) {
+      throw new Error('Methodology not found');
+    }
+
+    // Initialize template service
+    const templateService = new MethodologyTemplateService(pool);
+
+    // Check if graph already has nodes
+    const hasNodes = await templateService.graphHasNodes(graphId);
+    if (hasNodes) {
+      throw new Error(
+        'Cannot apply template to graph that already has nodes. Create a new graph or clear existing nodes first.'
+      );
+    }
+
+    // Apply the template
+    const result = await templateService.applyTemplate(graphId, methodologyId);
+
+    // Increment methodology usage count
+    await pool.query(
+      'UPDATE public."Methodologies" SET usage_count = usage_count + 1 WHERE id = $1',
+      [methodologyId]
+    );
+
+    // Publish event for real-time updates
+    await pubSub.publish(TEMPLATE_APPLIED, {
+      graphId,
+      methodologyId,
+      nodeIds: result.nodes,
+      edgeIds: result.edges
+    });
+
+    return {
+      nodeIds: result.nodes,
+      edgeIds: result.edges,
+      graphId,
+      methodologyId
+    };
   }
 
   // ================================================

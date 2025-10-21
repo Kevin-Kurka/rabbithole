@@ -14,7 +14,11 @@ import {
   Publisher,
   Authorized,
   FieldResolver,
-  Int
+  Int,
+  ObjectType,
+  Field,
+  InputType,
+  Float
 } from 'type-graphql';
 import GraphQLJSON from 'graphql-type-json';
 import { Pool } from 'pg';
@@ -43,6 +47,21 @@ import {
   Operation,
   MessageType
 } from '../services/collaboration/interfaces';
+
+@InputType()
+class CursorInput {
+  @Field(() => Float)
+  x!: number;
+
+  @Field(() => Float)
+  y!: number;
+}
+
+@ObjectType()
+class PresenceResponse {
+  @Field()
+  success!: boolean;
+}
 
 // Subscription topics
 const GRAPH_UPDATED = 'GRAPH_UPDATED';
@@ -428,8 +447,13 @@ export class CollaborationResolver {
     @Arg('x') x: number,
     @Arg('y') y: number,
     @Arg('nodeId', { nullable: true }) nodeId: string,
-    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
+    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string | null; pubSub: PubSubEngine }
   ): Promise<boolean> {
+    // Return silently if no authenticated user
+    if (!userId) {
+      return false;
+    }
+
     // Update cursor position
     await pool.query(
       `UPDATE public."UserPresence"
@@ -453,8 +477,13 @@ export class CollaborationResolver {
     @Arg('graphId') graphId: string,
     @Arg('nodeIds', () => [String]) nodeIds: string[],
     @Arg('edgeIds', () => [String]) edgeIds: string[],
-    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
+    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string | null; pubSub: PubSubEngine }
   ): Promise<boolean> {
+    // Return silently if no authenticated user
+    if (!userId) {
+      return false;
+    }
+
     // Update selection
     await pool.query(
       `UPDATE public."UserPresence"
@@ -478,8 +507,13 @@ export class CollaborationResolver {
   async joinGraph(
     @Arg('graphId') graphId: string,
     @Arg('sessionId') sessionId: string,
-    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
+    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string | null; pubSub: PubSubEngine }
   ): Promise<boolean> {
+    // Return silently if no authenticated user
+    if (!userId) {
+      return false;
+    }
+
     // Get Redis instance
     const redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
@@ -513,12 +547,107 @@ export class CollaborationResolver {
     return true;
   }
 
+  @Mutation(() => PresenceResponse)
+  async updatePresence(
+    @Arg('graphId') graphId: string,
+    @Arg('cursor', () => CursorInput, { nullable: true }) cursor: CursorInput | null,
+    @Ctx() { pool, userId, pubSub, redis }: { pool: Pool; userId: string | null; pubSub: PubSubEngine; redis: Redis }
+  ): Promise<PresenceResponse> {
+    // Validate required parameters
+    if (!graphId || graphId.trim() === '') {
+      throw new Error('graphId is required');
+    }
+
+    // Validate authentication
+    if (!userId) {
+      throw new Error('Authentication required. User must be logged in to update presence.');
+    }
+
+    try {
+      // Get user info for all events
+      const userResult = await pool.query(
+        'SELECT username FROM public."Users" WHERE id = $1',
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      const username = userResult.rows[0].username;
+
+      // Store presence state in Redis (temporary until DB tables are created)
+      const presenceKey = `presence:${graphId}:${userId}`;
+
+      if (cursor === null) {
+        // This is a leave action - remove from Redis
+        await redis.del(presenceKey);
+
+        // Publish user left event
+        await pubSub.publish(`${USER_LEFT}:${graphId}`, {
+          userLeft: {
+            userId,
+            username,
+            cursor: null,
+            action: 'left',
+            timestamp: new Date()
+          }
+        });
+
+        return { success: true };
+      }
+
+      // Check if this is first time (join) or update
+      const existing = await redis.get(presenceKey);
+      const isNewUser = !existing;
+
+      // Store cursor position in Redis with 5 minute expiry
+      await redis.setex(presenceKey, 300, JSON.stringify({
+        userId,
+        graphId,
+        cursor,
+        timestamp: Date.now()
+      }));
+
+      if (isNewUser) {
+        // Publish user joined event
+        await pubSub.publish(`${USER_JOINED}:${graphId}`, {
+          userJoined: {
+            userId,
+            username,
+            cursor,
+            action: 'joined',
+            timestamp: new Date()
+          }
+        });
+      } else {
+        // Publish cursor update
+        await pubSub.publish(`${CURSOR_MOVED}:${graphId}`, {
+          userId,
+          username,
+          position: cursor,
+          timestamp: Date.now()
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error in updatePresence:', error);
+      return { success: false };
+    }
+  }
+
   @Mutation(() => Boolean)
   async leaveGraph(
     @Arg('graphId') graphId: string,
     @Arg('sessionId') sessionId: string,
-    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
+    @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string | null; pubSub: PubSubEngine }
   ): Promise<boolean> {
+    // Return silently if no authenticated user
+    if (!userId) {
+      return false;
+    }
+
     // Get Redis instance
     const redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',

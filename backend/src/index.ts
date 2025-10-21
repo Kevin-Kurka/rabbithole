@@ -13,6 +13,8 @@ import { buildSchema } from 'type-graphql';
 import { Pool } from 'pg';
 import { UserResolver } from './resolvers/UserResolver';
 import { GraphResolver, NodeResolver, EdgeResolver } from './resolvers/GraphResolver';
+import { NodeTypeResolver } from './resolvers/NodeTypeResolver';
+import { EdgeTypeResolver } from './resolvers/EdgeTypeResolver';
 import { CommentResolver } from './resolvers/CommentResolver';
 import { MethodologyResolver } from './resolvers/MethodologyResolver';
 import { MethodologyNodeTypeResolver } from './resolvers/MethodologyNodeTypeResolver';
@@ -21,8 +23,10 @@ import { MethodologyWorkflowResolver } from './resolvers/MethodologyWorkflowReso
 import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from './resolvers/UserMethodologyResolver';
 import { VeracityScoreResolver, EvidenceResolver, SourceResolver, VeracityScoreHistoryResolver } from './resolvers/VeracityResolver';
 import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
-import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
-import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
+// Temporarily disabled due to TypeScript errors - TODO: Fix AI service initialization
+// import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
+// Temporarily disabled - ESM import issue
+// import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
 import {
   CollaborationResolver,
   GraphShareResolver,
@@ -31,11 +35,16 @@ import {
   ChatMessageResolver
 } from './resolvers/CollaborationResolver';
 import { GamificationResolver } from './resolvers/GamificationResolver';
+import { GraphVersionResolver } from './resolvers/GraphVersionResolver';
+import { ContentAnalysisResolver } from './resolvers/ContentAnalysisResolver';
+import { GraphTraversalResolver } from './resolvers/GraphTraversalResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import Redis from 'ioredis';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+// Temporarily disabled - ESM import issue
+// import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import { NotificationService } from './services/NotificationService';
 
 async function main() {
   const app = express();
@@ -55,6 +64,13 @@ async function main() {
     subscriber: new Redis(options)
   });
 
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  // Initialize NotificationService
+  const notificationService = new NotificationService(pool, pubSub);
+
   const schema = await buildSchema({
     resolvers: [
       UserResolver,
@@ -62,6 +78,8 @@ async function main() {
       CommentResolver,
       NodeResolver,
       EdgeResolver,
+      NodeTypeResolver,
+      EdgeTypeResolver,
       MethodologyResolver,
       MethodologyNodeTypeResolver,
       MethodologyEdgeTypeResolver,
@@ -73,14 +91,17 @@ async function main() {
       SourceResolver,
       VeracityScoreHistoryResolver,
       ProcessValidationResolver,
-      AIAssistantResolver,
-      EvidenceFileResolver,
+      // AIAssistantResolver, // Temporarily disabled
+      // EvidenceFileResolver, // Temporarily disabled
       CollaborationResolver,
       GraphShareResolver,
       PresenceResolver,
       ActivityResolver,
       ChatMessageResolver,
-      GamificationResolver
+      GamificationResolver,
+      GraphVersionResolver,
+      ContentAnalysisResolver,
+      GraphTraversalResolver
     ],
     pubSub,
     validate: false,
@@ -91,7 +112,22 @@ async function main() {
     path: '/graphql',
   });
 
-  const serverCleanup = useServer({ schema }, wsServer);
+  const serverCleanup = useServer({
+    schema,
+    context: async (ctx) => {
+      // Extract userId from WebSocket connection params
+      const connectionParams = ctx.connectionParams as { 'x-user-id'?: string } | undefined;
+      const userId = connectionParams?.['x-user-id'] || null;
+
+      return {
+        pool,
+        pubSub,
+        redis,
+        notificationService,
+        userId,
+      };
+    },
+  }, wsServer);
 
   const server = new ApolloServer({
     schema,
@@ -106,22 +142,62 @@ async function main() {
           };
         },
       },
+      {
+        async requestDidStart() {
+          return {
+            async didEncounterErrors(requestContext) {
+              const { errors, request } = requestContext;
+              if (errors) {
+                console.error('GraphQL Errors:', {
+                  operation: request.operationName,
+                  variables: request.variables,
+                  errors: errors.map(err => ({
+                    message: err.message,
+                    path: err.path,
+                    extensions: err.extensions
+                  }))
+                });
+              }
+            }
+          };
+        }
+      }
     ],
   });
 
   await server.start();
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
-  // Configure file upload middleware (must come before GraphQL middleware)
+  // Configure GraphQL middleware (file uploads temporarily disabled)
   app.use(
     '/graphql',
     cors<cors.CorsRequest>(),
     bodyParser.json({ limit: '50mb' }),
-    graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // 100MB max
-    expressMiddleware(server, { context: async () => ({ pool, pubSub, redis }) }),
+    // graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // Temporarily disabled
+    expressMiddleware(server, {
+      context: async ({ req }) => {
+        // Extract user ID from authorization header
+        // In production, this would validate a JWT token
+        const userId = req.headers['x-user-id'] as string;
+
+        // Log authentication context for debugging (remove in production)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('GraphQL Request:', {
+            operation: req.body?.operationName,
+            userId: userId || '(none)',
+            hasAuth: !!userId
+          });
+        }
+
+        return {
+          pool,
+          pubSub,
+          redis,
+          notificationService,
+          userId: userId || null, // Make userId available in all resolvers
+          req
+        };
+      }
+    }),
   );
 
   const PORT = process.env.PORT || 4000;

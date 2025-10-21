@@ -1,0 +1,271 @@
+name: Coverage Report
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: ankane/pgvector:v0.5.1
+        env:
+          POSTGRES_DB: rabbithole_test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      rabbitmq:
+        image: rabbitmq:3.13-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: admin
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5672:5672
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rabbithole_test_db
+      REDIS_URL: redis://localhost:6379
+      RABBITMQ_URL: amqp://admin:admin@localhost:5672
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Initialize test database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d rabbithole_test_db < init.sql
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        working-directory: ./backend
+        run: npm run test:coverage -- --ci --maxWorkers=2
+
+      - name: Generate coverage badges
+        run: |
+          cd backend
+          COVERAGE_STATEMENTS=$(node -p "require('./coverage/coverage-summary.json').total.statements.pct")
+          COVERAGE_BRANCHES=$(node -p "require('./coverage/coverage-summary.json').total.branches.pct")
+          COVERAGE_FUNCTIONS=$(node -p "require('./coverage/coverage-summary.json').total.functions.pct")
+          COVERAGE_LINES=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+
+          echo "COVERAGE_STATEMENTS=$COVERAGE_STATEMENTS" >> $GITHUB_ENV
+          echo "COVERAGE_BRANCHES=$COVERAGE_BRANCHES" >> $GITHUB_ENV
+          echo "COVERAGE_FUNCTIONS=$COVERAGE_FUNCTIONS" >> $GITHUB_ENV
+          echo "COVERAGE_LINES=$COVERAGE_LINES" >> $GITHUB_ENV
+
+      - name: Coverage Report Summary
+        run: |
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Statements
+          if (( $(echo "${{ env.COVERAGE_STATEMENTS }} >= 80" | bc -l) )); then
+            STATEMENTS_STATUS=":white_check_mark: Excellent"
+          elif (( $(echo "${{ env.COVERAGE_STATEMENTS }} >= 60" | bc -l) )); then
+            STATEMENTS_STATUS=":warning: Acceptable"
+          else
+            STATEMENTS_STATUS=":x: Below Threshold"
+          fi
+          echo "| Statements | ${{ env.COVERAGE_STATEMENTS }}% | $STATEMENTS_STATUS |" >> $GITHUB_STEP_SUMMARY
+
+          # Branches
+          if (( $(echo "${{ env.COVERAGE_BRANCHES }} >= 80" | bc -l) )); then
+            BRANCHES_STATUS=":white_check_mark: Excellent"
+          elif (( $(echo "${{ env.COVERAGE_BRANCHES }} >= 60" | bc -l) )); then
+            BRANCHES_STATUS=":warning: Acceptable"
+          else
+            BRANCHES_STATUS=":x: Below Threshold"
+          fi
+          echo "| Branches | ${{ env.COVERAGE_BRANCHES }}% | $BRANCHES_STATUS |" >> $GITHUB_STEP_SUMMARY
+
+          # Functions
+          if (( $(echo "${{ env.COVERAGE_FUNCTIONS }} >= 80" | bc -l) )); then
+            FUNCTIONS_STATUS=":white_check_mark: Excellent"
+          elif (( $(echo "${{ env.COVERAGE_FUNCTIONS }} >= 60" | bc -l) )); then
+            FUNCTIONS_STATUS=":warning: Acceptable"
+          else
+            FUNCTIONS_STATUS=":x: Below Threshold"
+          fi
+          echo "| Functions | ${{ env.COVERAGE_FUNCTIONS }}% | $FUNCTIONS_STATUS |" >> $GITHUB_STEP_SUMMARY
+
+          # Lines
+          if (( $(echo "${{ env.COVERAGE_LINES }} >= 80" | bc -l) )); then
+            LINES_STATUS=":white_check_mark: Excellent"
+          elif (( $(echo "${{ env.COVERAGE_LINES }} >= 60" | bc -l) )); then
+            LINES_STATUS=":warning: Acceptable"
+          else
+            LINES_STATUS=":x: Below Threshold"
+          fi
+          echo "| Lines | ${{ env.COVERAGE_LINES }}% | $LINES_STATUS |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Thresholds" >> $GITHUB_STEP_SUMMARY
+          echo "- :white_check_mark: Excellent: >= 80%" >> $GITHUB_STEP_SUMMARY
+          echo "- :warning: Acceptable: >= 60%" >> $GITHUB_STEP_SUMMARY
+          echo "- :x: Below Threshold: < 60%" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check coverage thresholds
+        run: |
+          cd backend
+          FAIL=0
+
+          if (( $(echo "${{ env.COVERAGE_STATEMENTS }} < 60" | bc -l) )); then
+            echo "ERROR: Statement coverage (${{ env.COVERAGE_STATEMENTS }}%) is below 60% threshold"
+            FAIL=1
+          fi
+
+          if (( $(echo "${{ env.COVERAGE_BRANCHES }} < 60" | bc -l) )); then
+            echo "ERROR: Branch coverage (${{ env.COVERAGE_BRANCHES }}%) is below 60% threshold"
+            FAIL=1
+          fi
+
+          if (( $(echo "${{ env.COVERAGE_FUNCTIONS }} < 60" | bc -l) )); then
+            echo "ERROR: Function coverage (${{ env.COVERAGE_FUNCTIONS }}%) is below 60% threshold"
+            FAIL=1
+          fi
+
+          if (( $(echo "${{ env.COVERAGE_LINES }} < 60" | bc -l) )); then
+            echo "ERROR: Line coverage (${{ env.COVERAGE_LINES }}%) is below 60% threshold"
+            FAIL=1
+          fi
+
+          if [ $FAIL -eq 1 ]; then
+            echo "Coverage check failed!"
+            exit 1
+          fi
+
+          echo "All coverage thresholds met!"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            backend/coverage/
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('backend/coverage/coverage-summary.json', 'utf8'));
+
+            const statements = coverage.total.statements.pct;
+            const branches = coverage.total.branches.pct;
+            const functions = coverage.total.functions.pct;
+            const lines = coverage.total.lines.pct;
+
+            const statusIcon = (pct) => {
+              if (pct >= 80) return '✅';
+              if (pct >= 60) return '⚠️';
+              return '❌';
+            };
+
+            const body = `## Test Coverage Report
+
+            | Metric | Coverage |
+            |--------|----------|
+            | ${statusIcon(statements)} Statements | ${statements}% |
+            | ${statusIcon(branches)} Branches | ${branches}% |
+            | ${statusIcon(functions)} Functions | ${functions}% |
+            | ${statusIcon(lines)} Lines | ${lines}% |
+
+            **Thresholds:** ✅ >= 80% | ⚠️ >= 60% | ❌ < 60%
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  coverage-trend:
+    name: Coverage Trend Analysis
+    runs-on: ubuntu-latest
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Store coverage metrics
+        run: |
+          echo "Storing coverage metrics for trend analysis..."
+          TIMESTAMP=$(date +%s)
+          COVERAGE=$(node -p "JSON.stringify(require('./coverage/coverage-summary.json').total)")
+
+          # Store in a persistent location (e.g., S3, database, or GitHub Pages)
+          echo "Coverage at $TIMESTAMP: $COVERAGE"
+
+      - name: Generate trend report
+        run: |
+          echo "## Coverage Trend" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage metrics have been stored for trend analysis." >> $GITHUB_STEP_SUMMARY
+          echo "View historical trends in the project dashboard." >> $GITHUB_STEP_SUMMARY

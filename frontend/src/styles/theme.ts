@@ -111,6 +111,12 @@ export const theme = {
     lg: '0 10px 15px -3px rgba(39, 39, 42, 0.1), 0 4px 6px -2px rgba(39, 39, 42, 0.05)',
     xl: '0 20px 25px -5px rgba(39, 39, 42, 0.1), 0 10px 10px -5px rgba(39, 39, 42, 0.04)',
   },
+
+  // Typography
+  fonts: {
+    sans: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    mono: 'var(--font-geist-mono), "Fira Code", "Cascadia Code", "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  },
 } as const;
 
 // Type-safe theme access

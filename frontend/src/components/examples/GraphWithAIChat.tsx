@@ -20,11 +20,11 @@ import { ChatMessage } from '@/types/collaboration';
 import { MessageSquare, Sparkles } from 'lucide-react';
 
 interface GraphWithAIChatProps {
-  graphId: string;
+  graphIds: string[];
   methodologyId?: string;
 }
 
-export function GraphWithAIChat({ graphId, methodologyId }: GraphWithAIChatProps) {
+export function GraphWithAIChat({ graphIds, methodologyId }: GraphWithAIChatProps) {
   const [selectedNodes, setSelectedNodes] = useState<GraphCanvasNode[]>([]);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(new Set());
   const [chatMode, setChatMode] = useState<'ai' | 'collaboration'>('ai');
@@ -83,7 +83,7 @@ export function GraphWithAIChat({ graphId, methodologyId }: GraphWithAIChatProps
       {/* Graph Canvas */}
       <div className="flex-1 relative">
         <GraphCanvas
-          graphId={graphId}
+          graphIds={graphIds}
           methodologyId={methodologyId}
           onError={(error) => console.error('Graph error:', error)}
         />
@@ -131,7 +131,7 @@ export function GraphWithAIChat({ graphId, methodologyId }: GraphWithAIChatProps
         <div className="flex-1 overflow-hidden">
           {chatMode === 'ai' ? (
             <AIChat
-              graphId={graphId}
+              graphId={graphIds[0] || ''}
               selectedNodeIds={selectedNodeIds}
               onNodeClick={handleNodeClick}
               onNodeHighlight={handleNodeHighlight}

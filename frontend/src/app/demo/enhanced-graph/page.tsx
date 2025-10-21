@@ -3,14 +3,11 @@
  *
  * Demonstrates the advanced visualization features of the graph canvas.
  */
-
 'use client';
-
 import React, { useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import EnhancedGraphCanvas from '@/components/EnhancedGraphCanvas';
 import { GraphCanvasNode, GraphCanvasEdge, GraphLevel } from '@/types/graph';
-
 /**
  * Generate sample graph data
  */
@@ -19,7 +16,6 @@ function generateSampleData(): {
   edges: GraphCanvasEdge[];
 } {
   const now = new Date();
-
   const nodes: GraphCanvasNode[] = [
     {
       id: '1',
@@ -172,7 +168,6 @@ function generateSampleData(): {
       },
     },
   ];
-
   const edges: GraphCanvasEdge[] = [
     {
       id: 'e1-2',
@@ -259,16 +254,13 @@ function generateSampleData(): {
       data: { weight: 0.48, level: GraphLevel.LEVEL_1, isLocked: false },
     },
   ];
-
   return { nodes, edges };
 }
-
 /**
  * Enhanced Graph Demo Page Component
  */
 export default function EnhancedGraphDemoPage() {
   const [graphData] = useState(generateSampleData);
-
   return (
     <div className="h-screen bg-gray-900">
       <div className="h-full flex flex-col">
@@ -282,12 +274,11 @@ export default function EnhancedGraphDemoPage() {
             clustering
           </p>
         </header>
-
         {/* Graph Canvas */}
         <main className="flex-1 overflow-hidden">
           <ReactFlowProvider>
             <EnhancedGraphCanvas
-              graphId="demo-graph"
+              graphIds={["demo-graph"]}
               initialNodes={graphData.nodes}
               initialEdges={graphData.edges}
               enableFilters={true}

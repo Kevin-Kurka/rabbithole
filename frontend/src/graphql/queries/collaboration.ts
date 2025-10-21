@@ -11,7 +11,7 @@ import { gql } from '@apollo/client';
  * Subscription: User joined the graph
  */
 export const USER_JOINED_SUBSCRIPTION = gql`
-  subscription OnUserJoined($graphId: ID!) {
+  subscription OnUserJoined($graphId: String!) {
     userJoined(graphId: $graphId) {
       userId
       username
@@ -24,7 +24,7 @@ export const USER_JOINED_SUBSCRIPTION = gql`
  * Subscription: User left the graph
  */
 export const USER_LEFT_SUBSCRIPTION = gql`
-  subscription OnUserLeft($graphId: ID!) {
+  subscription OnUserLeft($graphId: String!) {
     userLeft(graphId: $graphId) {
       userId
       username
@@ -37,7 +37,7 @@ export const USER_LEFT_SUBSCRIPTION = gql`
  * Subscription: Cursor position moved
  */
 export const CURSOR_MOVED_SUBSCRIPTION = gql`
-  subscription OnCursorMoved($graphId: ID!) {
+  subscription OnCursorMoved($graphId: String!) {
     cursorMoved(graphId: $graphId) {
       userId
       username
@@ -53,7 +53,7 @@ export const CURSOR_MOVED_SUBSCRIPTION = gql`
  * Subscription: Chat message received
  */
 export const CHAT_MESSAGE_SUBSCRIPTION = gql`
-  subscription OnChatMessage($graphId: ID!) {
+  subscription OnChatMessage($graphId: String!) {
     chatMessage(graphId: $graphId) {
       id
       userId
@@ -68,7 +68,7 @@ export const CHAT_MESSAGE_SUBSCRIPTION = gql`
  * Mutation: Send chat message
  */
 export const SEND_CHAT_MESSAGE_MUTATION = gql`
-  mutation SendChatMessage($graphId: ID!, $message: String!) {
+  mutation SendChatMessage($graphId: String!, $message: String!) {
     sendChatMessage(graphId: $graphId, message: $message) {
       id
       message
@@ -81,7 +81,7 @@ export const SEND_CHAT_MESSAGE_MUTATION = gql`
  * Mutation: Update presence (join/leave/cursor)
  */
 export const UPDATE_PRESENCE_MUTATION = gql`
-  mutation UpdatePresence($graphId: ID!, $cursor: CursorInput) {
+  mutation UpdatePresence($graphId: String!, $cursor: CursorInput) {
     updatePresence(graphId: $graphId, cursor: $cursor) {
       success
     }
@@ -92,7 +92,7 @@ export const UPDATE_PRESENCE_MUTATION = gql`
  * Query: Get active users for a graph
  */
 export const ACTIVE_USERS_QUERY = gql`
-  query GetActiveUsers($graphId: ID!) {
+  query GetActiveUsers($graphId: String!) {
     activeUsers(graphId: $graphId) {
       userId
       username

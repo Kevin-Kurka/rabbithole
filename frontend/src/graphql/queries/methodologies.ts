@@ -155,3 +155,18 @@ export const TOGGLE_METHODOLOGY_FAVORITE_MUTATION = gql`
     }
   }
 `;
+
+/**
+ * Apply methodology template to a graph
+ * Creates pre-configured nodes and edges on the canvas
+ */
+export const APPLY_METHODOLOGY_TEMPLATE_MUTATION = gql`
+  mutation ApplyMethodologyTemplate($graphId: ID!, $methodologyId: ID!) {
+    applyMethodologyTemplate(graphId: $graphId, methodologyId: $methodologyId) {
+      nodeIds
+      edgeIds
+      graphId
+      methodologyId
+    }
+  }
+`;

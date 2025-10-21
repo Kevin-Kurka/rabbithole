@@ -1,0 +1,209 @@
+name: Lint & Type Check
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend-lint:
+    name: Backend Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: TypeScript compilation check
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Check for TypeScript errors
+        working-directory: ./backend
+        run: npx tsc --noEmit
+
+      - name: Security audit (npm)
+        working-directory: ./backend
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --audit-level=critical
+        continue-on-error: false
+
+      - name: Check for outdated dependencies
+        working-directory: ./backend
+        run: npm outdated || true
+        continue-on-error: true
+
+  frontend-lint:
+    name: Frontend Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: TypeScript compilation check
+        working-directory: ./frontend
+        run: npx tsc --noEmit
+
+      - name: Check Next.js build
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/graphql
+          NEXTAUTH_SECRET: lint-check-secret
+
+      - name: Security audit (npm)
+        working-directory: ./frontend
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --audit-level=critical
+        continue-on-error: false
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Checking commit message format..."
+          git log --format=%s origin/${{ github.base_ref }}..HEAD | while read msg; do
+            if ! echo "$msg" | grep -qE '^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+'; then
+              echo "Invalid commit message: $msg"
+              echo "Expected format: type(scope): subject"
+              echo "Types: feat, fix, docs, style, refactor, test, chore"
+              exit 1
+            fi
+          done
+
+      - name: Check for console.log statements
+        run: |
+          echo "Checking for console.log statements..."
+          if grep -r "console\.log" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist \
+            --exclude-dir=.next \
+            --exclude-dir=coverage \
+            backend/src frontend/src 2>/dev/null; then
+            echo "Found console.log statements in source code!"
+            echo "Please remove debug statements before committing."
+            exit 1
+          fi
+          echo "No console.log statements found."
+
+      - name: Check for TODO comments
+        run: |
+          echo "Checking for TODO comments..."
+          if grep -r "TODO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist \
+            --exclude-dir=.next \
+            backend/src frontend/src 2>/dev/null; then
+            echo "Found TODO comments in code!"
+            echo "Please create issues instead of leaving TODO comments."
+            exit 1
+          fi
+          echo "No TODO comments found."
+
+      - name: Check for secrets in code
+        run: |
+          echo "Checking for potential secrets..."
+          # Check for common secret patterns
+          if grep -rE "(password|api_key|secret|token|private_key)\s*=\s*['\"][^'\"]{8,}" \
+            --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.json" \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist \
+            --exclude-dir=.next \
+            --exclude="package-lock.json" \
+            . 2>/dev/null; then
+            echo "Potential secrets found in code!"
+            echo "Please use environment variables for sensitive data."
+            exit 1
+          fi
+          echo "No hardcoded secrets detected."
+
+  docker-lint:
+    name: Docker Configuration Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          docker-compose config > /dev/null
+          echo "docker-compose.yml is valid"
+
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: backend/Dockerfile
+          failure-threshold: warning
+
+      - name: Lint frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: frontend/Dockerfile
+          failure-threshold: warning
+        continue-on-error: true
+
+  lint-summary:
+    name: Lint Summary
+    runs-on: ubuntu-latest
+    needs: [backend-lint, frontend-lint, code-quality, docker-lint]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Lint & Type Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Lint: ${{ needs.backend-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Lint: ${{ needs.frontend-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Lint: ${{ needs.docker-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.code-quality.result }}" != "success" ]; then
+            echo ":x: Some checks failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo ":white_check_mark: All checks passed" >> $GITHUB_STEP_SUMMARY
+          fi

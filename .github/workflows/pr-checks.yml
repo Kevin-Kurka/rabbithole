@@ -1,0 +1,260 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  pr-metadata:
+    name: PR Metadata Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR title format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const pattern = /^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+/;
+
+            if (!pattern.test(title)) {
+              core.setFailed(
+                `PR title "${title}" does not follow conventional commits format.\n` +
+                `Expected: type(scope): subject\n` +
+                `Types: feat, fix, docs, style, refactor, test, chore`
+              );
+            }
+
+      - name: Check PR description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+
+            if (body.length < 50) {
+              core.setFailed(
+                'PR description is too short. Please provide:\n' +
+                '- What changes were made\n' +
+                '- Why these changes are needed\n' +
+                '- How to test the changes'
+              );
+            }
+
+      - name: Check linked issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const hasIssueLink = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):?\s*#\d+/i.test(body);
+
+            if (!hasIssueLink && !body.includes('no-issue')) {
+              core.warning(
+                'No linked issues found. Consider linking related issues with "Closes #123" or add "no-issue" if not applicable.'
+              );
+            }
+
+  size-check:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const changedFiles = pr.changed_files;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const totalChanges = additions + deletions;
+
+            let size = 'XS';
+            let label = 'size/XS';
+
+            if (totalChanges > 1000) {
+              size = 'XXL';
+              label = 'size/XXL';
+              core.warning(
+                `This PR is very large (${totalChanges} lines changed). ` +
+                `Consider breaking it into smaller PRs for easier review.`
+              );
+            } else if (totalChanges > 500) {
+              size = 'XL';
+              label = 'size/XL';
+            } else if (totalChanges > 250) {
+              size = 'L';
+              label = 'size/L';
+            } else if (totalChanges > 100) {
+              size = 'M';
+              label = 'size/M';
+            } else if (totalChanges > 50) {
+              size = 'S';
+              label = 'size/S';
+            }
+
+            // Add size label
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [label]
+              });
+            } catch (error) {
+              console.log('Could not add label:', error.message);
+            }
+
+            // Comment on PR
+            const comment = `## PR Size: ${size}\n\n` +
+              `📊 **Changes:** ${totalChanges} lines (${additions} additions, ${deletions} deletions)\n` +
+              `📁 **Files:** ${changedFiles} changed\n\n` +
+              (size === 'XXL' || size === 'XL'
+                ? '⚠️ This PR is large. Consider breaking it into smaller, focused PRs for easier review.'
+                : '✅ Good PR size for review!');
+
+            core.summary.addRaw(comment).write();
+
+  dependency-check:
+    name: Dependency Changes Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for dependency changes
+        run: |
+          echo "Checking for dependency changes..."
+
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          if echo "$CHANGED_FILES" | grep -q "package.json"; then
+            echo "⚠️ package.json files were modified"
+            echo "## Dependency Changes Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if echo "$CHANGED_FILES" | grep -q "backend/package.json"; then
+              echo "### Backend Dependencies" >> $GITHUB_STEP_SUMMARY
+              git diff origin/${{ github.base_ref }}...HEAD -- backend/package.json >> $GITHUB_STEP_SUMMARY || true
+            fi
+
+            if echo "$CHANGED_FILES" | grep -q "frontend/package.json"; then
+              echo "### Frontend Dependencies" >> $GITHUB_STEP_SUMMARY
+              git diff origin/${{ github.base_ref }}...HEAD -- frontend/package.json >> $GITHUB_STEP_SUMMARY || true
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please ensure:" >> $GITHUB_STEP_SUMMARY
+            echo "- Dependencies are necessary" >> $GITHUB_STEP_SUMMARY
+            echo "- Versions are pinned or use caret (^)" >> $GITHUB_STEP_SUMMARY
+            echo "- No security vulnerabilities" >> $GITHUB_STEP_SUMMARY
+            echo "- Lock files are updated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No dependency changes detected"
+          fi
+
+  breaking-changes:
+    name: Breaking Changes Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for breaking changes
+        run: |
+          echo "Checking for potential breaking changes..."
+
+          BREAKING_MARKERS="BREAKING CHANGE|breaking change|BREAKING-CHANGE"
+
+          if git log origin/${{ github.base_ref }}..HEAD --format=%B | grep -iE "$BREAKING_MARKERS"; then
+            echo "## ⚠️ Breaking Changes Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This PR contains breaking changes. Ensure:" >> $GITHUB_STEP_SUMMARY
+            echo "- Migration guide is provided" >> $GITHUB_STEP_SUMMARY
+            echo "- Version bump is appropriate (major version)" >> $GITHUB_STEP_SUMMARY
+            echo "- Deprecation warnings were added in previous version" >> $GITHUB_STEP_SUMMARY
+            echo "- All stakeholders are notified" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No breaking changes detected"
+          fi
+
+  label-check:
+    name: Auto-Label PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto-label based on files changed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = [];
+
+            // Get changed files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const changedFiles = files.map(f => f.filename);
+
+            // Backend changes
+            if (changedFiles.some(f => f.startsWith('backend/'))) {
+              labels.push('backend');
+            }
+
+            // Frontend changes
+            if (changedFiles.some(f => f.startsWith('frontend/'))) {
+              labels.push('frontend');
+            }
+
+            // Documentation changes
+            if (changedFiles.some(f => f.endsWith('.md') || f.startsWith('docs/'))) {
+              labels.push('documentation');
+            }
+
+            // Test changes
+            if (changedFiles.some(f => f.includes('test') || f.includes('spec'))) {
+              labels.push('tests');
+            }
+
+            // CI/CD changes
+            if (changedFiles.some(f => f.includes('.github/workflows'))) {
+              labels.push('ci-cd');
+            }
+
+            // Database changes
+            if (changedFiles.some(f => f.includes('init.sql') || f.includes('migration'))) {
+              labels.push('database');
+            }
+
+            // Docker changes
+            if (changedFiles.some(f => f.includes('Dockerfile') || f.includes('docker-compose'))) {
+              labels.push('docker');
+            }
+
+            // Apply labels
+            if (labels.length > 0) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: labels
+                });
+                console.log('Added labels:', labels.join(', '));
+              } catch (error) {
+                console.log('Could not add labels:', error.message);
+              }
+            }

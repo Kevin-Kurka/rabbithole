@@ -3,9 +3,7 @@
  *
  * Demonstrates usage of the GraphCanvas component with various features.
  */
-
 'use client';
-
 import React, { useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import GraphCanvas from '@/components/GraphCanvas';
@@ -16,7 +14,6 @@ import {
 } from '@/types/graph';
 import { calculateGraphStats } from '@/utils/graphHelpers';
 import { theme } from '@/styles/theme';
-
 export default function GraphCanvasExample() {
   const { data: session, status } = useSession();
   const [graphId] = useState('c14f48ce-b474-48ec-acc9-187c45555c4a');
@@ -28,19 +25,16 @@ export default function GraphCanvasExample() {
     avgNodeVeracity: 0,
     avgEdgeVeracity: 0,
   });
-
   const handleSave = (nodes: GraphCanvasNode[], edges: GraphCanvasEdge[]) => {
     const newStats = calculateGraphStats(nodes, edges);
     setStats(newStats);
     console.log('Graph saved:', { nodes, edges, stats: newStats });
   };
-
   const handleError = (error: Error) => {
     console.error('Graph error:', error);
     // In production, you'd show a toast notification here
     alert(`Error: ${error.message}`);
   };
-
   if (status === 'loading') {
     return (
       <div
@@ -57,7 +51,6 @@ export default function GraphCanvasExample() {
       </div>
     );
   }
-
   if (status === 'unauthenticated') {
     return (
       <div
@@ -90,7 +83,6 @@ export default function GraphCanvasExample() {
       </div>
     );
   }
-
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       {/* Stats Panel */}
@@ -201,7 +193,6 @@ export default function GraphCanvasExample() {
           </div>
         </div>
       </div>
-
       {/* Instructions Panel */}
       <div
         style={{
@@ -246,10 +237,9 @@ export default function GraphCanvasExample() {
           </div>
         </div>
       </div>
-
       {/* Graph Canvas */}
       <GraphCanvas
-        graphId={graphId}
+        graphIds={[graphId]}
         onSave={handleSave}
         onError={handleError}
         showMinimap={true}

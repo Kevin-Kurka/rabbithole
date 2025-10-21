@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client';
 import {
   BookOpen,
   Workflow,
@@ -15,13 +15,18 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { theme } from '@/styles/theme';
-import { METHODOLOGIES_QUERY } from '@/graphql/queries/methodologies';
+import {
+  METHODOLOGIES_QUERY,
+  APPLY_METHODOLOGY_TEMPLATE_MUTATION
+} from '@/graphql/queries/methodologies';
 import type { Methodology } from '@/types/methodology';
 
 interface MethodologySelectorProps {
   onSelect: (methodologyId: string | null) => void;
   onCancel: () => void;
   selectedMethodology?: string | null;
+  graphId?: string | null; // Optional: if provided, will apply template immediately
+  onTemplateApplied?: (result: { nodeIds: string[]; edgeIds: string[] }) => void;
 }
 
 // Icon mapping based on methodology name/category
@@ -42,12 +47,17 @@ const getMethodologyIcon = (name: string, category?: string) => {
 export default function MethodologySelector({
   onSelect,
   onCancel,
-  selectedMethodology
+  selectedMethodology,
+  graphId,
+  onTemplateApplied
 }: MethodologySelectorProps) {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedForDetails, setSelectedForDetails] = useState<Methodology | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const { data, loading, error } = useQuery(METHODOLOGIES_QUERY);
+
+  const [applyTemplate] = useMutation(APPLY_METHODOLOGY_TEMPLATE_MUTATION);
 
   const methodologies: Methodology[] = data?.methodologies || [];
 
@@ -69,9 +79,35 @@ export default function MethodologySelector({
     setLocalSelectedMethodology('custom');
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (localSelectedMethodology === 'custom') {
       onSelect(null); // null indicates custom methodology
+      return;
+    }
+
+    // If graphId is provided, apply template before calling onSelect
+    if (graphId && localSelectedMethodology) {
+      setIsApplyingTemplate(true);
+      try {
+        const result = await applyTemplate({
+          variables: {
+            graphId,
+            methodologyId: localSelectedMethodology
+          }
+        });
+
+        if (result.data?.applyMethodologyTemplate) {
+          onTemplateApplied?.(result.data.applyMethodologyTemplate);
+        }
+
+        onSelect(localSelectedMethodology);
+      } catch (err) {
+        console.error('Failed to apply methodology template:', err);
+        // Still call onSelect even if template application fails
+        onSelect(localSelectedMethodology);
+      } finally {
+        setIsApplyingTemplate(false);
+      }
     } else {
       onSelect(localSelectedMethodology);
     }
@@ -300,21 +336,32 @@ export default function MethodologySelector({
         {localSelectedMethodology && (
           <button
             onClick={handleContinue}
+            disabled={isApplyingTemplate}
             style={{
-              backgroundColor: theme.colors.text.primary,
-              color: theme.colors.bg.primary,
+              backgroundColor: isApplyingTemplate
+                ? theme.colors.bg.elevated
+                : theme.colors.text.primary,
+              color: isApplyingTemplate
+                ? theme.colors.text.muted
+                : theme.colors.bg.primary,
               borderRadius: theme.radius.sm,
+              opacity: isApplyingTemplate ? 0.7 : 1,
+              cursor: isApplyingTemplate ? 'not-allowed' : 'pointer'
             }}
             className="flex-1 px-4 py-2 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2"
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.text.secondary;
+              if (!isApplyingTemplate) {
+                e.currentTarget.style.backgroundColor = theme.colors.text.secondary;
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.text.primary;
+              if (!isApplyingTemplate) {
+                e.currentTarget.style.backgroundColor = theme.colors.text.primary;
+              }
             }}
           >
-            Create Graph
-            <ChevronRight className="w-4 h-4" />
+            {isApplyingTemplate ? 'Applying Template...' : 'Create Graph'}
+            {!isApplyingTemplate && <ChevronRight className="w-4 h-4" />}
           </button>
         )}
       </div>

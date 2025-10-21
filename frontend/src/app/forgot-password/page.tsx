@@ -1,19 +1,15 @@
 "use client";
-
 import { useState } from 'react';
 import Link from 'next/link';
-
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     // TODO: Implement actual password reset logic
     // For now, just simulate the process
     setTimeout(() => {
@@ -21,7 +17,6 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }, 1000);
   };
-
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -41,21 +36,17 @@ export default function ForgotPasswordPage() {
               />
             </svg>
           </div>
-
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Check Your Email
           </h1>
-
           <p className="text-gray-600 mb-6">
             We've sent password reset instructions to:
             <br />
             <span className="font-medium text-gray-900">{email}</span>
           </p>
-
           <p className="text-sm text-gray-500 mb-6">
             Didn't receive the email? Check your spam folder or try again.
           </p>
-
           <div className="space-y-3">
             <button
               onClick={() => setSubmitted(false)}
@@ -63,7 +54,6 @@ export default function ForgotPasswordPage() {
             >
               Try different email
             </button>
-
             <Link
               href="/login"
               className="block w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-center"
@@ -75,7 +65,6 @@ export default function ForgotPasswordPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
@@ -88,14 +77,12 @@ export default function ForgotPasswordPage() {
             Enter your email and we'll send you instructions to reset your password
           </p>
         </div>
-
         {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
-
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -112,7 +99,6 @@ export default function ForgotPasswordPage() {
               placeholder="you@example.com"
             />
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -121,14 +107,12 @@ export default function ForgotPasswordPage() {
             {loading ? 'Sending...' : 'Send reset instructions'}
           </button>
         </form>
-
         {/* Back to Login */}
         <div className="mt-6 text-center">
           <Link href="/login" className="text-sm text-blue-600 hover:text-blue-500">
             ← Back to login
           </Link>
         </div>
-
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">

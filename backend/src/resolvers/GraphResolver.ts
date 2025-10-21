@@ -13,6 +13,25 @@ import { Redis } from 'ioredis';
 const NODE_UPDATED = "NODE_UPDATED";
 const EDGE_UPDATED = "EDGE_UPDATED";
 
+// Helper function to serialize JSONB fields to strings for GraphQL
+function serializeNode(node: any): any {
+  if (!node) return node;
+  return {
+    ...node,
+    props: typeof node.props === 'object' ? JSON.stringify(node.props) : node.props,
+    meta: typeof node.meta === 'object' ? JSON.stringify(node.meta) : node.meta
+  };
+}
+
+function serializeEdge(edge: any): any {
+  if (!edge) return edge;
+  return {
+    ...edge,
+    props: typeof edge.props === 'object' ? JSON.stringify(edge.props) : edge.props,
+    meta: typeof edge.meta === 'object' ? JSON.stringify(edge.meta) : edge.meta
+  };
+}
+
 @Resolver(of => Node)
 export class NodeResolver {
   @FieldResolver(() => [Edge])
@@ -22,7 +41,7 @@ export class NodeResolver {
       'SELECT * FROM public."Edges" WHERE source_node_id = $1 OR target_node_id = $1',
       [node.id]
     );
-    return result.rows;
+    return result.rows.map(serializeEdge);
   }
 
   @FieldResolver(() => [Comment])
@@ -86,13 +105,13 @@ export class EdgeResolver {
   @FieldResolver(() => Node)
   async from(@Root() edge: any, @Ctx() { pool }: { pool: Pool }): Promise<Node> {
     const result = await pool.query('SELECT * FROM public."Nodes" WHERE id = $1', [edge.source_node_id]);
-    return result.rows[0];
+    return serializeNode(result.rows[0]);
   }
 
   @FieldResolver(() => Node)
   async to(@Root() edge: any, @Ctx() { pool }: { pool: Pool }): Promise<Node> {
     const result = await pool.query('SELECT * FROM public."Nodes" WHERE id = $1', [edge.target_node_id]);
-    return result.rows[0];
+    return serializeNode(result.rows[0]);
   }
 
   @FieldResolver(() => [Comment])
@@ -161,8 +180,10 @@ export class GraphResolver {
     }
     const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE graph_id = $1', [id]);
     const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE graph_id = $1', [id]);
-    graph.nodes = nodesResult.rows;
-    graph.edges = edgesResult.rows;
+
+    // Convert JSONB to strings for GraphQL
+    graph.nodes = nodesResult.rows.map(serializeNode);
+    graph.edges = edgesResult.rows.map(serializeEdge);
 
     // Cache the result
     await cacheService.cacheGraph(id, graph);
@@ -190,7 +211,7 @@ export class GraphResolver {
       'INSERT INTO public."Nodes" (graph_id, node_type_id, props, is_level_0) VALUES ($1, $2, $3, $4) RETURNING *',
       [graphId, defaultNodeTypeId, props, false]
     );
-    const newNode = result.rows[0];
+    const newNode = serializeNode(result.rows[0]);
     await pubSub.publish(NODE_UPDATED, newNode);
 
     // Invalidate graph cache
@@ -220,7 +241,7 @@ export class GraphResolver {
       'INSERT INTO public."Edges" (graph_id, edge_type_id, source_node_id, target_node_id, props, is_level_0) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [graphId, defaultEdgeTypeId, from, to, props, false]
     );
-    const newEdge = result.rows[0];
+    const newEdge = serializeEdge(result.rows[0]);
     await pubSub.publish(EDGE_UPDATED, newEdge);
 
     // Invalidate graph cache
@@ -246,7 +267,7 @@ export class GraphResolver {
       'UPDATE public."Nodes" SET weight = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [weight, id]
     );
-    const updatedNode = result.rows[0];
+    const updatedNode = serializeNode(result.rows[0]);
     await pubSub.publish(NODE_UPDATED, updatedNode);
     return updatedNode;
   }
@@ -267,7 +288,7 @@ export class GraphResolver {
       'UPDATE public."Edges" SET weight = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [weight, id]
     );
-    const updatedEdge = result.rows[0];
+    const updatedEdge = serializeEdge(result.rows[0]);
     await pubSub.publish(EDGE_UPDATED, updatedEdge);
     return updatedEdge;
   }
@@ -320,7 +341,7 @@ export class GraphResolver {
       'UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [props, id]
     );
-    const updatedNode = result.rows[0];
+    const updatedNode = serializeNode(result.rows[0]);
     await pubSub.publish(NODE_UPDATED, updatedNode);
     return updatedNode;
   }
@@ -341,7 +362,7 @@ export class GraphResolver {
       'UPDATE public."Edges" SET props = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [props, id]
     );
-    const updatedEdge = result.rows[0];
+    const updatedEdge = serializeEdge(result.rows[0]);
     await pubSub.publish(EDGE_UPDATED, updatedEdge);
     return updatedEdge;
   }
@@ -385,8 +406,10 @@ export class GraphResolver {
     const graph = result.rows[0];
     const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE graph_id = $1', [id]);
     const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE graph_id = $1', [id]);
-    graph.nodes = nodesResult.rows;
-    graph.edges = edgesResult.rows;
+
+    // Convert JSONB to strings for GraphQL
+    graph.nodes = nodesResult.rows.map(serializeNode);
+    graph.edges = edgesResult.rows.map(serializeEdge);
     return graph;
   }
 

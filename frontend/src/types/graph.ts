@@ -74,6 +74,8 @@ export interface NodeData {
   level: GraphLevel;
   methodology?: string;
   isLocked: boolean;
+  graphId?: string; // ID of the graph this node belongs to
+  graphColor?: string; // Color indicator for multi-graph overlay
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -86,6 +88,8 @@ export interface EdgeData {
   weight: number;
   level: GraphLevel;
   isLocked: boolean;
+  graphId?: string; // ID of the graph this edge belongs to
+  graphColor?: string; // Color indicator for multi-graph overlay
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -153,9 +157,11 @@ export interface HistoryItem {
  * Graph canvas props
  */
 export interface GraphCanvasProps {
-  graphId: string;
+  graphIds: string[]; // Changed from graphId to support multiple graphs
   onSave?: (nodes: GraphCanvasNode[], edges: GraphCanvasEdge[]) => void;
   onError?: (error: Error) => void;
+  onNodeSelect?: (node: GraphCanvasNode | null) => void;
+  onEdgeSelect?: (edge: GraphCanvasEdge | null) => void;
   readOnly?: boolean;
   initialNodes?: GraphCanvasNode[];
   initialEdges?: GraphCanvasEdge[];
