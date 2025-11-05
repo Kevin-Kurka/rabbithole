@@ -273,13 +273,49 @@ export class GraphRAGService extends EventEmitter {
     similarityThreshold: number = 0.7,
     level0Only: boolean = false
   ): Promise<GraphNode[]> {
-    // TODO: Implement vector similarity search
-    // 1. Check L2 cache for cached results
-    // 2. Execute pgvector similarity search
-    // 3. Parse results into GraphNode objects
-    // 4. Cache results in L2
-    // 5. Emit performance metrics
-    throw new Error('Not implemented');
+    const startTime = Date.now();
+    const level0Filter = level0Only ? 'AND n.is_level_0 = true' : '';
+
+    const vectorString = `[${queryEmbedding.join(',')}]`;
+
+    const query = `
+      SELECT
+        n.id,
+        n.node_type_id,
+        nt.name as type_name,
+        n.props,
+        n.meta,
+        n.weight as veracity_score,
+        1 - (n.ai <=> $1::vector) as relevance_score
+      FROM public."Nodes" n
+      LEFT JOIN public."NodeTypes" nt ON nt.id = n.node_type_id
+      WHERE n.ai IS NOT NULL
+        ${level0Filter}
+        AND (1 - (n.ai <=> $1::vector)) >= $2
+      ORDER BY n.ai <=> $1::vector
+      LIMIT $3
+    `;
+
+    const result = await this.pool.query(query, [
+      vectorString,
+      similarityThreshold,
+      limit
+    ]);
+
+    const nodes: GraphNode[] = result.rows.map(row => ({
+      id: row.id,
+      nodeTypeId: row.node_type_id,
+      typeName: row.type_name || 'Unknown',
+      props: row.props || {},
+      meta: row.meta || {},
+      veracityScore: row.veracity_score || 0,
+      relevanceScore: row.relevance_score || 0,
+    }));
+
+    const duration = Date.now() - startTime;
+    this.emit('anchorNodesFound', { count: nodes.length, duration });
+
+    return nodes;
   }
 
   // ============================================================================
@@ -307,13 +343,118 @@ export class GraphRAGService extends EventEmitter {
     minVeracity: number = 0.5,
     maxNodes: number = 500
   ): Promise<Subgraph> {
-    // TODO: Implement recursive graph traversal
-    // 1. Validate anchor node IDs
-    // 2. Execute recursive CTE query
-    // 3. Collect unique nodes and edges
-    // 4. Calculate path scores and relevance
-    // 5. Build and return Subgraph
-    throw new Error('Not implemented');
+    const startTime = Date.now();
+
+    // Recursive CTE to traverse graph
+    const nodesQuery = `
+      WITH RECURSIVE graph_traversal AS (
+        -- Base case: anchor nodes
+        SELECT
+          n.id,
+          n.node_type_id,
+          n.props,
+          n.meta,
+          n.weight,
+          0 as depth,
+          ARRAY[n.id] as path
+        FROM public."Nodes" n
+        WHERE n.id = ANY($1)
+
+        UNION
+
+        -- Recursive case: follow edges
+        SELECT
+          n.id,
+          n.node_type_id,
+          n.props,
+          n.meta,
+          n.weight,
+          gt.depth + 1,
+          gt.path || n.id
+        FROM public."Nodes" n
+        INNER JOIN public."Edges" e
+          ON (e.target_node_id = n.id OR e.source_node_id = n.id)
+        INNER JOIN graph_traversal gt
+          ON (e.source_node_id = gt.id OR e.target_node_id = gt.id)
+        WHERE gt.depth < $2
+          AND e.weight >= $3
+          AND NOT (n.id = ANY(gt.path)) -- Prevent cycles
+      )
+      SELECT DISTINCT
+        gt.id,
+        gt.node_type_id,
+        nt.name as type_name,
+        gt.props,
+        gt.meta,
+        gt.weight,
+        gt.depth
+      FROM graph_traversal gt
+      LEFT JOIN public."NodeTypes" nt ON nt.id = gt.node_type_id
+      ORDER BY gt.depth, gt.weight DESC
+      LIMIT $4
+    `;
+
+    const nodesResult = await this.pool.query(nodesQuery, [
+      anchorNodeIds,
+      maxDepth,
+      minVeracity,
+      maxNodes
+    ]);
+
+    const nodes: GraphNode[] = nodesResult.rows.map(row => ({
+      id: row.id,
+      nodeTypeId: row.node_type_id,
+      typeName: row.type_name || 'Unknown',
+      props: row.props || {},
+      meta: row.meta || {},
+      veracityScore: row.weight || 0,
+      graphDistance: row.depth || 0,
+    }));
+
+    // Fetch edges connecting these nodes
+    const nodeIds = nodes.map(n => n.id);
+    const edgesQuery = `
+      SELECT
+        e.id,
+        e.edge_type_id,
+        et.name as type_name,
+        e.source_node_id,
+        e.target_node_id,
+        e.props,
+        e.meta,
+        e.weight
+      FROM public."Edges" e
+      LEFT JOIN public."EdgeTypes" et ON et.id = e.edge_type_id
+      WHERE e.source_node_id = ANY($1)
+        AND e.target_node_id = ANY($1)
+        AND e.weight >= $2
+    `;
+
+    const edgesResult = await this.pool.query(edgesQuery, [nodeIds, minVeracity]);
+
+    const edges: GraphEdge[] = edgesResult.rows.map(row => ({
+      id: row.id,
+      edgeTypeId: row.edge_type_id,
+      typeName: row.type_name || 'Related',
+      sourceNodeId: row.source_node_id,
+      targetNodeId: row.target_node_id,
+      props: row.props || {},
+      meta: row.meta || {},
+      veracityScore: row.weight || 0,
+    }));
+
+    const duration = Date.now() - startTime;
+    this.emit('graphTraversalComplete', {
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      duration
+    });
+
+    return {
+      nodes,
+      edges,
+      anchorNodeIds,
+    };
   }
 
   // ============================================================================
@@ -338,14 +479,95 @@ export class GraphRAGService extends EventEmitter {
     subgraph: Subgraph,
     selectedNodes?: GraphNode[]
   ): Promise<AugmentedPrompt> {
-    // TODO: Implement prompt generation
-    // 1. Serialize nodes with relevance-based prioritization
-    // 2. Serialize edges with relationship descriptions
-    // 3. Add selected node context if provided
-    // 4. Count tokens and trim if necessary
-    // 5. Build citation map for response attribution
-    // 6. Format final prompt with system/user sections
-    throw new Error('Not implemented');
+    const citationMap = new Map<string, string>();
+    const contextParts: string[] = [];
+
+    // Add selected nodes context first (highest priority)
+    if (selectedNodes && selectedNodes.length > 0) {
+      contextParts.push('=== SELECTED CONTEXT ===\n');
+      selectedNodes.forEach((node, idx) => {
+        const citation = `[Selected-${idx + 1}]`;
+        citationMap.set(node.id, citation);
+
+        const label = node.props.label || node.props.name || node.props.title || 'Untitled';
+        const description = node.props.description || '';
+        const veracity = (node.veracityScore * 100).toFixed(0);
+        const level = node.veracityScore === 1.0 ? ' [LEVEL 0 - VERIFIED]' : '';
+
+        contextParts.push(
+          `${citation} ${label}${level}\n` +
+          `  Type: ${node.typeName}\n` +
+          `  Veracity: ${veracity}%\n` +
+          `  ${description}\n`
+        );
+      });
+      contextParts.push('\n');
+    }
+
+    // Add subgraph nodes
+    contextParts.push('=== GRAPH CONTEXT ===\n');
+    subgraph.nodes.forEach((node, idx) => {
+      // Skip if already cited as selected
+      if (citationMap.has(node.id)) return;
+
+      const citation = `[Node-${idx + 1}]`;
+      citationMap.set(node.id, citation);
+
+      const label = node.props.label || node.props.name || node.props.title || 'Untitled';
+      const description = node.props.description || '';
+      const veracity = (node.veracityScore * 100).toFixed(0);
+      const level = node.veracityScore === 1.0 ? ' [LEVEL 0 - VERIFIED]' : '';
+      const distance = node.graphDistance !== undefined ? ` (distance: ${node.graphDistance})` : '';
+
+      contextParts.push(
+        `${citation} ${label}${level}${distance}\n` +
+        `  Type: ${node.typeName}\n` +
+        `  Veracity: ${veracity}%\n` +
+        `  ${description}\n`
+      );
+    });
+
+    // Add relationships
+    if (subgraph.edges.length > 0) {
+      contextParts.push('\n=== RELATIONSHIPS ===\n');
+      subgraph.edges.forEach(edge => {
+        const sourceCitation = citationMap.get(edge.sourceNodeId) || edge.sourceNodeId;
+        const targetCitation = citationMap.get(edge.targetNodeId) || edge.targetNodeId;
+        const edgeLabel = edge.props.label || edge.typeName;
+
+        contextParts.push(
+          `${sourceCitation} --[${edgeLabel}]--> ${targetCitation}\n`
+        );
+      });
+    }
+
+    const graphContext = contextParts.join('\n');
+
+    const systemPrompt = `You are an AI assistant analyzing a knowledge graph to answer questions about complex topics.
+
+**Instructions:**
+1. Answer the user's question based ONLY on the provided graph context
+2. Always cite your sources using the [Node-X] or [Selected-X] citation format
+3. Pay special attention to nodes marked [LEVEL 0 - VERIFIED] as these are verified facts
+4. Consider veracity scores when weighing evidence (higher is more reliable)
+5. If the graph doesn't contain enough information to answer fully, say so clearly
+6. Be precise and factual - do not speculate beyond what the evidence shows
+
+**Context Format:**
+- Each node has a citation marker like [Node-1] or [Selected-1]
+- Veracity scores range from 0% (unverified) to 100% (verified)
+- Relationships show how nodes connect to each other
+- Distance indicates degrees of separation from anchor nodes`;
+
+    const tokenCount = Math.ceil(graphContext.length / 4); // Rough estimate
+
+    return {
+      systemPrompt,
+      userQuery: query,
+      graphContext,
+      tokenCount,
+      citationMap,
+    };
   }
 
   // ============================================================================
@@ -366,13 +588,39 @@ export class GraphRAGService extends EventEmitter {
   async generateResponse(
     augmentedPrompt: AugmentedPrompt
   ): Promise<string> {
-    // TODO: Implement LLM response generation
-    // 1. Call LLM API (OpenAI/Ollama)
-    // 2. Stream response tokens
-    // 3. Extract entity references from response
-    // 4. Add inline citations using citation map
-    // 5. Identify potential follow-up queries
-    throw new Error('Not implemented');
+    const axios = await import('axios');
+    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+    const model = process.env.OLLAMA_MODEL || 'llama3.2';
+
+    try {
+      const response = await axios.default.post(`${ollamaUrl}/api/chat`, {
+        model,
+        messages: [
+          { role: 'system', content: augmentedPrompt.systemPrompt },
+          {
+            role: 'user',
+            content: `${augmentedPrompt.graphContext}\n\n**Question:** ${augmentedPrompt.userQuery}`
+          }
+        ],
+        stream: false,
+        options: {
+          temperature: this.config.promptGeneration?.temperature || 0.7,
+          num_predict: this.config.promptGeneration?.maxTokens || 2000,
+        }
+      }, {
+        timeout: 60000, // 60 second timeout
+      });
+
+      return response.data.message.content;
+    } catch (error: any) {
+      console.error('Ollama LLM generation failed:', error.message);
+
+      if (error.code === 'ECONNREFUSED') {
+        throw new Error('Cannot connect to Ollama. Make sure Ollama is running on ' + ollamaUrl);
+      }
+
+      throw new Error(`Failed to generate response: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -580,8 +828,28 @@ export class GraphRAGService extends EventEmitter {
    * @returns 1536-dimensional embedding
    */
   private async embedText(text: string): Promise<number[]> {
-    // TODO: Call embedding service
-    throw new Error('Not implemented');
+    const axios = await import('axios');
+    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+    const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
+
+    try {
+      const response = await axios.default.post(`${ollamaUrl}/api/embeddings`, {
+        model: embeddingModel,
+        prompt: text,
+      }, {
+        timeout: 30000,
+      });
+
+      return response.data.embedding;
+    } catch (error: any) {
+      console.error('Ollama embedding generation failed:', error.message);
+
+      if (error.code === 'ECONNREFUSED') {
+        throw new Error('Cannot connect to Ollama for embeddings. Make sure Ollama is running and ' + embeddingModel + ' model is installed');
+      }
+
+      throw new Error(`Failed to generate embedding: ${error.message}`);
+    }
   }
 
   /**
@@ -606,9 +874,32 @@ export class GraphRAGService extends EventEmitter {
     response: string,
     citationMap: Map<string, string>
   ): Array<{ id: string; type: 'node' | 'edge'; text: string }> {
-    // TODO: Implement citation extraction
-    // Parse response for entity references
-    throw new Error('Not implemented');
+    const citations: Array<{ id: string; type: 'node' | 'edge'; text: string }> = [];
+    const citationRegex = /\[(Node|Selected)-\d+\]/g;
+    const matches = response.matchAll(citationRegex);
+
+    const seenCitations = new Set<string>();
+
+    for (const match of matches) {
+      const citation = match[0];
+
+      if (seenCitations.has(citation)) continue;
+      seenCitations.add(citation);
+
+      // Find node ID from citation map
+      for (const [nodeId, citationText] of citationMap.entries()) {
+        if (citationText === citation) {
+          citations.push({
+            id: nodeId,
+            type: 'node',
+            text: citation,
+          });
+          break;
+        }
+      }
+    }
+
+    return citations;
   }
 
   /**
@@ -622,9 +913,39 @@ export class GraphRAGService extends EventEmitter {
     subgraph: Subgraph,
     query: string
   ): Promise<string[]> {
-    // TODO: Implement suggestion generation
-    // Analyze graph structure for interesting patterns
-    throw new Error('Not implemented');
+    const suggestions: string[] = [];
+
+    // Suggest exploring highly connected nodes
+    if (subgraph.nodes.length > 5) {
+      const nodeConnections = new Map<string, number>();
+      subgraph.edges.forEach(edge => {
+        nodeConnections.set(edge.sourceNodeId, (nodeConnections.get(edge.sourceNodeId) || 0) + 1);
+        nodeConnections.set(edge.targetNodeId, (nodeConnections.get(edge.targetNodeId) || 0) + 1);
+      });
+
+      const maxConnections = Math.max(...Array.from(nodeConnections.values()));
+      if (maxConnections > 3) {
+        suggestions.push('Explore the highly connected nodes to understand central themes');
+      }
+    }
+
+    // Suggest checking Level 0 nodes
+    const level0Nodes = subgraph.nodes.filter(n => n.veracityScore === 1.0);
+    if (level0Nodes.length > 0) {
+      suggestions.push(`Found ${level0Nodes.length} verified fact(s) - review these for authoritative information`);
+    } else {
+      suggestions.push('No verified facts found - consider searching Level 0 for authoritative sources');
+    }
+
+    // Suggest following specific relationships
+    if (subgraph.edges.length > 0) {
+      const edgeTypes = new Set(subgraph.edges.map(e => e.typeName));
+      if (edgeTypes.size > 1) {
+        suggestions.push('Multiple relationship types found - explore each type to understand different connections');
+      }
+    }
+
+    return suggestions;
   }
 
   /**
