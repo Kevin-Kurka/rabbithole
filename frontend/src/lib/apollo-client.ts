@@ -44,25 +44,33 @@ const getWsUri = () => {
 
 /**
  * Auth link to add user authentication headers to requests
- * Uses NextAuth session to get authenticated user ID
+ * Supports both JWT tokens and NextAuth session (backwards compatible)
  */
 const authLink = setContext(async (_, { headers }) => {
+  let authHeader = '';
   let userId = null;
 
   if (!isSSR && typeof window !== 'undefined') {
     try {
-      // Get session from NextAuth
-      const session = await getSession();
-      userId = session?.user?.id || null;
+      // Try JWT token first (preferred method)
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
+        authHeader = `Bearer ${accessToken}`;
+      } else {
+        // Fallback to NextAuth session for backwards compatibility
+        const session = await getSession();
+        userId = session?.user?.id || null;
+      }
     } catch (error) {
-      console.error('Failed to get session:', error);
+      console.error('Failed to get auth credentials:', error);
     }
   }
 
   return {
     headers: {
       ...headers,
-      'x-user-id': userId || '',
+      ...(authHeader ? { authorization: authHeader } : {}),
+      'x-user-id': userId || '', // Backwards compatibility
     }
   };
 });
@@ -83,14 +91,25 @@ const wsLink = !isSSR
       url: getWsUri(),
       connectionParams: async () => {
         try {
-          // Get userId from NextAuth session for WebSocket auth
+          // Try JWT token first
+          const accessToken = typeof window !== 'undefined'
+            ? localStorage.getItem('accessToken')
+            : null;
+
+          if (accessToken) {
+            return {
+              authorization: `Bearer ${accessToken}`,
+            };
+          }
+
+          // Fallback to NextAuth session
           const session = await getSession();
           const userId = session?.user?.id || null;
           return {
             'x-user-id': userId || '',
           };
         } catch (error) {
-          console.error('Failed to get session for WebSocket:', error);
+          console.error('Failed to get auth for WebSocket:', error);
           return {
             'x-user-id': '',
           };
