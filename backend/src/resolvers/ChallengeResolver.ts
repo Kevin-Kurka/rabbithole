@@ -107,6 +107,67 @@ export class ChallengeResolver {
   }
 
   @Query(() => Object, { nullable: true })
+  async challenge(
+    @Arg('challengeId') challengeId: string,
+    @Ctx() { pool }: { pool: Pool }
+  ): Promise<any> {
+    const result = await pool.query(
+      `SELECT
+        c.*,
+        ct.display_name as challenge_type_name,
+        ct.type_code,
+        u.username as challenger_username,
+        ur.reputation_score as challenger_reputation,
+        ur.reputation_tier
+      FROM public."Challenges" c
+      JOIN public."ChallengeTypes" ct ON c.challenge_type_id = ct.id
+      JOIN public."Users" u ON c.challenger_id = u.id
+      LEFT JOIN public."UserReputation" ur ON c.challenger_id = ur.user_id
+      WHERE c.id = $1`,
+      [challengeId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const challenge = result.rows[0];
+
+    // Get all votes for this challenge
+    const votesResult = await pool.query(
+      `SELECT
+        cv.*,
+        u.username as voter_username,
+        ur.reputation_score as voter_reputation
+      FROM public."ChallengeVotes" cv
+      JOIN public."Users" u ON cv.user_id = u.id
+      LEFT JOIN public."UserReputation" ur ON cv.user_id = ur.user_id
+      WHERE cv.challenge_id = $1
+      ORDER BY cv.weight DESC`,
+      [challengeId]
+    );
+
+    challenge.votes = votesResult.rows;
+
+    // Calculate consensus if votes exist
+    if (votesResult.rows.length > 0) {
+      const supportWeight = votesResult.rows
+        .filter(v => v.vote === 'support')
+        .reduce((sum, v) => sum + v.weight, 0);
+      const rejectWeight = votesResult.rows
+        .filter(v => v.vote === 'reject')
+        .reduce((sum, v) => sum + v.weight, 0);
+      const totalWeight = supportWeight + rejectWeight;
+
+      if (totalWeight > 0) {
+        challenge.consensus = (supportWeight / totalWeight) * 100;
+      }
+    }
+
+    return challenge;
+  }
+
+  @Query(() => Object, { nullable: true })
   async myReputation(
     @Ctx() { pool, userId }: { pool: Pool; userId: string }
   ): Promise<any> {
