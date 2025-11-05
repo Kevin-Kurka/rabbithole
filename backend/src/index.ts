@@ -172,19 +172,19 @@ async function main() {
     '/graphql',
     cors<cors.CorsRequest>(),
     bodyParser.json({ limit: '50mb' }),
-    // graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // Temporarily disabled
+    // graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // TODO: Fix ESM import
     expressMiddleware(server, {
       context: async ({ req }) => {
-        // Extract user ID from authorization header
-        // In production, this would validate a JWT token
-        const userId = req.headers['x-user-id'] as string;
+        // Extract user context from JWT token or fallback to header
+        const { getAuthContext } = await import('./middleware/auth');
+        const authContext = getAuthContext(req);
 
-        // Log authentication context for debugging (remove in production)
+        // Log authentication context for debugging
         if (process.env.NODE_ENV === 'development') {
           console.log('GraphQL Request:', {
             operation: req.body?.operationName,
-            userId: userId || '(none)',
-            hasAuth: !!userId
+            userId: authContext.userId || '(none)',
+            isAuthenticated: authContext.isAuthenticated,
           });
         }
 
@@ -193,7 +193,9 @@ async function main() {
           pubSub,
           redis,
           notificationService,
-          userId: userId || null, // Make userId available in all resolvers
+          userId: authContext.userId,
+          isAuthenticated: authContext.isAuthenticated,
+          user: authContext.user,
           req
         };
       }
