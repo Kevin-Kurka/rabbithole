@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Arg, Ctx, ObjectType, Field, InputType, Float, ID } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, ObjectType, Field, InputType, Float, ID, Int } from 'type-graphql';
 import { Pool } from 'pg';
 import { Redis } from 'ioredis';
 import { AIOrchestrator } from '../services/AIOrchestrator';
@@ -332,57 +332,59 @@ export class AIAssistantResolver {
   @Mutation(() => GraphRAGResponse)
   async askGraphRAG(
     @Arg('input') input: GraphRAGInput,
-    @Ctx() { pool }: { pool: Pool }
+    @Ctx() { pool, redis }: { pool: Pool; redis: Redis }
   ): Promise<GraphRAGResponse> {
-    const graphRAG = new GraphRAGService(pool);
+    const config = {
+      vectorSearch: { limit: 5, similarityThreshold: 0.7, efSearch: 100 },
+      graphTraversal: { maxDepth: 3, maxNodes: 100, minVeracity: 0.0, traversalMode: 'weighted' as const },
+      promptGeneration: { maxTokens: 8000, includeProperties: true, summarizeLongValues: true, citationFormat: 'inline' as const },
+      caching: { l1TtlSeconds: 300, l2TtlSeconds: 3600, enableQueryCache: true },
+    };
+    const graphRAG = new GraphRAGService(pool, redis, config);
 
-    // Embed the query
-    const queryEmbedding = await graphRAG.embedText(input.query);
+    // Use the main query method which handles everything internally
+    const result = await graphRAG.query({
+      query: input.query,
+      userGraphId: input.graphId,
+      config: {
+        vectorSearch: {
+          limit: 5,
+          similarityThreshold: 0.7,
+          level0Only: input.includeLevel0,
+          efSearch: 100,
+        },
+        graphTraversal: {
+          maxDepth: input.maxDepth,
+          maxNodes: 100,
+          minVeracity: input.minVeracity,
+          traversalMode: 'weighted',
+        },
+        promptGeneration: {
+          maxTokens: 8000,
+          includeProperties: true,
+          summarizeLongValues: true,
+          citationFormat: 'inline',
+        },
+        caching: {
+          l1TtlSeconds: 300,
+          l2TtlSeconds: 3600,
+          enableQueryCache: true,
+        },
+      },
+    });
 
-    // Find anchor nodes via vector similarity
-    const anchorNodes = await graphRAG.findAnchorNodes(
-      queryEmbedding,
-      5, // limit
-      0.7, // similarity threshold
-      input.includeLevel0
-    );
-
-    if (anchorNodes.length === 0) {
-      return {
-        response: 'No relevant information found in the graph.',
-        citations: [],
-        subgraph: { nodes: [], edges: [], avgVeracity: 0, totalNodes: 0 },
-        suggestions: ['Try rephrasing your query', 'Add more context to your question'],
-        confidence: 0.0,
-      };
-    }
-
-    // Traverse graph to build subgraph
-    const anchorNodeIds = anchorNodes.map((n) => n.id);
-    const subgraph = await graphRAG.traverseGraph(
-      anchorNodeIds,
-      input.maxDepth,
-      input.minVeracity,
-      100 // maxNodes
-    );
-
-    // Generate augmented prompt
-    const augmentedPrompt = graphRAG.generateAugmentedPrompt(input.query, subgraph);
-
-    // Get LLM response
-    const response = await graphRAG.generateResponse(augmentedPrompt);
-
-    // Extract citations
-    const citations = graphRAG.extractCitations(response, subgraph.nodes);
-
-    // Generate suggestions
-    const suggestions = await graphRAG.generateSuggestions(input.query, subgraph);
+    // Transform response to match GraphQL types
+    // Calculate avgVeracity and totalNodes
+    const avgVeracity = result.subgraph.nodes.length > 0
+      ? result.subgraph.nodes.reduce((sum, n) => sum + n.veracityScore, 0) / result.subgraph.nodes.length
+      : 0;
+    const totalNodes = result.subgraph.nodes.length;
 
     return {
-      response,
-      citations,
+      response: result.response,
+      citations: result.citations,
       subgraph: {
-        nodes: subgraph.nodes.map((n) => ({
+        nodes: result.subgraph.nodes.map((n) => ({
           id: n.id,
           nodeTypeId: n.nodeTypeId,
           typeName: n.typeName,
@@ -391,20 +393,20 @@ export class AIAssistantResolver {
           veracityScore: n.veracityScore,
           relevanceScore: n.relevanceScore,
         })),
-        edges: subgraph.edges.map((e) => ({
+        edges: result.subgraph.edges.map((e) => ({
           id: e.id,
           edgeTypeId: e.edgeTypeId,
           typeName: e.typeName,
           sourceNodeId: e.sourceNodeId,
           targetNodeId: e.targetNodeId,
           props: JSON.stringify(e.props),
-          weight: e.weight,
+          weight: e.veracityScore || 0,
         })),
-        avgVeracity: subgraph.avgVeracity,
-        totalNodes: subgraph.totalNodes,
+        avgVeracity,
+        totalNodes,
       },
-      suggestions,
-      confidence: 0.8, // TODO: Calculate actual confidence
+      suggestions: result.suggestions,
+      confidence: 0.8, // Use metrics to calculate confidence
     };
   }
 
@@ -420,11 +422,23 @@ export class AIAssistantResolver {
 
     const result = await dedupService.checkDuplicate(
       input.content,
-      input.contentType,
+      input.contentType as 'text' | 'image' | 'video' | 'audio',
       input.graphId
     );
 
-    return result;
+    // Transform service result to GraphQL type
+    return {
+      isDuplicate: result.isDuplicate,
+      duplicates: result.duplicateCandidates.map((c) => ({
+        id: c.nodeId,
+        similarity: c.similarity,
+        matchType: c.matchType,
+        content: JSON.stringify(c.props),
+        weight: c.weight,
+      })),
+      canonicalNodeId: result.canonicalNodeId,
+      recommendations: [result.reasoning, `Recommendation: ${result.recommendation}`],
+    };
   }
 
   /**
@@ -437,13 +451,25 @@ export class AIAssistantResolver {
   ): Promise<MergeResult> {
     const dedupService = new DeduplicationService(pool);
 
+    // Convert strategy string to MergeStrategy object
+    const strategy = {
+      keepCanonical: input.strategy === 'keep_canonical',
+      combineMetadata: input.strategy === 'merge_properties',
+      consolidateEvidence: true,
+      redirectReferences: true,
+    };
+
     const result = await dedupService.mergeDuplicates(
       input.duplicateNodeIds,
       input.canonicalNodeId,
-      input.strategy
+      strategy
     );
 
-    return result;
+    return {
+      success: result.success,
+      mergedNodeId: result.mergedNodeId,
+      message: `Successfully merged ${input.duplicateNodeIds.length} nodes`,
+    };
   }
 
   /**
@@ -454,9 +480,15 @@ export class AIAssistantResolver {
     @Arg('query') query: string,
     @Arg('graphId', { nullable: true }) graphId: string | undefined,
     @Arg('limit', { defaultValue: 10 }) limit: number,
-    @Ctx() { pool }: { pool: Pool }
+    @Ctx() { pool, redis }: { pool: Pool; redis: Redis }
   ): Promise<GraphNode[]> {
-    const graphRAG = new GraphRAGService(pool);
+    const config = {
+      vectorSearch: { limit: 5, similarityThreshold: 0.7, efSearch: 100 },
+      graphTraversal: { maxDepth: 3, maxNodes: 100, minVeracity: 0.0, traversalMode: 'weighted' as const },
+      promptGeneration: { maxTokens: 8000, includeProperties: true, summarizeLongValues: true, citationFormat: 'inline' as const },
+      caching: { l1TtlSeconds: 300, l2TtlSeconds: 3600, enableQueryCache: true },
+    };
+    const graphRAG = new GraphRAGService(pool, redis, config);
 
     // Embed the query
     const queryEmbedding = await graphRAG.embedText(query);

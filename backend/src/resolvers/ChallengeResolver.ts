@@ -11,7 +11,6 @@ import {
   Float,
   Authorized,
   PubSub,
-  Publisher,
   Args
 } from 'type-graphql';
 import { Pool } from 'pg';

@@ -823,11 +823,11 @@ export class GraphRAGService extends EventEmitter {
 
   /**
    * Embed text into vector using embedding service
-   * 
+   *
    * @param text - Text to embed
    * @returns 1536-dimensional embedding
    */
-  private async embedText(text: string): Promise<number[]> {
+  async embedText(text: string): Promise<number[]> {
     const axios = await import('axios');
     const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
     const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';

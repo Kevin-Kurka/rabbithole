@@ -11,7 +11,6 @@ import {
   Subscription,
   Root,
   PubSub,
-  Publisher,
   Authorized,
   FieldResolver,
   Int,

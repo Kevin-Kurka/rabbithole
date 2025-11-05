@@ -145,7 +145,10 @@ export class PromotionResolver {
 
     try {
       const eligibility = await service.evaluateEligibility(nodeId);
-      return eligibility;
+      return {
+        ...eligibility,
+        lastEvaluated: eligibility.lastEvaluated.toISOString(),
+      };
     } catch (error) {
       console.error('Error evaluating promotion eligibility:', error);
       return null;
@@ -164,7 +167,10 @@ export class PromotionResolver {
 
     try {
       const eligibleNodes = await service.getEligibleNodes(limit);
-      return eligibleNodes;
+      return eligibleNodes.map((node) => ({
+        ...node,
+        lastEvaluated: node.lastEvaluated.toISOString(),
+      }));
     } catch (error) {
       console.error('Error fetching eligible nodes:', error);
       return [];
@@ -189,10 +195,14 @@ export class PromotionResolver {
     const service = new PromotionEligibilityService(pool);
 
     try {
+      // Convert frontend promotionType to service promotionType
+      const promotionType =
+        input.promotionType === 'FACT' ? 'verified_truth' : 'verified_false';
+
       const result = await service.promoteToLevel0(
         input.nodeId,
         userId,
-        input.promotionType,
+        promotionType as 'verified_truth' | 'verified_false',
         input.curatorNotes
       );
 
