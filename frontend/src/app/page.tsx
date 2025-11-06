@@ -1502,15 +1502,15 @@ function NodePage({
                   }`}
                 >
                   Article
-                  <button
+                  <span
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowContentsDropdown(!showContentsDropdown);
                     }}
-                    className="p-1 hover:bg-zinc-700 rounded"
+                    className="p-1 hover:bg-zinc-700 rounded cursor-pointer inline-flex"
                   >
                     <Menu size={14} />
-                  </button>
+                  </span>
                 </button>
 
                 {/* Contents Dropdown */}
