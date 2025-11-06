@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { FileText, Users, MessageSquare, History } from 'lucide-react';
 import { theme } from '@/styles/theme';
 import ResizeHandle from './ResizeHandle';
-import PropertiesPanel from '@/components/panels/PropertiesPanel';
 
 export type RightPanelTab = 'properties' | 'collaboration' | 'ai-chat' | 'history';
 
@@ -60,7 +59,24 @@ export default function RightPanel({
   const renderTabContent = () => {
     switch (activeTab) {
       case 'properties':
-        return <PropertiesPanel selectedNode={selectedNode} selectedEdge={selectedEdge} />;
+        return (
+          <div style={{ padding: theme.spacing.md }}>
+            <h3 style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing.md
+            }}>
+              Properties
+            </h3>
+            <p style={{
+              fontSize: '12px',
+              color: theme.colors.text.tertiary
+            }}>
+              Node properties are now shown in the detail page
+            </p>
+          </div>
+        );
 
       case 'collaboration':
         return (

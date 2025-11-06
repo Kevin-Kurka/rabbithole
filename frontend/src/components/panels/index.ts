@@ -13,9 +13,6 @@ export type { SearchPanelProps, SearchFilters } from './SearchPanel';
 export { default as StructurePanel } from './StructurePanel';
 export type { StructurePanelProps } from './StructurePanel';
 
-export { default as PropertiesPanel } from './PropertiesPanel';
-export type { PropertiesPanelProps } from './PropertiesPanel';
-
 export { default as ConsolePanel } from './ConsolePanel';
 export type { ConsolePanelProps } from './ConsolePanel';
 
