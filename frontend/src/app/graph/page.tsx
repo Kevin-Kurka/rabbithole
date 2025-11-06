@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { BrainCircuit } from 'lucide-react';
 import GraphCanvas from '@/components/GraphCanvas';
 import VSCodeLayout from '@/components/layout/VSCodeLayout';
@@ -21,6 +22,7 @@ import { GraphCanvasNode, GraphCanvasEdge } from '@/types/graph';
  */
 export default function GraphPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [activeGraphs, setActiveGraphs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphCanvasNode | null>(null);
@@ -74,12 +76,16 @@ export default function GraphPage() {
     // TODO: Implement global search functionality
   }, []);
   /**
-   * Handle node selection
+   * Handle node selection - navigate to node detail page
    */
   const handleNodeSelect = useCallback((node: GraphCanvasNode | null) => {
     console.log('Node selected:', node);
     setSelectedNode(node);
-  }, []);
+    // Navigate to node detail page
+    if (node?.id) {
+      router.push(`/nodes/${node.id}`);
+    }
+  }, [router]);
   /**
    * Handle edge selection
    */

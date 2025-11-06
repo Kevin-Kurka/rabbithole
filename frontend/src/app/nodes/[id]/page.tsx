@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Network, User, LogIn, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Network, User, LogIn, Moon, Sun, ChevronDown, FileText } from 'lucide-react';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -140,37 +140,36 @@ export default function NodeDetailsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content with Tabs */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <Tabs defaultValue="contents" className="w-full">
-                  <div className="border-b">
-                    <TabsList className="w-full justify-start rounded-none bg-transparent p-0">
-                      <TabsTrigger
-                        value="contents"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-                      >
-                        Contents
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="article"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-                      >
-                        Article
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="inquiries"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-                      >
-                        Inquiries
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="activity"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-                      >
-                        Activity
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+                  <TabsList className="w-full h-auto justify-start rounded-none bg-transparent p-0 border-0 px-6 pt-4">
+                    <TabsTrigger
+                      value="contents"
+                      className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
+                    >
+                      Contents
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="article"
+                      className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Article
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="inquiries"
+                      className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
+                    >
+                      Inquiries
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="activity"
+                      className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
+                    >
+                      Activity
+                    </TabsTrigger>
+                  </TabsList>
 
                   <div className="p-6">
                     <TabsContent value="contents" className="mt-0">
