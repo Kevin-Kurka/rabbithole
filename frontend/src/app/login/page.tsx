@@ -1,17 +1,22 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { theme } from '@/styles/theme';
-import { useEffect } from 'react';
+import { LogIn } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 export default function LoginPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   // Store user ID in sessionStorage when session is available
   useEffect(() => {
     if (session?.user?.id) {
@@ -20,16 +25,19 @@ export default function LoginPage() {
       }
     }
   }, [session]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
+
       if (result?.error) {
         setError('Invalid email or password. Please try again.');
       } else if (result?.ok) {
@@ -42,15 +50,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
   const handleDemoLogin = async () => {
     setError('');
     setLoading(true);
+
     try {
       const result = await signIn('credentials', {
         email: 'test@example.com',
         password: 'test',
         redirect: false,
       });
+
       if (result?.ok) {
         // Wait a moment for session to be set
         setTimeout(() => router.push('/'), 100);
@@ -63,188 +74,123 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
   return (
-    <div
-      style={{ backgroundColor: theme.colors.bg.secondary }}
-      className="min-h-screen flex items-center justify-center"
-    >
-      <div
-        style={{
-          backgroundColor: theme.colors.bg.primary,
-          borderColor: theme.colors.border.primary,
-          borderRadius: theme.radius.sm
-        }}
-        className="p-8 shadow-xl w-full max-w-md border"
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 style={{ color: theme.colors.text.primary }} className="text-3xl font-bold mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Card className="w-full max-w-md mx-4 shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-3xl font-bold">
             Welcome to Rabbit Hole
-          </h1>
-          <p style={{ color: theme.colors.text.secondary }}>
+          </CardTitle>
+          <CardDescription>
             Collaborative knowledge graph platform
-          </p>
-        </div>
-        {/* Error Message */}
-        {error && (
-          <div
-            style={{
-              backgroundColor: `${theme.colors.bg.elevated}40`,
-              borderColor: theme.colors.border.secondary,
-              borderRadius: theme.radius.sm
-            }}
-            className="mb-4 p-3 border"
-          >
-            <p style={{ color: theme.colors.text.tertiary }} className="text-sm">{error}</p>
-          </div>
-        )}
-        {/* Demo Login Button */}
-        <button
-          onClick={handleDemoLogin}
-          disabled={loading}
-          style={{
-            backgroundColor: theme.colors.bg.elevated,
-            color: theme.colors.text.primary,
-            borderRadius: theme.radius.sm
-          }}
-          className="w-full mb-6 px-4 py-3 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-          onMouseEnter={(e) => {
-            if (!loading) e.currentTarget.style.backgroundColor = theme.colors.bg.hover;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = theme.colors.bg.elevated;
-          }}
-        >
-          {loading ? 'Signing in...' : '🚀 Try Demo (No signup needed)'}
-        </button>
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div style={{ borderColor: theme.colors.border.secondary }} className="w-full border-t"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span
-              style={{
-                backgroundColor: theme.colors.bg.primary,
-                color: theme.colors.text.tertiary
-              }}
-              className="px-2"
-            >
-              Or sign in with your account
-            </span>
-          </div>
-        </div>
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              style={{ color: theme.colors.text.secondary }}
-              className="block text-sm font-medium mb-1"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              style={{
-                backgroundColor: theme.colors.input.bg,
-                borderColor: theme.colors.input.border,
-                color: theme.colors.text.primary,
-                borderRadius: theme.radius.sm
-              }}
-              className="w-full px-4 py-3 border focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-zinc-400"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              style={{ color: theme.colors.text.secondary }}
-              className="block text-sm font-medium mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={{
-                backgroundColor: theme.colors.input.bg,
-                borderColor: theme.colors.input.border,
-                color: theme.colors.text.primary,
-                borderRadius: theme.radius.sm
-              }}
-              className="w-full px-4 py-3 border focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-zinc-400"
-              placeholder="••••••••"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                style={{
-                  backgroundColor: theme.colors.input.bg,
-                  borderColor: theme.colors.input.border,
-                  borderRadius: theme.radius.sm
-                }}
-                className="h-4 w-4"
-              />
-              <label
-                htmlFor="remember"
-                style={{ color: theme.colors.text.secondary }}
-                className="ml-2 block text-sm"
-              >
-                Remember me
-              </label>
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
-            <Link
-              href="/forgot-password"
-              style={{ color: theme.colors.text.tertiary }}
-              className="text-sm hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-          <button
-            type="submit"
+          )}
+
+          {/* Demo Login Button */}
+          <Button
+            onClick={handleDemoLogin}
             disabled={loading}
-            style={{
-              backgroundColor: theme.colors.bg.elevated,
-              color: theme.colors.text.primary,
-              borderRadius: theme.radius.sm
-            }}
-            className="w-full px-4 py-3 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-            onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.backgroundColor = theme.colors.bg.hover;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.bg.elevated;
-            }}
+            variant="secondary"
+            className="w-full"
+            size="lg"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-        {/* Register Link */}
-        <p style={{ color: theme.colors.text.tertiary }} className="mt-6 text-center text-sm">
-          Don't have an account?{' '}
-          <Link
-            href="/register"
-            style={{ color: theme.colors.text.secondary }}
-            className="font-medium hover:underline"
-          >
-            Create one now
-          </Link>
-        </p>
-      </div>
+            {loading ? 'Signing in...' : '🚀 Try Demo (No signup needed)'}
+          </Button>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                Or sign in with your account
+              </span>
+            </div>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label
+                  htmlFor="remember"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Remember me
+                </Label>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+              size="lg"
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              {loading ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+
+          {/* Register Link */}
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link
+              href="/register"
+              className="text-primary font-medium hover:underline"
+            >
+              Create one now
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

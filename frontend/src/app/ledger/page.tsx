@@ -1,16 +1,26 @@
 "use client";
 import React from 'react';
-
-// Temporarily disabled due to theme import issues during build
-// This page needs to be refactored to use inline styles or dynamic imports
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PromotionLedgerPage() {
   return (
-    <div style={{ backgroundColor: '#000000', minHeight: '100vh', padding: '2rem' }}>
-      <h1 style={{ color: '#ffffff', fontFamily: 'Arial, sans-serif' }}>Promotion Ledger</h1>
-      <p style={{ color: '#71717a', fontFamily: 'Arial, sans-serif' }}>
-        This page is temporarily under maintenance.
-      </p>
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-7xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold">Promotion Ledger</CardTitle>
+            <CardDescription>
+              Track node promotions from Level 1 to Level 0
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              This page is temporarily under maintenance. The promotion ledger will display
+              a comprehensive history of node verifications and promotions to the truth layer.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

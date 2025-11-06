@@ -1,7 +1,18 @@
 "use client";
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { X, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -13,8 +24,6 @@ export default function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,58 +75,42 @@ export default function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-center">
+            Sign In
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            Access your knowledge graphs
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Dialog */}
-      <div className="relative bg-black border border-gray-500 rounded-sm shadow-2xl w-full max-w-md mx-4" style={{ borderWidth: '0.6px' }}>
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
-        >
-          <X size={20} />
-        </button>
-
-        <div className="p-8">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold mb-2 text-white" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Sign In
-            </h2>
-            <p className="text-gray-400" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Access your knowledge graphs
-            </p>
-          </div>
-
+        <div className="space-y-4 py-4">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded-sm" style={{ borderWidth: '0.6px' }}>
-              <p className="text-sm text-red-400" style={{ fontFamily: 'Arial, sans-serif' }}>{error}</p>
+            <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
           {/* Demo Login Button */}
-          <button
+          <Button
             onClick={handleDemoLogin}
             disabled={loading}
-            className="w-full mb-4 px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            style={{ fontFamily: 'Arial, sans-serif' }}
+            variant="secondary"
+            className="w-full"
           >
             {loading ? 'Signing in...' : '🚀 Try Demo (No signup needed)'}
-          </button>
+          </Button>
 
           {/* Divider */}
-          <div className="relative my-4">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700" style={{ borderWidth: '0.6px' }}></div>
+              <span className="w-full border-t" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-black text-gray-500" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
                 Or sign in with your account
               </span>
             </div>
@@ -125,71 +118,54 @@ export default function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-1 text-gray-400"
-                style={{ fontFamily: 'Arial, sans-serif' }}
-              >
-                Email address
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-sm focus:outline-none focus:border-white transition-colors placeholder-gray-600"
-                style={{ fontFamily: 'Arial, sans-serif', borderWidth: '0.6px' }}
                 placeholder="you@example.com"
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-1 text-gray-400"
-                style={{ fontFamily: 'Arial, sans-serif' }}
-              >
-                Password
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
-                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-sm focus:outline-none focus:border-white transition-colors placeholder-gray-600"
-                style={{ fontFamily: 'Arial, sans-serif', borderWidth: '0.6px' }}
                 placeholder="••••••••"
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-3 bg-white hover:bg-gray-200 text-black rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
-              style={{ fontFamily: 'Arial, sans-serif' }}
+              className="w-full"
             >
-              <LogIn size={16} />
+              <LogIn className="mr-2 h-4 w-4" />
               {loading ? 'Signing in...' : 'Sign in'}
-            </button>
+            </Button>
           </form>
 
           {/* Register Link */}
-          <p className="mt-4 text-center text-sm text-gray-500" style={{ fontFamily: 'Arial, sans-serif' }}>
+          <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
             <a
               href="/register"
-              className="text-white hover:underline font-medium"
+              className="text-primary hover:underline font-medium"
             >
               Create one now
             </a>
           </p>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
