@@ -34,7 +34,7 @@ export default function LoginPage() {
         setError('Invalid email or password. Please try again.');
       } else if (result?.ok) {
         // Wait a moment for session to be set
-        setTimeout(() => router.push('/graph'), 100);
+        setTimeout(() => router.push('/'), 100);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -53,7 +53,7 @@ export default function LoginPage() {
       });
       if (result?.ok) {
         // Wait a moment for session to be set
-        setTimeout(() => router.push('/graph'), 100);
+        setTimeout(() => router.push('/'), 100);
       } else {
         setError('Demo login failed. Please try manual login.');
       }

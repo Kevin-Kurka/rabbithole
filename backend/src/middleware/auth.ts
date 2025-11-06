@@ -5,7 +5,7 @@
  * Generates tokens on login, validates on each request.
  */
 
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
 export interface JWTPayload {
@@ -34,10 +34,13 @@ const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
  * Generate access token
  */
 export function generateAccessToken(userId: string, username: string, email: string): string {
+  const options: any = {
+    expiresIn: JWT_EXPIRES_IN
+  };
   return jwt.sign(
     { userId, username, email },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    options
   );
 }
 
@@ -45,10 +48,13 @@ export function generateAccessToken(userId: string, username: string, email: str
  * Generate refresh token
  */
 export function generateRefreshToken(userId: string): string {
+  const options: any = {
+    expiresIn: REFRESH_TOKEN_EXPIRES_IN
+  };
   return jwt.sign(
     { userId, type: 'refresh' },
     JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+    options
   );
 }
 

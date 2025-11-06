@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body style={{ fontFamily: 'var(--font-geist-sans)' }}>
+      <body className={GeistSans.className}>
         <Providers>
           {children}
           {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}

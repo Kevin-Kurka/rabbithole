@@ -157,26 +157,72 @@ export class EdgeResolver {
 
 @Resolver(Graph)
 export class GraphResolver {
+  @FieldResolver(() => [Node])
+  async nodes(@Root() graph: Graph, @Ctx() { pool }: { pool: Pool }): Promise<Node[]> {
+    const result = await pool.query(
+      'SELECT * FROM public."Nodes" WHERE graph_id = $1',
+      [graph.id]
+    );
+    return result.rows.map(serializeNode);
+  }
+
+  @FieldResolver(() => [Edge])
+  async edges(@Root() graph: Graph, @Ctx() { pool }: { pool: Pool }): Promise<Edge[]> {
+    const result = await pool.query(
+      'SELECT * FROM public."Edges" WHERE graph_id = $1',
+      [graph.id]
+    );
+    return result.rows.map(serializeEdge);
+  }
+
   @Query(() => [Graph])
-  async graphs(@Ctx() { pool }: { pool: Pool }): Promise<Graph[]> {
-    const result = await pool.query('SELECT id, name, description, level, methodology, privacy, created_at, updated_at FROM public."Graphs" ORDER BY created_at DESC');
+  async graphs(@Ctx() { pool, userId }: { pool: Pool, userId: string | null }): Promise<Graph[]> {
+    let query: string;
+    let params: any[] = [];
+
+    if (userId) {
+      // Authenticated users see all public graphs, Level 0 graphs, and their own private graphs
+      // TODO: Also include graphs shared with the user
+      query = 'SELECT id, name, description, level, methodology, privacy, created_at, updated_at FROM public."Graphs" WHERE level = 0 OR privacy = $1 ORDER BY created_at DESC';
+      params = ['public'];
+    } else {
+      // Unauthenticated users only see Level 0 graphs and public graphs
+      query = 'SELECT id, name, description, level, methodology, privacy, created_at, updated_at FROM public."Graphs" WHERE level = 0 OR privacy = $1 ORDER BY created_at DESC';
+      params = ['public'];
+    }
+
+    const result = await pool.query(query, params);
     return result.rows;
   }
 
   @Query(() => Graph, { nullable: true })
-  async graph(@Arg("id") id: string, @Ctx() { pool, redis }: { pool: Pool, redis: Redis }): Promise<Graph | null> {
-    // Try cache first
+  async graph(@Arg("id") id: string, @Ctx() { pool, redis, userId }: { pool: Pool, redis: Redis, userId: string | null }): Promise<Graph | null> {
+    // First check the graph's level and privacy settings
+    const graphCheck = await pool.query('SELECT * FROM public."Graphs" WHERE id = $1', [id]);
+    const graph = graphCheck.rows[0];
+    if (!graph) {
+      return null;
+    }
+
+    // Level 0 graphs are always publicly accessible
+    if (graph.level === 0) {
+      // Continue with normal processing
+    }
+    // Private graphs require authentication and ownership/sharing check
+    else if (graph.privacy === 'private') {
+      if (!userId) {
+        throw new Error('Authentication required to view private graphs');
+      }
+      // TODO: Check if user owns or has access to the graph
+      // For now, we'll allow authenticated users to access
+    }
+    // Public Level 1 graphs are accessible to everyone
+
+    // Try cache for the complete graph data
     const cacheService = new CacheService(redis);
     const cached = await cacheService.getGraph(id);
     if (cached) {
       return cached;
-    }
-
-    // Cache miss - query database
-    const result = await pool.query('SELECT * FROM public."Graphs" WHERE id = $1', [id]);
-    const graph = result.rows[0];
-    if (!graph) {
-      return null;
     }
     const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE graph_id = $1', [id]);
     const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE graph_id = $1', [id]);
@@ -194,8 +240,12 @@ export class GraphResolver {
   @Mutation(() => Node)
   async createNode(
     @Arg("input") { graphId, props }: NodeInput,
-    @Ctx() { pool, pubSub, redis }: { pool: Pool, pubSub: PubSubEngine, redis: Redis }
+    @Ctx() { pool, pubSub, redis, userId }: { pool: Pool, pubSub: PubSubEngine, redis: Redis, userId: string | null }
   ): Promise<Node> {
+    // Require authentication to create nodes
+    if (!userId) {
+      throw new Error('Authentication required to create nodes');
+    }
     // Check if the graph is Level 0 (read-only)
     const graphCheck = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [graphId]);
     if (graphCheck.rows[0]?.level === 0) {
@@ -224,8 +274,12 @@ export class GraphResolver {
   @Mutation(() => Edge)
   async createEdge(
     @Arg("input") { graphId, from, to, props }: EdgeInput,
-    @Ctx() { pool, pubSub, redis }: { pool: Pool, pubSub: PubSubEngine, redis: Redis }
+    @Ctx() { pool, pubSub, redis, userId }: { pool: Pool, pubSub: PubSubEngine, redis: Redis, userId: string | null }
   ): Promise<Edge> {
+    // Require authentication to create edges
+    if (!userId) {
+      throw new Error('Authentication required to create edges');
+    }
     // Check if the graph is Level 0 (read-only)
     const graphCheck = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [graphId]);
     if (graphCheck.rows[0]?.level === 0) {
@@ -255,8 +309,12 @@ export class GraphResolver {
   async updateNodeWeight(
     @Arg("id") id: string,
     @Arg("weight", () => Float) weight: number,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<Node> {
+    // Require authentication to update nodes
+    if (!userId) {
+      throw new Error('Authentication required to update nodes');
+    }
     // Check if the node is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -276,8 +334,12 @@ export class GraphResolver {
   async updateEdgeWeight(
     @Arg("id") id: string,
     @Arg("weight", () => Float) weight: number,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<Edge> {
+    // Require authentication to update edges
+    if (!userId) {
+      throw new Error('Authentication required to update edges');
+    }
     // Check if the edge is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -296,8 +358,12 @@ export class GraphResolver {
   @Mutation(() => Boolean)
   async deleteNode(
     @Arg("id") id: string,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<boolean> {
+    // Require authentication to delete nodes
+    if (!userId) {
+      throw new Error('Authentication required to delete nodes');
+    }
     // Check if the node is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -312,8 +378,12 @@ export class GraphResolver {
   @Mutation(() => Boolean)
   async deleteEdge(
     @Arg("id") id: string,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<boolean> {
+    // Require authentication to delete edges
+    if (!userId) {
+      throw new Error('Authentication required to delete edges');
+    }
     // Check if the edge is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -329,8 +399,12 @@ export class GraphResolver {
   async updateNode(
     @Arg("id") id: string,
     @Arg("props") props: string,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<Node> {
+    // Require authentication to update nodes
+    if (!userId) {
+      throw new Error('Authentication required to update nodes');
+    }
     // Check if the node is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -350,8 +424,12 @@ export class GraphResolver {
   async updateEdge(
     @Arg("id") id: string,
     @Arg("props") props: string,
-    @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
+    @Ctx() { pool, pubSub, userId }: { pool: Pool, pubSub: PubSubEngine, userId: string | null }
   ): Promise<Edge> {
+    // Require authentication to update edges
+    if (!userId) {
+      throw new Error('Authentication required to update edges');
+    }
     // Check if the edge is Level 0 (read-only)
     const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.is_level_0) {
@@ -370,8 +448,12 @@ export class GraphResolver {
   @Mutation(() => Graph)
   async createGraph(
     @Arg("input") { name, description, level, methodology, privacy }: GraphInput,
-    @Ctx() { pool }: { pool: Pool }
+    @Ctx() { pool, userId }: { pool: Pool; userId: string | null }
   ): Promise<Graph> {
+    // Require authentication to create graphs
+    if (!userId) {
+      throw new Error('Authentication required to create graphs');
+    }
     const result = await pool.query(
       'INSERT INTO public."Graphs" (name, description, level, methodology, privacy) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [name, description || null, level || 1, methodology || null, privacy || 'private']
@@ -386,8 +468,12 @@ export class GraphResolver {
   async updateGraph(
     @Arg("id") id: string,
     @Arg("input") { name, description, level, methodology, privacy }: GraphInput,
-    @Ctx() { pool }: { pool: Pool }
+    @Ctx() { pool, userId }: { pool: Pool; userId: string | null }
   ): Promise<Graph> {
+    // Require authentication to update graphs
+    if (!userId) {
+      throw new Error('Authentication required to update graphs');
+    }
     // First check if the graph is Level 0 (read-only)
     const checkResult = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.level === 0) {
@@ -416,8 +502,12 @@ export class GraphResolver {
   @Mutation(() => Boolean)
   async deleteGraph(
     @Arg("id") id: string,
-    @Ctx() { pool }: { pool: Pool }
+    @Ctx() { pool, userId }: { pool: Pool; userId: string | null }
   ): Promise<boolean> {
+    // Require authentication to delete graphs
+    if (!userId) {
+      throw new Error('Authentication required to delete graphs');
+    }
     // Check if the graph is Level 0 (read-only)
     const checkResult = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [id]);
     if (checkResult.rows[0]?.level === 0) {

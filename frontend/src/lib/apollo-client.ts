@@ -44,16 +44,21 @@ const getWsUri = () => {
 
 /**
  * Auth link to add user authentication headers to requests
- * Uses NextAuth session to get authenticated user ID
+ * Uses NextAuth session to get JWT access token
  */
 const authLink = setContext(async (_, { headers }) => {
-  let userId = null;
+  let authHeader = {};
 
   if (!isSSR && typeof window !== 'undefined') {
     try {
       // Get session from NextAuth
-      const session = await getSession();
-      userId = session?.user?.id || null;
+      const session = await getSession() as any;
+      // Add Bearer token if user is authenticated
+      if (session?.accessToken) {
+        authHeader = {
+          Authorization: `Bearer ${session.accessToken}`,
+        };
+      }
     } catch (error) {
       console.error('Failed to get session:', error);
     }
@@ -62,7 +67,7 @@ const authLink = setContext(async (_, { headers }) => {
   return {
     headers: {
       ...headers,
-      'x-user-id': userId || '',
+      ...authHeader,
     }
   };
 });
@@ -83,17 +88,17 @@ const wsLink = !isSSR
       url: getWsUri(),
       connectionParams: async () => {
         try {
-          // Get userId from NextAuth session for WebSocket auth
-          const session = await getSession();
-          const userId = session?.user?.id || null;
-          return {
-            'x-user-id': userId || '',
-          };
+          // Get JWT token from NextAuth session for WebSocket auth
+          const session = await getSession() as any;
+          if (session?.accessToken) {
+            return {
+              Authorization: `Bearer ${session.accessToken}`,
+            };
+          }
+          return {};
         } catch (error) {
           console.error('Failed to get session for WebSocket:', error);
-          return {
-            'x-user-id': '',
-          };
+          return {};
         }
       },
     }))

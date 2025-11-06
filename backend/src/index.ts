@@ -115,9 +115,28 @@ async function main() {
   const serverCleanup = useServer({
     schema,
     context: async (ctx) => {
-      // Extract userId from WebSocket connection params
-      const connectionParams = ctx.connectionParams as { 'x-user-id'?: string } | undefined;
-      const userId = connectionParams?.['x-user-id'] || null;
+      // Extract authentication from WebSocket connection params
+      const connectionParams = ctx.connectionParams as {
+        'x-user-id'?: string;
+        Authorization?: string;
+      } | undefined;
+
+      let userId: string | null = null;
+
+      // First check for JWT token
+      if (connectionParams?.Authorization) {
+        const { verifyToken } = await import('./middleware/auth');
+        const token = connectionParams.Authorization.replace('Bearer ', '');
+        const payload = verifyToken(token);
+        if (payload) {
+          userId = payload.userId;
+        }
+      }
+
+      // Fallback to x-user-id for backwards compatibility
+      if (!userId && connectionParams?.['x-user-id']) {
+        userId = connectionParams['x-user-id'];
+      }
 
       return {
         pool,

@@ -7,9 +7,13 @@ import client from "@/lib/apollo-client";
 const LOGIN_MUTATION = gql`
   mutation Login($input: UserInput!) {
     login(input: $input) {
-      id
-      username
-      email
+      accessToken
+      refreshToken
+      user {
+        id
+        username
+        email
+      }
     }
   }
 `;
@@ -37,9 +41,15 @@ const handler = NextAuth({
 
           console.log("Login mutation data:", data);
 
-          if (data && data.login) {
+          if (data && data.login && data.login.user) {
             console.log("Login successful");
-            return data.login;
+            // Store the tokens in the user object for later use
+            const user = {
+              ...data.login.user,
+              accessToken: data.login.accessToken,
+              refreshToken: data.login.refreshToken,
+            };
+            return user;
           } else {
             console.log("Login failed");
             return null;
@@ -57,6 +67,8 @@ const handler = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.username = user.username;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
       }
       return token;
     },
@@ -65,6 +77,8 @@ const handler = NextAuth({
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.username as string;
+        session.accessToken = token.accessToken as string;
+        session.refreshToken = token.refreshToken as string;
       }
       return session;
     }
