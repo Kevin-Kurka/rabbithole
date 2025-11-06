@@ -1,7 +1,6 @@
 "use client";
 
-import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Network, User, LogIn, Moon, Sun, ChevronDown } from 'lucide-react';
 import {
@@ -31,14 +30,9 @@ import {
 } from '@/components/ui/collapsible';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface NodeDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
-
-export default function NodeDetailsPage({ params }: NodeDetailsPageProps) {
-  const { id } = use(params);
+export default function NodeDetailsPage() {
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
   const { data: session } = useSession();
 

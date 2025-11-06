@@ -19,11 +19,8 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: true,
   },
 
-  // Temporarily disable ESLint during build to unblock deployment
-  // TODO: Fix ESLint errors in parallel-implemented components
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Note: 'eslint' config moved to next.config.mjs or use `next lint` CLI
+  // For Next.js 16+, use CLI flags instead: `next lint --max-warnings 0`
 
   // Temporarily ignore TypeScript errors to unblock deployment
   // TODO: Fix TypeScript errors in parallel-implemented components
