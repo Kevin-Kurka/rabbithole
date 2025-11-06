@@ -9,6 +9,9 @@ export class Node {
   @Field(() => ID)
   id!: string;
 
+  @Field()
+  title!: string;
+
   @Field(() => Float)
   weight!: number;
 
