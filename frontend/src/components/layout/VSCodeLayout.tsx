@@ -14,6 +14,8 @@ export interface VSCodeLayoutProps {
   children: React.ReactNode;
   /** Optional callback for main menu search */
   onSearch?: (query: string) => void;
+  /** Optional callback for login button click */
+  onLoginClick?: () => void;
   /** Graph statistics for status bar */
   graphName?: string;
   nodeCount?: number;
@@ -56,6 +58,7 @@ const DEFAULTS = {
 export default function VSCodeLayout({
   children,
   onSearch,
+  onLoginClick,
   graphName,
   nodeCount,
   edgeCount,
@@ -189,6 +192,7 @@ export default function VSCodeLayout({
         rightPanelOpen={rightPanelOpen}
         bottomPanelOpen={bottomPanelOpen}
         onSearch={onSearch}
+        onLoginClick={onLoginClick}
       />
 
       {/* Main Content Area */}
