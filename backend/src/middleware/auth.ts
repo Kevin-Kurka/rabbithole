@@ -130,14 +130,8 @@ export function getAuthContext(req: any): AuthContext {
     }
   }
 
-  // Fallback to x-user-id header (for backwards compatibility during migration)
-  const userId = req.headers['x-user-id'] as string;
-  if (userId) {
-    return {
-      userId,
-      isAuthenticated: true,
-    };
-  }
+  // No fallback - JWT authentication required
+  // Removed insecure x-user-id header fallback for security
 
   return {
     userId: null,

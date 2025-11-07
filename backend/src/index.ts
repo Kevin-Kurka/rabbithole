@@ -11,32 +11,19 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { buildSchema } from 'type-graphql';
 import { Pool } from 'pg';
+// Core resolvers
 import { UserResolver } from './resolvers/UserResolver';
 import { GraphResolver, NodeResolver, EdgeResolver } from './resolvers/GraphResolver';
 import { NodeTypeResolver } from './resolvers/NodeTypeResolver';
 import { EdgeTypeResolver } from './resolvers/EdgeTypeResolver';
 import { CommentResolver } from './resolvers/CommentResolver';
-import { MethodologyResolver } from './resolvers/MethodologyResolver';
-import { MethodologyNodeTypeResolver } from './resolvers/MethodologyNodeTypeResolver';
-import { MethodologyEdgeTypeResolver } from './resolvers/MethodologyEdgeTypeResolver';
-import { MethodologyWorkflowResolver } from './resolvers/MethodologyWorkflowResolver';
-import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from './resolvers/UserMethodologyResolver';
-import { VeracityScoreResolver, EvidenceResolver, SourceResolver, VeracityScoreHistoryResolver } from './resolvers/VeracityResolver';
-import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
+
+// Challenge/Veracity resolvers (core features)
+import { ChallengeResolver } from './resolvers/ChallengeResolver';
+import { VeracityScoreResolver, EvidenceResolver, SourceResolver } from './resolvers/VeracityResolver';
+
+// AI assistance
 import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
-// Temporarily disabled - ESM import issue
-// import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
-import {
-  CollaborationResolver,
-  GraphShareResolver,
-  PresenceResolver,
-  ActivityResolver,
-  ChatMessageResolver
-} from './resolvers/CollaborationResolver';
-import { GamificationResolver } from './resolvers/GamificationResolver';
-import { GraphVersionResolver } from './resolvers/GraphVersionResolver';
-import { ContentAnalysisResolver } from './resolvers/ContentAnalysisResolver';
-import { GraphTraversalResolver } from './resolvers/GraphTraversalResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -72,38 +59,30 @@ async function main() {
 
   const schema = await buildSchema({
     resolvers: [
+      // Core graph resolvers
       UserResolver,
       GraphResolver,
-      CommentResolver,
       NodeResolver,
       EdgeResolver,
       NodeTypeResolver,
       EdgeTypeResolver,
-      MethodologyResolver,
-      MethodologyNodeTypeResolver,
-      MethodologyEdgeTypeResolver,
-      MethodologyWorkflowResolver,
-      UserMethodologyProgressResolver,
-      MethodologyPermissionResolver,
+
+      // Social layer (Comments)
+      CommentResolver,
+
+      // Truth-seeking layer (Challenges) - CORE FEATURE
+      ChallengeResolver,
+
+      // Credibility/Evidence system
       VeracityScoreResolver,
       EvidenceResolver,
       SourceResolver,
-      VeracityScoreHistoryResolver,
-      ProcessValidationResolver,
+
+      // AI facilitation
       AIAssistantResolver,
-      // EvidenceFileResolver, // Temporarily disabled
-      CollaborationResolver,
-      GraphShareResolver,
-      PresenceResolver,
-      ActivityResolver,
-      ChatMessageResolver,
-      GamificationResolver,
-      GraphVersionResolver,
-      ContentAnalysisResolver,
-      GraphTraversalResolver
     ],
     pubSub,
-    validate: false,
+    validate: true, // ✓ VALIDATION ENABLED (was: false)
   });
 
   const wsServer = new WebSocketServer({
@@ -132,10 +111,7 @@ async function main() {
         }
       }
 
-      // Fallback to x-user-id for backwards compatibility
-      if (!userId && connectionParams?.['x-user-id']) {
-        userId = connectionParams['x-user-id'];
-      }
+      // Removed insecure x-user-id fallback - JWT only for security
 
       return {
         pool,
@@ -185,11 +161,27 @@ async function main() {
 
   await server.start();
 
-  // Configure GraphQL middleware (file uploads temporarily disabled)
+  // Configure CORS - restrict to known origins
+  const corsOptions: cors.CorsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  };
+
+  // Rate limiting for GraphQL endpoint
+  // Note: Install express-rate-limit: npm install express-rate-limit
+  // import rateLimit from 'express-rate-limit';
+  // const limiter = rateLimit({
+  //   windowMs: 15 * 60 * 1000, // 15 minutes
+  //   max: 100, // limit each IP to 100 requests per windowMs
+  //   message: 'Too many requests from this IP, please try again later.'
+  // });
+
+  // Configure GraphQL middleware
   app.use(
     '/graphql',
-    cors<cors.CorsRequest>(),
-    bodyParser.json({ limit: '50mb' }),
+    // limiter, // Enable after installing express-rate-limit
+    cors<cors.CorsRequest>(corsOptions),
+    bodyParser.json({ limit: '10mb' }), // Reduced from 50mb for security
     // graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // TODO: Fix ESM import
     expressMiddleware(server, {
       context: async ({ req }) => {
