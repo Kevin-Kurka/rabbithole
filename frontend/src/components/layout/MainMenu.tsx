@@ -23,6 +23,7 @@ export interface MainMenuProps {
   rightPanelOpen: boolean;
   bottomPanelOpen: boolean;
   onSearch?: (query: string) => void;
+  onLoginClick?: () => void;
 }
 
 export default function MainMenu({
@@ -33,6 +34,7 @@ export default function MainMenu({
   rightPanelOpen,
   bottomPanelOpen,
   onSearch,
+  onLoginClick,
 }: MainMenuProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -107,7 +109,7 @@ export default function MainMenu({
             fontWeight: 600,
             color: theme.colors.text.primary,
             whiteSpace: 'nowrap',
-            fontFamily: theme.fonts.sans,
+            fontFamily: theme.fontFamily.sans,
           }}
         >
           Rabbit Hole
@@ -146,7 +148,7 @@ export default function MainMenu({
             outline: 'none',
             color: theme.colors.text.primary,
             fontSize: '13px',
-            fontFamily: theme.fonts.sans,
+            fontFamily: theme.fontFamily.sans,
           }}
         />
       </form>
@@ -250,7 +252,13 @@ export default function MainMenu({
       {/* User Menu */}
       <div style={{ position: 'relative' }} ref={userMenuRef}>
         <button
-          onClick={() => setShowUserMenu(!showUserMenu)}
+          onClick={() => {
+            if (!session && onLoginClick) {
+              onLoginClick();
+            } else {
+              setShowUserMenu(!showUserMenu);
+            }
+          }}
           style={{
             width: '28px',
             height: '28px',

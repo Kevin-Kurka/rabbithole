@@ -23,8 +23,7 @@ import { MethodologyWorkflowResolver } from './resolvers/MethodologyWorkflowReso
 import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from './resolvers/UserMethodologyResolver';
 import { VeracityScoreResolver, EvidenceResolver, SourceResolver, VeracityScoreHistoryResolver } from './resolvers/VeracityResolver';
 import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
-// Temporarily disabled due to TypeScript errors - TODO: Fix AI service initialization
-// import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
+import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
 // Temporarily disabled - ESM import issue
 // import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
 import {
@@ -91,7 +90,7 @@ async function main() {
       SourceResolver,
       VeracityScoreHistoryResolver,
       ProcessValidationResolver,
-      // AIAssistantResolver, // Temporarily disabled
+      AIAssistantResolver,
       // EvidenceFileResolver, // Temporarily disabled
       CollaborationResolver,
       GraphShareResolver,

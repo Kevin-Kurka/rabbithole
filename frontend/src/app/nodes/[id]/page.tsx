@@ -2,7 +2,8 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Network, User, LogIn, Moon, Sun, ChevronDown, FileText } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Network, User, LogIn, Moon, Sun, ChevronDown, List } from 'lucide-react';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -35,6 +36,7 @@ export default function NodeDetailsPage() {
   const id = params.id as string;
   const router = useRouter();
   const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
 
   // Mock node data - replace with actual GraphQL query
   const node = {
@@ -48,16 +50,16 @@ export default function NodeDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
+      <header className="border-b bg-card flex-shrink-0">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Breadcrumb - Icon Only for Graph */}
+            {/* Breadcrumb - Icon Only for Home/Graph */}
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/">
+                  <BreadcrumbLink href="/" title="Back to Graph">
                     <Network className="h-4 w-4" />
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -71,7 +73,11 @@ export default function NodeDetailsPage() {
             {/* User Menu */}
             <div className="flex items-center gap-2">
               {/* Dark Mode Toggle */}
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
@@ -135,26 +141,66 @@ export default function NodeDetailsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Content with Tabs */}
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <Tabs defaultValue="contents" className="w-full">
-                  <TabsList className="w-full h-auto justify-start rounded-none bg-transparent p-0 border-0 px-6 pt-4">
-                    <TabsTrigger
-                      value="contents"
-                      className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
-                    >
-                      Contents
-                    </TabsTrigger>
+      {/* Main Content - Full Height */}
+      <div className="flex-1 container mx-auto px-4 py-6 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+          {/* Left Column - Main Content with Tabs - Full Height */}
+          <div className="lg:col-span-2 flex flex-col h-full">
+            <Card className="flex flex-col h-full overflow-hidden">
+              <CardContent className="p-0 flex flex-col h-full">
+                <Tabs defaultValue="article" className="flex flex-col h-full">
+                  <TabsList className="w-full h-auto justify-start rounded-none bg-transparent p-0 border-0 px-6 pt-4 flex-shrink-0">
+                    {/* Contents Dropdown Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 mr-2"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        className="z-[100] bg-card backdrop-blur-sm border border-border shadow-lg"
+                      >
+                        <DropdownMenuLabel>Contents</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const element = document.getElementById('section-overview');
+                            element?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="cursor-pointer"
+                        >
+                          Section 1: Overview
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const element = document.getElementById('section-evidence');
+                            element?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="cursor-pointer"
+                        >
+                          Section 2: Evidence Analysis
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const element = document.getElementById('section-conclusions');
+                            element?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="cursor-pointer"
+                        >
+                          Section 3: Conclusions
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <TabsTrigger
                       value="article"
                       className="rounded-none border-0 bg-transparent shadow-none data-[state=active]:shadow-none px-4 py-2"
                     >
-                      <FileText className="h-4 w-4 mr-2" />
                       Article
                     </TabsTrigger>
                     <TabsTrigger
@@ -171,22 +217,26 @@ export default function NodeDetailsPage() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <div className="p-6">
-                    <TabsContent value="contents" className="mt-0">
+                  <div className="flex-1 overflow-y-auto p-6">
+                    <TabsContent value="article" className="mt-0 h-full">
                       <div className="prose dark:prose-invert max-w-none">
-                        <p>{node.content}</p>
-                        <p>This section contains the main content and evidence for this node.</p>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="article" className="mt-0">
-                      <div className="prose dark:prose-invert max-w-none">
-                        <h2>Article View</h2>
+                        <h2 id="section-overview">Section 1: Overview</h2>
                         <p>Full article or document content will be displayed here.</p>
+                        <p>{node.content}</p>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+
+                        <h2 id="section-evidence">Section 2: Evidence Analysis</h2>
+                        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+                        <h2 id="section-conclusions">Section 3: Conclusions</h2>
+                        <p>Final analysis and conclusions based on the evidence presented.</p>
+                        <p>Additional context and summary of findings.</p>
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="inquiries" className="mt-0">
+                    <TabsContent value="inquiries" className="mt-0 h-full">
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Open Inquiries</h3>
                         <p className="text-muted-foreground">
@@ -195,7 +245,7 @@ export default function NodeDetailsPage() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="activity" className="mt-0">
+                    <TabsContent value="activity" className="mt-0 h-full">
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Recent Activity</h3>
                         <div className="space-y-2">
@@ -221,7 +271,7 @@ export default function NodeDetailsPage() {
           </div>
 
           {/* Right Column - Collapsible Sections */}
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto h-full">
             {/* Related Section */}
             <Card>
               <Collapsible defaultOpen>

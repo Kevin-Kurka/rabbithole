@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Fix workspace root detection issue
-  outputFileTracingRoot: '/Users/kmk/rabbithole',
+  // Disable static page generation for routes that need runtime data
+  output: 'standalone',
 
   // Enable React strict mode for better development practices
   reactStrictMode: true,
