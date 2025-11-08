@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Pool } from 'pg';
 import { ComplianceReport, ComplianceIssue, EvidenceSuggestion } from '../entities/ComplianceReport';
+import { config } from '../config';
 
 interface GraphAnalysis {
   nodes: Array<{
@@ -85,6 +86,76 @@ export class AIAssistantService {
     this.rateLimitCache = new Map();
 
     console.log(`AI Assistant initialized with Ollama (${this.model}) at ${this.ollamaUrl}`);
+  }
+
+  /**
+   * Search for semantically similar nodes using vector similarity
+   * Falls back to text search if embeddings are not available
+   */
+  private async searchSimilarNodes(
+    pool: Pool,
+    query: string,
+    limit: number = 10
+  ): Promise<Array<{
+    id: string;
+    props: any;
+    weight: number;
+    node_type_name?: string;
+    similarity?: number;
+  }>> {
+    // Check if OpenAI API key is configured for embeddings
+    const hasEmbeddings = config.openai.apiKey && config.openai.apiKey.length > 0;
+
+    if (hasEmbeddings) {
+      try {
+        // Generate embedding for query
+        const { EmbeddingService } = await import('./EmbeddingService');
+        const embeddingService = new EmbeddingService();
+        const { vector } = await embeddingService.generateEmbedding(query);
+
+        // Convert vector to PostgreSQL array format
+        const vectorStr = `[${vector.join(',')}]`;
+
+        // Search using vector similarity (cosine distance)
+        const result = await pool.query(
+          `SELECT n.id, n.props, n.weight, nt.name as node_type_name,
+                  1 - (n.embeddings <=> $1::vector) as similarity
+           FROM public."Nodes" n
+           LEFT JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+           WHERE n.visibility = 'public'
+             AND n.embeddings IS NOT NULL
+           ORDER BY n.embeddings <=> $1::vector
+           LIMIT $2`,
+          [vectorStr, limit]
+        );
+
+        if (result.rows.length > 0) {
+          console.log(`✓ Vector similarity search found ${result.rows.length} results`);
+          return result.rows;
+        }
+
+        // Fall through to text search if no vector results
+        console.log('No vector results found, falling back to text search');
+      } catch (error) {
+        console.error('Vector search failed, falling back to text search:', error);
+        // Fall through to text search on error
+      }
+    }
+
+    // Fallback: Text-based search using ILIKE
+    const result = await pool.query(
+      `SELECT n.id, n.props, n.weight, nt.name as node_type_name
+       FROM public."Nodes" n
+       LEFT JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE n.visibility = 'public'
+         AND (n.props::text ILIKE $1 OR n.meta::text ILIKE $1)
+       ORDER BY n.weight DESC
+       LIMIT $2`,
+      [`%${query}%`, limit]
+    );
+
+    console.log(`✓ Text search found ${result.rows.length} results`);
+    return result.rows;
   }
 
   /**
@@ -814,20 +885,8 @@ ${analysis.methodology ? `\nMethodology Description: ${analysis.methodology.desc
       }
     }
 
-    // Search for related nodes using simple text matching
-    // TODO: Use vector similarity search when embeddings are available
-    const relatedNodesResult = await pool.query(
-      `SELECT n.*, nt.name as node_type_name
-       FROM public."Nodes" n
-       LEFT JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-       WHERE n.visibility = 'public'
-       AND (n.props::text ILIKE $1 OR n.meta::text ILIKE $1)
-       ORDER BY n.weight DESC
-       LIMIT 10`,
-      [`%${claim}%`]
-    );
-
-    const relatedNodes = relatedNodesResult.rows;
+    // Search for related nodes using vector similarity (with text fallback)
+    const relatedNodes = await this.searchSimilarNodes(pool, claim, 10);
 
     // Build AI prompt for fact-checking
     const aiPrompt = `You are an objective fact-checker analyzing a claim against a knowledge graph.
@@ -1078,19 +1137,10 @@ Respond with valid JSON in this format:
 
     const challenge = challengeResult.rows[0];
 
-    // Search for related nodes in knowledge graph
-    const relatedNodesResult = await pool.query(
-      `SELECT n.*, nt.name as node_type_name
-       FROM public."Nodes" n
-       LEFT JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-       WHERE n.visibility = 'public'
-       AND (n.props::text ILIKE $1 OR n.props::text ILIKE $2)
-       ORDER BY n.weight DESC
-       LIMIT 15`,
-      [`%${challenge.claim}%`, `%${JSON.stringify(challenge.grounds)}%`]
-    );
-
-    const relatedNodes = relatedNodesResult.rows;
+    // Search for related nodes in knowledge graph using vector similarity
+    // Combine claim and grounds for more comprehensive search
+    const searchQuery = `${challenge.claim} ${JSON.stringify(challenge.grounds)}`;
+    const relatedNodes = await this.searchSimilarNodes(pool, searchQuery, 15);
 
     const aiPrompt = `You are a research assistant helping discover evidence for a formal inquiry.
 
@@ -1321,6 +1371,126 @@ Respond with valid JSON:
 
       return fallback;
     }
+  }
+
+  /**
+   * Find contradictions to a given claim
+   * Searches knowledge graph and uses AI to detect contradicting claims
+   */
+  async findContradictions(
+    pool: Pool,
+    claim: string,
+    options: {
+      nodeId?: string;
+      minimumSeverity?: number;
+      limit?: number;
+    },
+    userId: string
+  ): Promise<Array<{
+    nodeId: string;
+    title: string;
+    contradictionText: string;
+    originalClaim: string;
+    explanation: string;
+    severity: number;
+    confidence: number;
+    credibility: number;
+  }>> {
+    // Rate limit check
+    if (!this.checkRateLimit(userId)) {
+      throw new Error(
+        `You've reached the maximum of ${this.MAX_REQUESTS_PER_HOUR} AI requests per hour. Please try again later.`
+      );
+    }
+
+    const minimumSeverity = options.minimumSeverity || 0.6;
+    const limit = options.limit || 10;
+
+    // Search for potentially contradicting nodes using vector similarity
+    const potentialContradictions = await this.searchSimilarNodes(pool, claim, limit * 2);
+
+    if (potentialContradictions.length === 0) {
+      return [];
+    }
+
+    // Use AI to analyze potential contradictions
+    const contradictions: Array<{
+      nodeId: string;
+      title: string;
+      contradictionText: string;
+      originalClaim: string;
+      explanation: string;
+      severity: number;
+      confidence: number;
+      credibility: number;
+    }> = [];
+
+    for (const row of potentialContradictions) {
+      const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+      const title = props.title || 'Untitled';
+      const content = props.content || '';
+
+      // Call AI to check if this actually contradicts
+      const aiPrompt = `You are analyzing whether two claims contradict each other.
+
+ORIGINAL CLAIM:
+"${claim}"
+
+POTENTIALLY CONTRADICTING CLAIM:
+"${content.substring(0, 500)}"
+
+TASK:
+Determine if these claims contradict each other. Respond with valid JSON:
+{
+  "contradicts": true|false,
+  "severity": 0.0-1.0 (how severe the contradiction is),
+  "confidence": 0.0-1.0 (how confident you are),
+  "explanation": "Why this is/isn't a contradiction"
+}`;
+
+      try {
+        const aiResponse = await this.callOllama(
+          [
+            {
+              role: 'system',
+              content: 'You are a logical analysis expert. Detect contradictions rigorously. Return only valid JSON.',
+            },
+            { role: 'user', content: aiPrompt },
+          ],
+          500
+        );
+
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysis = JSON.parse(jsonMatch[0]);
+
+          if (analysis.contradicts && analysis.severity >= minimumSeverity) {
+            contradictions.push({
+              nodeId: row.id,
+              title,
+              contradictionText: content.substring(0, 200),
+              originalClaim: claim,
+              explanation: analysis.explanation,
+              severity: analysis.severity,
+              confidence: analysis.confidence,
+              credibility: row.weight || 0.5,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error analyzing contradiction:', error);
+        // Continue with next node
+      }
+    }
+
+    // Sort by severity * confidence * credibility
+    contradictions.sort((a, b) => {
+      const scoreA = a.severity * a.confidence * a.credibility;
+      const scoreB = b.severity * b.confidence * b.credibility;
+      return scoreB - scoreA;
+    });
+
+    return contradictions.slice(0, limit);
   }
 
   /**

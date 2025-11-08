@@ -25,6 +25,7 @@ import { VeracityScoreResolver, EvidenceResolver, SourceResolver } from './resol
 // AI assistance
 import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
 import { DeceptionDetectionResolver } from './resolvers/DeceptionDetectionResolver';
+import { FactCheckingResolver } from './resolvers/FactCheckingResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -83,6 +84,7 @@ async function main() {
       // AI facilitation
       AIAssistantResolver,
       DeceptionDetectionResolver,
+      FactCheckingResolver,
     ],
     pubSub,
     validate: true, // ✓ VALIDATION ENABLED (was: false)

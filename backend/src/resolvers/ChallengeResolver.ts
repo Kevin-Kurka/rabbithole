@@ -15,6 +15,7 @@ import {
 } from 'type-graphql';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';
+import { sourceCredibilityService } from '../services/SourceCredibilityService';
 
 // Subscription topics
 const CHALLENGE_CREATED = 'CHALLENGE_CREATED';
@@ -620,6 +621,7 @@ export class ChallengeResolver {
     @Arg('resolution') resolution: string,
     @Arg('summary') summary: string,
     @Arg('reasoning', { nullable: true }) reasoning?: string,
+    @Arg('forceResolve', { nullable: true, defaultValue: false }) forceResolve?: boolean,
     @Ctx() { pool, userId, pubSub }: { pool: Pool; userId?: string; pubSub: PubSubEngine }
   ): Promise<Challenge> {
     if (!userId) {
@@ -634,6 +636,23 @@ export class ChallengeResolver {
 
     if (challengeResult.rows.length === 0) {
       throw new Error('Challenge not found');
+    }
+
+    const challenge = challengeResult.rows[0];
+
+    // Check readiness score before resolving (unless forced)
+    if (!forceResolve) {
+      const readinessScore = await this.calculateReadinessScore(pool, challengeId);
+
+      if (readinessScore < 0.6) {
+        throw new Error(
+          `Challenge is not ready for resolution (readiness score: ${(readinessScore * 100).toFixed(0)}%). ` +
+          `Minimum required: 60%. Consider adding more evidence, rebuttals, or community engagement. ` +
+          `Use forceResolve=true to override this check.`
+        );
+      }
+
+      console.log(`✓ Challenge readiness score: ${(readinessScore * 100).toFixed(0)}%`);
     }
 
     // Calculate vote outcome if resolution is based on votes
@@ -655,22 +674,110 @@ export class ChallengeResolver {
 
     const resolvedChallenge = result.rows[0];
 
-    // Update target node credibility
+    // Update target node credibility using comprehensive credibility service
     if (resolvedChallenge.target_node_id) {
-      // This will trigger the database function to recalculate credibility
-      await pool.query(
-        `UPDATE public."Nodes"
-         SET weight = calculate_node_credibility($1),
-             updated_at = now()
-         WHERE id = $1`,
-        [resolvedChallenge.target_node_id]
-      );
+      try {
+        const credibilityUpdate = await sourceCredibilityService.updateNodeCredibility(
+          pool,
+          resolvedChallenge.target_node_id
+        );
+
+        console.log(`✓ Updated node credibility: ${credibilityUpdate.oldScore.toFixed(2)} → ${credibilityUpdate.newScore.toFixed(2)}`);
+      } catch (error) {
+        console.error('Failed to update node credibility:', error);
+        // Fallback to database function
+        await pool.query(
+          `UPDATE public."Nodes"
+           SET weight = calculate_node_credibility($1),
+               updated_at = now()
+           WHERE id = $1`,
+          [resolvedChallenge.target_node_id]
+        );
+      }
     }
 
     // Publish to subscriptions
     await pubSub.publish(CHALLENGE_RESOLVED, resolvedChallenge);
 
     return resolvedChallenge;
+  }
+
+  /**
+   * PRIVATE HELPERS
+   */
+
+  private async calculateReadinessScore(pool: Pool, challengeId: string): Promise<number> {
+    // Fetch challenge data
+    const challengeResult = await pool.query(
+      `SELECT * FROM public."Challenges" WHERE id = $1`,
+      [challengeId]
+    );
+
+    if (challengeResult.rows.length === 0) {
+      return 0;
+    }
+
+    const challenge = challengeResult.rows[0];
+
+    // Fetch evidence counts
+    const evidenceResult = await pool.query(
+      `SELECT
+        COUNT(*) FILTER (WHERE side = 'challenger') as challenger_evidence,
+        COUNT(*) FILTER (WHERE side = 'defender') as defender_evidence,
+        COUNT(*) FILTER (WHERE side = 'neutral') as neutral_evidence
+       FROM public."ChallengeEvidence"
+       WHERE challenge_id = $1`,
+      [challengeId]
+    );
+
+    const evidence = evidenceResult.rows[0];
+
+    // Fetch vote counts
+    const voteResult = await pool.query(
+      `SELECT COUNT(*) as total_votes FROM public."ChallengeVotes" WHERE challenge_id = $1`,
+      [challengeId]
+    );
+
+    const votes = voteResult.rows[0].total_votes;
+
+    // Calculate readiness score (0.0-1.0)
+    let score = 0.0;
+
+    // Has claim, grounds, warrant? (+0.2)
+    if (challenge.claim && challenge.grounds && challenge.warrant) {
+      score += 0.2;
+    }
+
+    // Has rebuttal? (+0.15)
+    if (challenge.rebuttal_claim) {
+      score += 0.15;
+    }
+
+    // Has evidence from both sides? (+0.25)
+    if (evidence.challenger_evidence > 0 && evidence.defender_evidence > 0) {
+      score += 0.25;
+    }
+
+    // Has significant evidence (3+ total)? (+0.15)
+    const totalEvidence =
+      parseInt(evidence.challenger_evidence) +
+      parseInt(evidence.defender_evidence) +
+      parseInt(evidence.neutral_evidence);
+    if (totalEvidence >= 3) {
+      score += 0.15;
+    }
+
+    // Has community engagement (5+ votes)? (+0.15)
+    if (votes >= 5) {
+      score += 0.15;
+    }
+
+    // Has AI analysis? (+0.1)
+    if (challenge.ai_analysis) {
+      score += 0.1;
+    }
+
+    return Math.min(score, 1.0);
   }
 
   /**
