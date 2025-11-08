@@ -66,28 +66,41 @@ export interface ChallengeVote {
 }
 
 /**
- * Challenge record
+ * Challenge record (Toulmin Argumentation Model)
  */
 export interface Challenge {
   id: string;
-  type: ChallengeType;
   status: ChallengeStatus;
   targetNodeId?: string;
   targetEdgeId?: string;
-  createdBy: string;
-  createdByName?: string;
+  challengerId: string;
+  challengerName?: string;
   createdAt: string;
-  evidence: string;
-  reasoning: string;
-  claimReference?: string;
+  updatedAt: string;
+
+  // Toulmin Model - Challenger's Argument
+  claim: string;
+  grounds?: any; // JSONB field - can contain structured evidence
+  warrant?: string;
+  backing?: string;
+  qualifier?: string;
+
+  // Defender's Rebuttal (Toulmin Model)
+  rebuttalClaim?: string;
+  rebuttalGrounds?: any;
+  rebuttalWarrant?: string;
+
+  // AI Analysis
+  aiAnalysis?: any; // AI-generated fact-checking and counter-arguments
+  aiRecommendations?: any;
+
+  // Resolution
+  resolution?: string; // 'challenge_sustained' | 'challenge_dismissed' | 'modified' | 'withdrawn'
+  resolutionSummary?: string;
+  resolutionReasoning?: string;
+  resolvedAt?: string;
+
   votes: ChallengeVote[];
-  resolution?: {
-    outcome: 'upheld' | 'dismissed';
-    reasoning: string;
-    resolvedAt: string;
-    resolvedBy: string;
-    veracityImpact?: number; // Change to veracity score if upheld
-  };
 }
 
 /**
@@ -130,15 +143,17 @@ export interface VoteDistribution {
 }
 
 /**
- * Challenge input for creation
+ * Challenge input for creation (Toulmin Argumentation Model)
  */
 export interface CreateChallengeInput {
-  type: ChallengeType;
   targetNodeId?: string;
   targetEdgeId?: string;
-  evidence: string;
-  reasoning: string;
-  claimReference?: string;
+  claim: string; // The assertion being made in the challenge
+  grounds?: string; // Evidence/data supporting the claim
+  warrant?: string; // Reasoning connecting grounds to claim
+  backing?: string; // Additional support for the warrant
+  qualifier?: string; // Degree of certainty (e.g., "probably", "certainly")
+  requestAIResearch?: boolean; // Flag to request AI fact-checking before submission
 }
 
 /**

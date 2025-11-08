@@ -1,23 +1,40 @@
 /**
  * ChallengeForm Component
  *
- * Modal form for creating new challenges against nodes or edges.
- * Includes challenge type selection, evidence input, and reasoning.
+ * Modal form for creating challenges using the Toulmin Argumentation Model.
+ * Includes optional AI fact-checking to strengthen challenges before submission.
  */
 
 import React, { useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
-import * as Icons from 'lucide-react';
-import { ChallengeType, CreateChallengeInput } from '@/types/challenge';
-import { getAllChallengeTypes, getChallengeTypeInfo } from '@/utils/challengeHelpers';
+import { X, AlertCircle, Sparkles, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { CreateChallengeInput } from '@/types/challenge';
 import { theme } from '@/styles/theme';
 
 export interface ChallengeFormProps {
   nodeId?: string;
   edgeId?: string;
-  claimText?: string;
   onSubmit: (input: CreateChallengeInput) => void;
   onCancel: () => void;
+}
+
+interface AIFactCheckResult {
+  verdict: 'supported' | 'contradicted' | 'insufficient_evidence' | 'needs_clarification';
+  confidence: number;
+  supportingEvidence: Array<{
+    nodeId: string;
+    content: string;
+    credibilityScore: number;
+    relevance: number;
+  }>;
+  contradictingEvidence: Array<{
+    nodeId: string;
+    content: string;
+    credibilityScore: number;
+    relevance: number;
+  }>;
+  missingContext: string[];
+  recommendations: string[];
+  analysis: string;
 }
 
 /**
@@ -26,39 +43,72 @@ export interface ChallengeFormProps {
 export const ChallengeForm: React.FC<ChallengeFormProps> = ({
   nodeId,
   edgeId,
-  claimText,
   onSubmit,
   onCancel,
 }) => {
-  const [selectedType, setSelectedType] = useState<ChallengeType | null>(null);
-  const [evidence, setEvidence] = useState('');
-  const [reasoning, setReasoning] = useState('');
-  const [claimReference, setClaimReference] = useState(claimText || '');
+  // Form state
+  const [claim, setClaim] = useState('');
+  const [grounds, setGrounds] = useState('');
+  const [warrant, setWarrant] = useState('');
+  const [backing, setBacking] = useState('');
+  const [qualifier, setQualifier] = useState('');
+  const [requestAIResearch, setRequestAIResearch] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const challengeTypes = getAllChallengeTypes();
+  // AI state
+  const [aiFactCheckResult, setAIFactCheckResult] = useState<AIFactCheckResult | null>(null);
+  const [isFactChecking, setIsFactChecking] = useState(false);
+  const [showAIHelp, setShowAIHelp] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!selectedType) {
-      newErrors.type = 'Please select a challenge type';
+    if (!claim.trim()) {
+      newErrors.claim = 'Claim is required';
+    } else if (claim.trim().length < 10) {
+      newErrors.claim = 'Claim must be at least 10 characters';
     }
 
-    if (!evidence.trim()) {
-      newErrors.evidence = 'Evidence is required';
-    } else if (evidence.trim().length < 20) {
-      newErrors.evidence = 'Evidence must be at least 20 characters';
+    if (grounds && grounds.trim().length > 0 && grounds.trim().length < 20) {
+      newErrors.grounds = 'Evidence must be at least 20 characters if provided';
     }
 
-    if (!reasoning.trim()) {
-      newErrors.reasoning = 'Reasoning is required';
-    } else if (reasoning.trim().length < 20) {
-      newErrors.reasoning = 'Reasoning must be at least 20 characters';
+    if (warrant && warrant.trim().length > 0 && warrant.trim().length < 20) {
+      newErrors.warrant = 'Warrant must be at least 20 characters if provided';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFactCheck = async () => {
+    if (!claim.trim()) {
+      setErrors({ claim: 'Please enter a claim before requesting AI research' });
+      return;
+    }
+
+    setIsFactChecking(true);
+    setAIFactCheckResult(null);
+
+    try {
+      // TODO: Call GraphQL factCheckClaim mutation
+      // For now, show mock result
+      setTimeout(() => {
+        setAIFactCheckResult({
+          verdict: 'needs_clarification',
+          confidence: 0.65,
+          supportingEvidence: [],
+          contradictingEvidence: [],
+          missingContext: ['Additional context needed to verify this claim'],
+          recommendations: ['Provide specific evidence to support your claim', 'Clarify the scope of your challenge'],
+          analysis: 'AI fact-checking is not yet connected. This is a placeholder.',
+        });
+        setIsFactChecking(false);
+      }, 1500);
+    } catch (error) {
+      console.error('AI fact-check error:', error);
+      setIsFactChecking(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,15 +117,32 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
     if (!validate()) return;
 
     const input: CreateChallengeInput = {
-      type: selectedType!,
       targetNodeId: nodeId,
       targetEdgeId: edgeId,
-      evidence: evidence.trim(),
-      reasoning: reasoning.trim(),
-      claimReference: claimReference.trim() || undefined,
+      claim: claim.trim(),
+      grounds: grounds.trim() || undefined,
+      warrant: warrant.trim() || undefined,
+      backing: backing.trim() || undefined,
+      qualifier: qualifier.trim() || undefined,
+      requestAIResearch,
     };
 
     onSubmit(input);
+  };
+
+  const getVerdictIcon = (verdict: string) => {
+    switch (verdict) {
+      case 'supported':
+        return <CheckCircle className="text-green-500" size={20} />;
+      case 'contradicted':
+        return <XCircle className="text-red-500" size={20} />;
+      case 'insufficient_evidence':
+        return <HelpCircle className="text-yellow-500" size={20} />;
+      case 'needs_clarification':
+        return <AlertCircle className="text-blue-500" size={20} />;
+      default:
+        return <HelpCircle className="text-gray-500" size={20} />;
+    }
   };
 
   return (
@@ -85,7 +152,7 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
         style={{
           backgroundColor: theme.colors.overlay.modal,
           border: `1px solid ${theme.colors.border.primary}`,
@@ -94,18 +161,23 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
       >
         {/* Header */}
         <div
-          className="sticky top-0 flex items-center justify-between p-6 pb-4"
+          className="sticky top-0 flex items-center justify-between p-6 pb-4 z-10"
           style={{
             backgroundColor: theme.colors.overlay.modal,
             borderBottom: `1px solid ${theme.colors.border.primary}`,
           }}
         >
-          <h2
-            className="text-2xl font-bold"
-            style={{ color: theme.colors.text.primary }}
-          >
-            Create Challenge
-          </h2>
+          <div>
+            <h2
+              className="text-2xl font-bold"
+              style={{ color: theme.colors.text.primary }}
+            >
+              Create Formal Challenge
+            </h2>
+            <p className="text-sm mt-1" style={{ color: theme.colors.text.tertiary }}>
+              Using the Toulmin Argumentation Model
+            </p>
+          </div>
           <button
             onClick={onCancel}
             className="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
@@ -118,171 +190,291 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Challenge Type Selection */}
-          <div>
-            <label
-              className="block text-sm font-semibold mb-3"
-              style={{ color: theme.colors.text.secondary }}
-            >
-              Challenge Type <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {challengeTypes.map((type) => {
-                const IconComponent = (Icons as any)[type.icon] || Icons.AlertCircle;
-                const isSelected = selectedType === type.id;
-
-                return (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setSelectedType(type.id)}
-                    className="p-3 rounded-lg text-left transition-all duration-200"
-                    style={{
-                      backgroundColor: isSelected
-                        ? `${type.color}20`
-                        : theme.colors.bg.elevated,
-                      border: `2px solid ${
-                        isSelected ? type.color : theme.colors.border.primary
-                      }`,
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <IconComponent
-                        size={16}
-                        style={{ color: isSelected ? type.color : theme.colors.text.tertiary }}
-                      />
-                      <span
-                        className="font-semibold text-sm"
-                        style={{
-                          color: isSelected ? type.color : theme.colors.text.primary,
-                        }}
-                      >
-                        {type.name}
-                      </span>
-                    </div>
-                    <div
-                      className="text-xs"
-                      style={{ color: theme.colors.text.tertiary }}
-                    >
-                      {type.description}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {errors.type && (
-              <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
-                <AlertCircle size={12} />
-                {errors.type}
-              </div>
-            )}
-          </div>
-
-          {/* Claim Reference (optional) */}
+          {/* Claim Field */}
           <div>
             <label
               className="block text-sm font-semibold mb-2"
               style={{ color: theme.colors.text.secondary }}
-              htmlFor="claimReference"
+              htmlFor="claim"
             >
-              Specific Claim (optional)
+              Claim <span className="text-red-500">*</span>
             </label>
-            <input
-              id="claimReference"
-              type="text"
-              value={claimReference}
-              onChange={(e) => setClaimReference(e.target.value)}
-              placeholder="Quote the specific claim you're challenging..."
-              className="w-full px-3 py-2 rounded-lg text-sm transition-colors"
+            <textarea
+              id="claim"
+              value={claim}
+              onChange={(e) => setClaim(e.target.value)}
+              placeholder="State your claim clearly and concisely (e.g., 'This node contains a factual error about X')"
+              className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-colors"
               style={{
                 backgroundColor: theme.colors.input.bg,
-                border: `1px solid ${theme.colors.input.border}`,
+                border: `1px solid ${errors.claim ? '#ef4444' : theme.colors.input.border}`,
                 color: theme.colors.text.primary,
+                minHeight: '80px',
               }}
+              rows={3}
             />
+            {errors.claim ? (
+              <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
+                <AlertCircle size={12} />
+                {errors.claim}
+              </div>
+            ) : (
+              <div
+                className="text-xs mt-1"
+                style={{ color: theme.colors.text.tertiary }}
+              >
+                What assertion are you making? This is your main argument.
+              </div>
+            )}
+          </div>
+
+          {/* AI Fact-Check Section */}
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              backgroundColor: `${theme.colors.accent.purple}10`,
+              border: `1px solid ${theme.colors.border.primary}`,
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} style={{ color: theme.colors.accent.purple }} />
+                <span className="font-semibold text-sm" style={{ color: theme.colors.text.primary }}>
+                  AI Research Assistant
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAIHelp(!showAIHelp)}
+                className="text-xs px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+                style={{ color: theme.colors.text.tertiary }}
+              >
+                {showAIHelp ? 'Hide Info' : 'Learn More'}
+              </button>
+            </div>
+
+            {showAIHelp && (
+              <div
+                className="mb-3 p-3 rounded text-xs"
+                style={{
+                  backgroundColor: theme.colors.bg.elevated,
+                  color: theme.colors.text.tertiary,
+                }}
+              >
+                The AI will search the knowledge graph for evidence, identify contradictions,
+                suggest missing context, and provide recommendations to strengthen your challenge.
+                This helps ensure high-quality formal inquiries.
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleFactCheck}
+              disabled={isFactChecking || !claim.trim()}
+              className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: theme.colors.accent.purple,
+                color: '#ffffff',
+                opacity: isFactChecking || !claim.trim() ? 0.5 : 1,
+                cursor: isFactChecking || !claim.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isFactChecking ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Researching...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Ask AI to Research This Claim
+                </>
+              )}
+            </button>
+
+            {/* AI Results */}
+            {aiFactCheckResult && (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  {getVerdictIcon(aiFactCheckResult.verdict)}
+                  <span className="font-semibold text-sm capitalize" style={{ color: theme.colors.text.primary }}>
+                    Verdict: {aiFactCheckResult.verdict.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-xs" style={{ color: theme.colors.text.tertiary }}>
+                    (Confidence: {(aiFactCheckResult.confidence * 100).toFixed(0)}%)
+                  </span>
+                </div>
+
+                <div className="p-3 rounded text-xs" style={{ backgroundColor: theme.colors.bg.elevated }}>
+                  <p style={{ color: theme.colors.text.secondary }}>{aiFactCheckResult.analysis}</p>
+                </div>
+
+                {aiFactCheckResult.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: theme.colors.text.secondary }}>
+                      Recommendations:
+                    </p>
+                    <ul className="space-y-1">
+                      {aiFactCheckResult.recommendations.map((rec, i) => (
+                        <li key={i} className="text-xs flex items-start gap-2" style={{ color: theme.colors.text.tertiary }}>
+                          <span>•</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Grounds (Evidence) */}
+          <div>
+            <label
+              className="block text-sm font-semibold mb-2"
+              style={{ color: theme.colors.text.secondary }}
+              htmlFor="grounds"
+            >
+              Grounds (Evidence) <span className="text-zinc-500 text-xs font-normal">(Optional)</span>
+            </label>
+            <textarea
+              id="grounds"
+              value={grounds}
+              onChange={(e) => setGrounds(e.target.value)}
+              placeholder="Provide concrete evidence, data, or facts that support your claim (sources, citations, examples, etc.)"
+              className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-colors"
+              style={{
+                backgroundColor: theme.colors.input.bg,
+                border: `1px solid ${errors.grounds ? '#ef4444' : theme.colors.input.border}`,
+                color: theme.colors.text.primary,
+                minHeight: '100px',
+              }}
+              rows={4}
+            />
+            {errors.grounds && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
+                <AlertCircle size={12} />
+                {errors.grounds}
+              </div>
+            )}
             <div
               className="text-xs mt-1"
               style={{ color: theme.colors.text.tertiary }}
             >
-              Optional: Quote the exact text you're disputing
+              What evidence supports your claim? Include links, citations, or references.
             </div>
           </div>
 
-          {/* Evidence */}
+          {/* Warrant */}
           <div>
             <label
               className="block text-sm font-semibold mb-2"
               style={{ color: theme.colors.text.secondary }}
-              htmlFor="evidence"
+              htmlFor="warrant"
             >
-              Evidence <span className="text-red-500">*</span>
+              Warrant <span className="text-zinc-500 text-xs font-normal">(Optional)</span>
             </label>
             <textarea
-              id="evidence"
-              value={evidence}
-              onChange={(e) => setEvidence(e.target.value)}
-              placeholder="Provide concrete evidence supporting your challenge (sources, data, references, etc.)"
+              id="warrant"
+              value={warrant}
+              onChange={(e) => setWarrant(e.target.value)}
+              placeholder="Explain how your evidence connects to your claim. Why does the evidence matter?"
               className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-colors"
               style={{
                 backgroundColor: theme.colors.input.bg,
-                border: `1px solid ${errors.evidence ? '#ef4444' : theme.colors.input.border}`,
+                border: `1px solid ${errors.warrant ? '#ef4444' : theme.colors.input.border}`,
                 color: theme.colors.text.primary,
-                minHeight: '120px',
+                minHeight: '100px',
               }}
-              rows={5}
+              rows={4}
             />
-            {errors.evidence ? (
+            {errors.warrant && (
               <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
                 <AlertCircle size={12} />
-                {errors.evidence}
-              </div>
-            ) : (
-              <div
-                className="text-xs mt-1"
-                style={{ color: theme.colors.text.tertiary }}
-              >
-                Minimum 20 characters. Include links to sources if available.
+                {errors.warrant}
               </div>
             )}
+            <div
+              className="text-xs mt-1"
+              style={{ color: theme.colors.text.tertiary }}
+            >
+              Bridge your evidence to your claim. Why should we accept the connection?
+            </div>
           </div>
 
-          {/* Reasoning */}
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2"
+          {/* Advanced Fields - Collapsible */}
+          <details className="group">
+            <summary
+              className="cursor-pointer font-semibold text-sm py-2 flex items-center gap-2"
               style={{ color: theme.colors.text.secondary }}
-              htmlFor="reasoning"
             >
-              Reasoning <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="reasoning"
-              value={reasoning}
-              onChange={(e) => setReasoning(e.target.value)}
-              placeholder="Explain why this evidence challenges the claim. What should be corrected or clarified?"
-              className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-colors"
-              style={{
-                backgroundColor: theme.colors.input.bg,
-                border: `1px solid ${errors.reasoning ? '#ef4444' : theme.colors.input.border}`,
-                color: theme.colors.text.primary,
-                minHeight: '120px',
-              }}
-              rows={5}
-            />
-            {errors.reasoning ? (
-              <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
-                <AlertCircle size={12} />
-                {errors.reasoning}
+              <span className="transform group-open:rotate-90 transition-transform">▶</span>
+              Advanced Arguments (Optional)
+            </summary>
+
+            <div className="mt-4 space-y-6">
+              {/* Backing */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: theme.colors.text.secondary }}
+                  htmlFor="backing"
+                >
+                  Backing
+                </label>
+                <textarea
+                  id="backing"
+                  value={backing}
+                  onChange={(e) => setBacking(e.target.value)}
+                  placeholder="Additional support for your warrant (theoretical framework, expert consensus, precedent, etc.)"
+                  className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-colors"
+                  style={{
+                    backgroundColor: theme.colors.input.bg,
+                    border: `1px solid ${theme.colors.input.border}`,
+                    color: theme.colors.text.primary,
+                    minHeight: '80px',
+                  }}
+                  rows={3}
+                />
+                <div
+                  className="text-xs mt-1"
+                  style={{ color: theme.colors.text.tertiary }}
+                >
+                  What additional support strengthens your reasoning?
+                </div>
               </div>
-            ) : (
-              <div
-                className="text-xs mt-1"
-                style={{ color: theme.colors.text.tertiary }}
-              >
-                Minimum 20 characters. Clearly explain your concern.
+
+              {/* Qualifier */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: theme.colors.text.secondary }}
+                  htmlFor="qualifier"
+                >
+                  Qualifier
+                </label>
+                <input
+                  id="qualifier"
+                  type="text"
+                  value={qualifier}
+                  onChange={(e) => setQualifier(e.target.value)}
+                  placeholder='e.g., "probably", "certainly", "in most cases", "with 95% confidence"'
+                  className="w-full px-3 py-2 rounded-lg text-sm transition-colors"
+                  style={{
+                    backgroundColor: theme.colors.input.bg,
+                    border: `1px solid ${theme.colors.input.border}`,
+                    color: theme.colors.text.primary,
+                  }}
+                />
+                <div
+                  className="text-xs mt-1"
+                  style={{ color: theme.colors.text.tertiary }}
+                >
+                  How confident are you in your claim? Indicates degree of certainty.
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          </details>
 
           {/* Info Banner */}
           <div
@@ -302,15 +494,15 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
                 className="text-sm font-semibold mb-1"
                 style={{ color: theme.colors.text.primary }}
               >
-                Community Review Process
+                Formal Inquiry Process
               </div>
               <div
                 className="text-xs"
                 style={{ color: theme.colors.text.tertiary }}
               >
-                Your challenge will be reviewed by the community. Users will vote based on the
-                strength of your evidence and reasoning. High-quality challenges help maintain
-                the integrity of the knowledge graph.
+                Your challenge initiates a structured formal inquiry. The defender can submit a rebuttal,
+                the community can participate with evidence and votes, and AI will assist throughout the process.
+                Well-structured challenges using the Toulmin model receive more consideration.
               </div>
             </div>
           </div>
