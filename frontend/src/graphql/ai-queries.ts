@@ -149,3 +149,244 @@ export interface GenerateContentSuggestionVariables {
   nodeId: string;
   context?: string;
 }
+
+// =============================================================================
+// FORMAL INQUIRY SYSTEM - AI-GUIDED TRUTH-SEEKING
+// =============================================================================
+
+/**
+ * Mutation to fact-check a claim against the knowledge graph
+ */
+export const FACT_CHECK_CLAIM = gql`
+  mutation FactCheckClaim($input: FactCheckInput!) {
+    factCheckClaim(input: $input) {
+      verdict
+      confidence
+      supportingEvidence {
+        nodeId
+        content
+        credibilityScore
+        relevance
+      }
+      contradictingEvidence {
+        nodeId
+        content
+        credibilityScore
+        relevance
+      }
+      missingContext
+      recommendations
+      analysis
+    }
+  }
+`;
+
+/**
+ * Query to generate counter-arguments for a challenge
+ */
+export const GENERATE_COUNTER_ARGUMENTS = gql`
+  query GenerateCounterArguments($challengeId: String!, $userId: String!) {
+    generateCounterArguments(challengeId: $challengeId, userId: $userId) {
+      argument
+      reasoning
+      evidenceNeeded
+      strength
+    }
+  }
+`;
+
+/**
+ * Query to discover evidence for a challenge
+ */
+export const DISCOVER_EVIDENCE = gql`
+  query DiscoverEvidence($challengeId: String!, $side: String!, $userId: String!) {
+    discoverEvidence(challengeId: $challengeId, side: $side, userId: $userId) {
+      type
+      source
+      description
+      searchQuery
+      nodeId
+      relevance
+      expectedImpact
+    }
+  }
+`;
+
+/**
+ * Query to get process guidance for a challenge
+ */
+export const GET_CHALLENGE_GUIDANCE = gql`
+  query GetChallengeGuidance($challengeId: String!, $userId: String!) {
+    getChallengeGuidance(challengeId: $challengeId, userId: $userId) {
+      currentStage
+      nextSteps {
+        action
+        description
+        priority
+        estimatedTime
+      }
+      warnings
+      suggestions
+      readinessForResolution {
+        ready
+        reasoning
+        missingElements
+      }
+    }
+  }
+`;
+
+/**
+ * Query to summarize a resolved challenge
+ */
+export const SUMMARIZE_CHALLENGE = gql`
+  query SummarizeChallenge($challengeId: String!, $userId: String!) {
+    summarizeChallenge(challengeId: $challengeId, userId: $userId) {
+      summary
+      keyFindings
+      evidenceQuality {
+        challenger
+        defender
+      }
+      communityConsensus {
+        supportChallenge
+        supportDefender
+        neutral
+      }
+      impactAssessment
+      recommendations
+    }
+  }
+`;
+
+// TypeScript types for AI formal inquiry
+
+export interface FactCheckEvidence {
+  nodeId: string;
+  content: string;
+  credibilityScore: number;
+  relevance: number;
+}
+
+export interface FactCheckResult {
+  verdict: 'supported' | 'contradicted' | 'insufficient_evidence' | 'needs_clarification';
+  confidence: number;
+  supportingEvidence: FactCheckEvidence[];
+  contradictingEvidence: FactCheckEvidence[];
+  missingContext: string[];
+  recommendations: string[];
+  analysis: string;
+}
+
+export interface FactCheckInput {
+  claim: string;
+  targetNodeId?: string;
+  targetEdgeId?: string;
+  grounds?: string;
+  userId: string;
+}
+
+export interface CounterArgument {
+  argument: string;
+  reasoning: string;
+  evidenceNeeded: string[];
+  strength: number;
+}
+
+export interface EvidenceDiscovery {
+  type: 'internal' | 'external';
+  source: string;
+  description: string;
+  searchQuery?: string;
+  nodeId?: string;
+  relevance: number;
+  expectedImpact: 'strong_support' | 'moderate_support' | 'neutral' | 'moderate_contradiction' | 'strong_contradiction';
+}
+
+export interface ProcessNextStep {
+  action: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  estimatedTime: string;
+}
+
+export interface ResolutionReadiness {
+  ready: boolean;
+  reasoning: string;
+  missingElements: string[];
+}
+
+export interface ProcessGuidance {
+  currentStage: string;
+  nextSteps: ProcessNextStep[];
+  warnings: string[];
+  suggestions: string[];
+  readinessForResolution?: ResolutionReadiness;
+}
+
+export interface EvidenceQuality {
+  challenger: number;
+  defender: number;
+}
+
+export interface CommunityConsensus {
+  supportChallenge: number;
+  supportDefender: number;
+  neutral: number;
+}
+
+export interface ChallengeSummary {
+  summary: string;
+  keyFindings: string[];
+  evidenceQuality: EvidenceQuality;
+  communityConsensus?: CommunityConsensus;
+  impactAssessment: string;
+  recommendations: string[];
+}
+
+// Variables for GraphQL operations
+
+export interface FactCheckClaimVariables {
+  input: FactCheckInput;
+}
+
+export interface FactCheckClaimData {
+  factCheckClaim: FactCheckResult;
+}
+
+export interface GenerateCounterArgumentsVariables {
+  challengeId: string;
+  userId: string;
+}
+
+export interface GenerateCounterArgumentsData {
+  generateCounterArguments: CounterArgument[];
+}
+
+export interface DiscoverEvidenceVariables {
+  challengeId: string;
+  side: 'challenger' | 'defender';
+  userId: string;
+}
+
+export interface DiscoverEvidenceData {
+  discoverEvidence: EvidenceDiscovery[];
+}
+
+export interface GetChallengeGuidanceVariables {
+  challengeId: string;
+  userId: string;
+}
+
+export interface GetChallengeGuidanceData {
+  getChallengeGuidance: ProcessGuidance;
+}
+
+export interface SummarizeChallengeVariables {
+  challengeId: string;
+  userId: string;
+}
+
+export interface SummarizeChallengeData {
+  summarizeChallenge: ChallengeSummary;
+}

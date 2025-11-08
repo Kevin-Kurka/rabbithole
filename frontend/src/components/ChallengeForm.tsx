@@ -6,35 +6,23 @@
  */
 
 import React, { useState } from 'react';
+import { useMutation } from '@apollo/client';
 import { X, AlertCircle, Sparkles, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { CreateChallengeInput } from '@/types/challenge';
 import { theme } from '@/styles/theme';
+import {
+  FACT_CHECK_CLAIM,
+  FactCheckResult,
+  FactCheckClaimData,
+  FactCheckClaimVariables,
+} from '@/graphql/ai-queries';
 
 export interface ChallengeFormProps {
   nodeId?: string;
   edgeId?: string;
   onSubmit: (input: CreateChallengeInput) => void;
   onCancel: () => void;
-}
-
-interface AIFactCheckResult {
-  verdict: 'supported' | 'contradicted' | 'insufficient_evidence' | 'needs_clarification';
-  confidence: number;
-  supportingEvidence: Array<{
-    nodeId: string;
-    content: string;
-    credibilityScore: number;
-    relevance: number;
-  }>;
-  contradictingEvidence: Array<{
-    nodeId: string;
-    content: string;
-    credibilityScore: number;
-    relevance: number;
-  }>;
-  missingContext: string[];
-  recommendations: string[];
-  analysis: string;
+  userId?: string; // User ID for AI rate limiting
 }
 
 /**
@@ -45,6 +33,7 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
   edgeId,
   onSubmit,
   onCancel,
+  userId = 'anonymous', // Default user ID if not provided
 }) => {
   // Form state
   const [claim, setClaim] = useState('');
@@ -56,9 +45,30 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // AI state
-  const [aiFactCheckResult, setAIFactCheckResult] = useState<AIFactCheckResult | null>(null);
-  const [isFactChecking, setIsFactChecking] = useState(false);
+  const [aiFactCheckResult, setAIFactCheckResult] = useState<FactCheckResult | null>(null);
   const [showAIHelp, setShowAIHelp] = useState(false);
+
+  // GraphQL mutation for fact-checking
+  const [factCheckClaim, { loading: isFactChecking }] = useMutation<
+    FactCheckClaimData,
+    FactCheckClaimVariables
+  >(FACT_CHECK_CLAIM, {
+    onCompleted: (data) => {
+      setAIFactCheckResult(data.factCheckClaim);
+    },
+    onError: (error) => {
+      console.error('Fact-check error:', error);
+      setAIFactCheckResult({
+        verdict: 'insufficient_evidence',
+        confidence: 0,
+        supportingEvidence: [],
+        contradictingEvidence: [],
+        missingContext: ['AI service unavailable'],
+        recommendations: ['Please try again later or continue without AI assistance'],
+        analysis: `Error: ${error.message}. The AI fact-checking service may not be running. Make sure Ollama is installed and running on http://localhost:11434`,
+      });
+    },
+  });
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -87,27 +97,23 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
       return;
     }
 
-    setIsFactChecking(true);
     setAIFactCheckResult(null);
 
     try {
-      // TODO: Call GraphQL factCheckClaim mutation
-      // For now, show mock result
-      setTimeout(() => {
-        setAIFactCheckResult({
-          verdict: 'needs_clarification',
-          confidence: 0.65,
-          supportingEvidence: [],
-          contradictingEvidence: [],
-          missingContext: ['Additional context needed to verify this claim'],
-          recommendations: ['Provide specific evidence to support your claim', 'Clarify the scope of your challenge'],
-          analysis: 'AI fact-checking is not yet connected. This is a placeholder.',
-        });
-        setIsFactChecking(false);
-      }, 1500);
+      await factCheckClaim({
+        variables: {
+          input: {
+            claim: claim.trim(),
+            targetNodeId: nodeId,
+            targetEdgeId: edgeId,
+            grounds: grounds.trim() || undefined,
+            userId,
+          },
+        },
+      });
     } catch (error) {
+      // Error is handled in onError callback above
       console.error('AI fact-check error:', error);
-      setIsFactChecking(false);
     }
   };
 
