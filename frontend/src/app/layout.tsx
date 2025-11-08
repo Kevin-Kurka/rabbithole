@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ErrorLoggingInitializer } from "@/components/ErrorLoggingInitializer";
 
 export const metadata: Metadata = {
   title: "Rabbit Hole - Collaborative Knowledge Graphs",
@@ -19,10 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <Providers>
-          {children}
-          {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <ErrorLoggingInitializer />
+            {children}
+            {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

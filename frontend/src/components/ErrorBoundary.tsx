@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { logComponentError } from '@/utils/errorLogger';
 
 interface Props {
   children: ReactNode;
@@ -44,9 +45,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error details
-    console.error('ErrorBoundary caught an error:', error);
-    console.error('Error componentStack:', errorInfo.componentStack);
+    // Log error with error logger utility
+    logComponentError(error, 'ErrorBoundary', {
+      componentStack: errorInfo.componentStack,
+      resetKeys: this.props.resetKeys,
+    });
 
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -57,11 +60,6 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({
       errorInfo,
     });
-
-    // In production, you might want to log to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: logErrorToService(error, errorInfo);
-    }
   }
 
   componentDidUpdate(prevProps: Props): void {
@@ -92,92 +90,183 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Default fallback UI
+      // Default fallback UI - Tesla-inspired design
       return (
-        <div className="error-boundary-fallback" style={{
-          padding: '2rem',
-          margin: '2rem auto',
-          maxWidth: '600px',
-          backgroundColor: '#fee',
-          border: '1px solid #f88',
-          borderRadius: '8px',
-        }}>
-          <h2 style={{ color: '#c33', marginTop: 0 }}>
-            Oops! Something went wrong
-          </h2>
-          <p style={{ color: '#666' }}>
-            We're sorry for the inconvenience. An error occurred while rendering this component.
-          </p>
-
-          {process.env.NODE_ENV === 'development' && this.state.error && (
-            <details style={{ marginTop: '1rem' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                Error Details (Development Only)
-              </summary>
-              <pre style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '4px',
-                overflow: 'auto',
-                fontSize: '0.875rem',
-              }}>
-                <strong>Error:</strong> {this.state.error.toString()}
-                {this.state.errorInfo && (
-                  <>
-                    {'\n\n'}
-                    <strong>Component Stack:</strong>
-                    {this.state.errorInfo.componentStack}
-                  </>
-                )}
-              </pre>
-            </details>
-          )}
-
-          <button
-            onClick={this.reset}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: '24px',
+            backgroundColor: '#000',
+            color: '#fff',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          }}
+        >
+          <div
             style={{
-              marginTop: '1rem',
-              padding: '0.5rem 1rem',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#45a049';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#4CAF50';
+              maxWidth: '600px',
+              width: '100%',
+              textAlign: 'center',
             }}
           >
-            Try Again
-          </button>
+            {/* Error Icon */}
+            <div
+              style={{
+                fontSize: '64px',
+                marginBottom: '24px',
+              }}
+            >
+              ⚠️
+            </div>
 
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: '1rem',
-              marginLeft: '0.5rem',
-              padding: '0.5rem 1rem',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#0b7dda';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#2196F3';
-            }}
-          >
-            Reload Page
-          </button>
+            {/* Error Title */}
+            <h1
+              style={{
+                fontSize: '32px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                lineHeight: 1.25,
+                margin: '0 0 16px 0',
+              }}
+            >
+              Something went wrong
+            </h1>
+
+            {/* Error Description */}
+            <p
+              style={{
+                fontSize: '16px',
+                lineHeight: 1.5,
+                color: '#9CA3AF',
+                marginBottom: '32px',
+              }}
+            >
+              We encountered an unexpected error. This has been logged and we'll look into it.
+              You can try refreshing the page or return to the home page.
+            </p>
+
+            {/* Error Details (Development Only) */}
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details
+                style={{
+                  marginBottom: '32px',
+                  padding: '16px',
+                  backgroundColor: '#1F2937',
+                  borderRadius: '8px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <summary
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    color: '#F59E0B',
+                  }}
+                >
+                  Error Details (Development Only)
+                </summary>
+                <pre
+                  style={{
+                    fontSize: '12px',
+                    lineHeight: 1.5,
+                    color: '#EF4444',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    margin: 0,
+                  }}
+                >
+                  {this.state.error.toString()}
+                  {this.state.errorInfo?.componentStack}
+                </pre>
+              </details>
+            )}
+
+            {/* Action Buttons */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                onClick={this.reset}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#fff',
+                  backgroundColor: '#3B82F6',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'background-color 200ms ease-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2563EB';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#3B82F6';
+                }}
+              >
+                Try Again
+              </button>
+
+              <button
+                onClick={() => window.location.href = '/'}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#fff',
+                  backgroundColor: '#374151',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'background-color 200ms ease-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#4B5563';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#374151';
+                }}
+              >
+                Go Home
+              </button>
+
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#9CA3AF',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'border-color 200ms ease-out, color 200ms ease-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#4B5563';
+                  e.currentTarget.style.color = '#fff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#374151';
+                  e.currentTarget.style.color = '#9CA3AF';
+                }}
+              >
+                Refresh Page
+              </button>
+            </div>
+          </div>
         </div>
       );
     }

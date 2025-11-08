@@ -3,7 +3,9 @@ import { getMainDefinition } from "@apollo/client/utilities";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { setContext } from "@apollo/client/link/context";
+import { onError } from "@apollo/client/link/error";
 import { getSession } from "next-auth/react";
+import { logGraphQLError } from "@/utils/errorLogger";
 
 /**
  * Detect if we're running in SSR (server-side) or browser context
@@ -72,12 +74,84 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+/**
+ * Error link to handle GraphQL and network errors
+ * Dispatches custom events that the toast system can listen to
+ */
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path, extensions }) => {
+      const errorMessage = message || 'An error occurred';
+      const errorCode = extensions?.code;
+
+      // Log error to error logger
+      logGraphQLError(
+        new Error(errorMessage),
+        operation.operationName || 'Unknown Operation',
+        {
+          variables: operation.variables,
+          path,
+          locations,
+          errorCode,
+        }
+      );
+
+      // Dispatch event for toast system (browser only)
+      if (!isSSR && typeof window !== 'undefined') {
+        // Filter out certain errors that shouldn't show toasts
+        const shouldShowToast =
+          errorCode !== 'UNAUTHENTICATED' && // Auth errors handled by auth system
+          errorCode !== 'FORBIDDEN' && // Permission errors handled contextually
+          !errorMessage.includes('rate limit'); // Rate limit errors handled in components
+
+        if (shouldShowToast) {
+          window.dispatchEvent(
+            new CustomEvent('apollo-error', {
+              detail: {
+                type: 'graphql',
+                message: errorMessage,
+                operation: operation.operationName,
+                path,
+              },
+            })
+          );
+        }
+      }
+    });
+  }
+
+  if (networkError) {
+    // Log network error to error logger
+    logGraphQLError(
+      networkError,
+      operation.operationName || 'Unknown Operation',
+      {
+        variables: operation.variables,
+        type: 'network',
+      }
+    );
+
+    // Dispatch event for toast system (browser only)
+    if (!isSSR && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('apollo-error', {
+          detail: {
+            type: 'network',
+            message: 'Network error. Please check your connection.',
+            operation: operation.operationName,
+          },
+        })
+      );
+    }
+  }
+});
+
 const httpLink = new HttpLink({
   uri: getHttpUri(),
 });
 
-// Combine auth link with http link
-const httpLinkWithAuth = authLink.concat(httpLink);
+// Combine error link, auth link, and http link
+const httpLinkWithAuth = ApolloLink.from([errorLink, authLink, httpLink]);
 
 /**
  * Only create WebSocket link in browser context
