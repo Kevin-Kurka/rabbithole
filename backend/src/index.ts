@@ -24,6 +24,7 @@ import { VeracityScoreResolver, EvidenceResolver, SourceResolver } from './resol
 
 // AI assistance
 import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
+import { DeceptionDetectionResolver } from './resolvers/DeceptionDetectionResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -31,6 +32,7 @@ import Redis from 'ioredis';
 // Temporarily disabled - ESM import issue
 // import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { NotificationService } from './services/NotificationService';
+import { createPublicAPI } from './api/publicAPI';
 
 async function main() {
   const app = express();
@@ -80,6 +82,7 @@ async function main() {
 
       // AI facilitation
       AIAssistantResolver,
+      DeceptionDetectionResolver,
     ],
     pubSub,
     validate: true, // ✓ VALIDATION ENABLED (was: false)
@@ -167,6 +170,9 @@ async function main() {
     credentials: true,
   };
 
+  // Mount Public REST API (read-only, no auth required)
+  app.use('/api/v1/public', createPublicAPI(pool));
+
   // Rate limiting for GraphQL endpoint
   // Note: Install express-rate-limit: npm install express-rate-limit
   // import rateLimit from 'express-rate-limit';
@@ -216,6 +222,7 @@ async function main() {
 
   await new Promise<void>((resolve) => httpServer.listen({ port: PORT }, resolve));
   console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+  console.log(`📡 Public REST API ready at http://localhost:${PORT}/api/v1/public`);
 }
 
 main().catch(console.error);

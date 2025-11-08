@@ -420,6 +420,118 @@ FOR EACH ROW
 EXECUTE FUNCTION update_node_credibility_on_challenge_resolution();
 
 -- ============================================================================
+-- ARTICLE ANNOTATIONS & DECEPTION DETECTION
+-- ============================================================================
+
+-- Table for storing annotations on article text (highlights, tags, notes)
+CREATE TABLE IF NOT EXISTS public."Annotations" (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- Target article/node
+    target_node_id uuid NOT NULL REFERENCES public."Nodes"(id) ON DELETE CASCADE,
+
+    -- Text selection (character offsets in article content)
+    start_offset INTEGER NOT NULL,
+    end_offset INTEGER NOT NULL,
+
+    -- The actual highlighted text (for display)
+    highlighted_text TEXT NOT NULL,
+
+    -- Annotation type: 'highlight', 'deception', 'note', 'question', 'correction'
+    annotation_type TEXT NOT NULL DEFAULT 'highlight',
+
+    -- For deception annotations: type of deception
+    -- Values: 'ad_hominem', 'straw_man', 'false_dichotomy', 'slippery_slope',
+    --         'appeal_to_authority', 'appeal_to_emotion', 'red_herring',
+    --         'exaggeration', 'false_comparison', 'cherry_picking',
+    --         'misleading_statistic', 'out_of_context', 'hasty_generalization'
+    deception_type TEXT,
+
+    -- Confidence score from AI (0.0-1.0)
+    confidence REAL CHECK (confidence >= 0.0 AND confidence <= 1.0),
+
+    -- AI explanation of the deception
+    explanation TEXT,
+
+    -- User notes/comments
+    user_notes TEXT,
+
+    -- Color for highlighting (hex color)
+    color TEXT DEFAULT '#FFFF00',
+
+    -- Severity for deception: 'low', 'medium', 'high'
+    severity TEXT CHECK (severity IN ('low', 'medium', 'high')),
+
+    -- Created by (can be NULL for AI-generated annotations)
+    created_by uuid REFERENCES public."Users"(id),
+
+    -- Whether this annotation was AI-generated
+    is_ai_generated BOOLEAN DEFAULT false,
+
+    -- Status: 'pending_review', 'approved', 'rejected', 'disputed'
+    status TEXT DEFAULT 'pending_review',
+
+    -- Upvotes/downvotes from community
+    votes INTEGER DEFAULT 0,
+
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Index for finding annotations by node
+CREATE INDEX IF NOT EXISTS idx_annotations_node ON public."Annotations"(target_node_id);
+CREATE INDEX IF NOT EXISTS idx_annotations_type ON public."Annotations"(annotation_type);
+CREATE INDEX IF NOT EXISTS idx_annotations_deception_type ON public."Annotations"(deception_type) WHERE deception_type IS NOT NULL;
+
+-- Table for storing detailed AI analysis of deceptive content
+CREATE TABLE IF NOT EXISTS public."DeceptionAnalysis" (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- Link to annotation
+    annotation_id uuid NOT NULL REFERENCES public."Annotations"(id) ON DELETE CASCADE,
+
+    -- Target article/node
+    target_node_id uuid NOT NULL REFERENCES public."Nodes"(id) ON DELETE CASCADE,
+
+    -- Type of logical fallacy or deception
+    fallacy_type TEXT NOT NULL,
+
+    -- AI's detailed explanation
+    explanation TEXT NOT NULL,
+
+    -- Supporting evidence/context
+    supporting_context TEXT,
+
+    -- Suggested correction or rewrite
+    suggested_correction TEXT,
+
+    -- Related sources that contradict this claim
+    contradicting_sources JSONB,
+
+    -- Related sources that support this claim
+    supporting_sources JSONB,
+
+    -- Severity score (0.0-1.0)
+    severity_score REAL NOT NULL CHECK (severity_score >= 0.0 AND severity_score <= 1.0),
+
+    -- Confidence in this analysis (0.0-1.0)
+    confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
+
+    -- AI model used for analysis
+    ai_model TEXT,
+
+    -- Raw AI response (for debugging)
+    ai_raw_response JSONB,
+
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Index for analysis queries
+CREATE INDEX IF NOT EXISTS idx_deception_analysis_annotation ON public."DeceptionAnalysis"(annotation_id);
+CREATE INDEX IF NOT EXISTS idx_deception_analysis_node ON public."DeceptionAnalysis"(target_node_id);
+CREATE INDEX IF NOT EXISTS idx_deception_analysis_fallacy ON public."DeceptionAnalysis"(fallacy_type);
+
+-- ============================================================================
 -- COMMENTS
 -- ============================================================================
 
@@ -442,7 +554,11 @@ SCHEMA SUMMARY:
 - ChallengeParticipants: Community participation (amicus brief style)
 - ChallengeVotes: Votes on challenge outcomes
 
-TOTAL: 10 tables (down from 50+)
+2 DECEPTION DETECTION TABLES:
+- Annotations: Highlights, tags, and annotations on article text
+- DeceptionAnalysis: AI-powered logical fallacy and deception detection
+
+TOTAL: 12 tables (down from 50+)
 
 KEY FEATURES:
 - Simplified to single namespace (no Graphs table)
