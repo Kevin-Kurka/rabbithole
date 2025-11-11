@@ -7,24 +7,25 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Menu, User, Bell } from 'lucide-react';
-import HamburgerMenu from './HamburgerMenu';
 import { mobileTheme } from '@/styles/mobileTheme';
 
 export interface MobileHeaderProps {
   logo?: React.ReactNode;
   title?: string;
   user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   showNotifications?: boolean;
   notificationCount?: number;
   onNotificationClick?: () => void;
   onUserClick?: () => void;
+  onMenuToggle?: () => void;
+  isMenuOpen?: boolean;
   className?: string;
 }
 
@@ -36,9 +37,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   notificationCount = 0,
   onNotificationClick,
   onUserClick,
+  onMenuToggle,
+  isMenuOpen = false,
   className = '',
 }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <>
@@ -53,14 +55,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         <div className="flex items-center justify-between h-full px-4">
           {/* Left: Hamburger Menu */}
           <button
-            onClick={() => setMenuOpen(true)}
+            onClick={onMenuToggle}
             className="p-2 -ml-2 hover:bg-muted rounded-full transition-colors"
             style={{
               minWidth: mobileTheme.touch.comfortable,
               minHeight: mobileTheme.touch.comfortable,
             }}
             aria-label="Open menu"
-            aria-expanded={menuOpen}
+            aria-expanded={isMenuOpen}
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -102,10 +104,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               }}
               aria-label="User menu"
             >
-              {user?.avatar ? (
+              {user?.image ? (
                 <img
-                  src={user.avatar}
-                  alt={user.name}
+                  src={user.image}
+                  alt={user.name || 'User'}
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
@@ -117,9 +119,6 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           </div>
         </div>
       </header>
-
-      {/* Hamburger Menu */}
-      <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} user={user} />
 
       {/* Spacer to prevent content from hiding under fixed header */}
       <div
