@@ -5,9 +5,13 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { User, Send, FileText, Link2, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import LoginDialog from '@/components/LoginDialog';
+import { useResponsive } from '@/hooks/useResponsive';
+import { MobileHomePage } from '@/components/mobile/MobileHomePage';
 
 /**
- * Home Page - Starfield canvas with nodes and AI chat
+ * Home Page - Adaptive layout with mobile/desktop variants
+ * Mobile: Vertical feed with trending nodes, categories, activity
+ * Desktop: Starfield canvas with nodes and AI chat
  */
 interface Node {
   id: string;
@@ -22,6 +26,7 @@ interface Node {
 export default function HomePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { isMobile } = useResponsive();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -145,6 +150,12 @@ export default function HomePage() {
     }
   };
 
+  // Render mobile version on mobile devices
+  if (isMobile) {
+    return <MobileHomePage user={session?.user} />;
+  }
+
+  // Render desktop version (starfield canvas)
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
       {/* Starfield Background - 3 Layers with Parallax */}
