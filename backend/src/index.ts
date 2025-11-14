@@ -50,6 +50,7 @@ import {
 import { FactCheckingResolver } from './resolvers/FactCheckingResolver';
 import { PostActivityResolver } from './resolvers/ActivityResolver';
 import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
+import { WhiteboardResolver } from './resolvers/WhiteboardResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -123,7 +124,8 @@ async function main() {
       ConversationalAIResponseFieldResolver,
       FactCheckingResolver,
       PostActivityResolver,
-      NodeAssociationResolver
+      NodeAssociationResolver,
+      WhiteboardResolver
     ],
     pubSub,
     validate: false,
