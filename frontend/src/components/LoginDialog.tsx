@@ -51,32 +51,9 @@ export default function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await signIn('credentials', {
-        email: 'test@example.com',
-        password: 'test',
-        redirect: false,
-      });
-
-      if (result?.ok) {
-        onClose();
-      } else {
-        setError('Demo login failed. Please try manual login.');
-      }
-    } catch (err) {
-      setError('Demo login failed. Please try manual login.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-card border-border shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
             Sign In
@@ -89,32 +66,10 @@ export default function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
         <div className="space-y-4 py-4">
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
+            <div className="p-3 bg-destructive border border-destructive rounded-md">
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
-
-          {/* Demo Login Button */}
-          <Button
-            onClick={handleDemoLogin}
-            disabled={loading}
-            variant="secondary"
-            className="w-full"
-          >
-            {loading ? 'Signing in...' : '🚀 Try Demo (No signup needed)'}
-          </Button>
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or sign in with your account
-              </span>
-            </div>
-          </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

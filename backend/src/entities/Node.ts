@@ -24,6 +24,19 @@ export class Node {
   @Field()
   is_level_0!: boolean;
 
+  // Article-specific fields
+  @Field({ nullable: true })
+  narrative?: string; // Markdown/rich text content for articles
+
+  @Field({ nullable: true })
+  published_at?: Date; // When article was published (NULL = draft)
+
+  @Field(() => [String], { nullable: true })
+  permissions?: string[]; // Array of user IDs with edit permissions
+
+  @Field(() => ID, { nullable: true })
+  author_id?: string; // Primary author user ID
+
   @Field(() => User, { nullable: true })
   created_by?: User;
 

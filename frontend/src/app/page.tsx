@@ -1,10 +1,50 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { User, Send, FileText, Link2, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useMutation, useQuery, useApolloClient } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import LoginDialog from '@/components/LoginDialog';
+
+// GraphQL queries and mutations
+const GET_GRAPHS_QUERY = gql`
+  query GetGraphs {
+    graphs {
+      id
+      name
+      description
+    }
+  }
+`;
+
+const SEARCH_NODES_QUERY = gql`
+  query SearchNodes($query: String!) {
+    search(input: { query: $query }) {
+      nodes {
+        id
+        title
+      }
+    }
+  }
+`;
+
+const AUTOCOMPLETE_QUERY = gql`
+  query Autocomplete($query: String!, $limit: Int) {
+    autocomplete(query: $query, limit: $limit)
+  }
+`;
+
+const ASK_AI_MUTATION = gql`
+  mutation AskAI($input: AIQueryInput!) {
+    askAI(input: $input) {
+      message
+      success
+      error
+    }
+  }
+`;
 
 /**
  * Home Page - Starfield canvas with nodes and AI chat
@@ -22,60 +62,169 @@ interface Node {
 export default function HomePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const apolloClient = useApolloClient();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Graph state
+  const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null);
+
+  // Fetch graphs
+  const { data: graphsData } = useQuery(GET_GRAPHS_QUERY);
+
+  // Fetch JFK nodes via search
+  const { data: nodesData } = useQuery(SEARCH_NODES_QUERY, {
+    variables: { query: 'JFK' },
+  });
+
+  // AI state
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [askAI, { loading: aiLoading }] = useMutation(ASK_AI_MUTATION);
+
+  // Search suggestions state
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Dragging state
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  // Mock nodes data - replace with actual GraphQL query
-  const [nodes, setNodes] = useState<Node[]>([
-    {
-      id: '1',
-      title: 'JFK Assassination',
-      type: 'Investigation',
-      credibility: 85,
-      x: 30,
-      y: 40,
-      connections: ['2', '3']
-    },
-    {
-      id: '2',
-      title: 'Warren Commission Report',
-      type: 'Evidence',
-      credibility: 72,
-      x: 60,
-      y: 30,
-      connections: ['1']
-    },
-    {
-      id: '3',
-      title: 'Lee Harvey Oswald',
-      type: 'Person',
-      credibility: 90,
-      x: 50,
-      y: 60,
-      connections: ['1', '4']
-    },
-    {
-      id: '4',
-      title: 'Jack Ruby',
-      type: 'Person',
-      credibility: 88,
-      x: 70,
-      y: 70,
-      connections: ['3']
-    },
-  ]);
+  // Node positions state
+  const [nodes, setNodes] = useState<Node[]>([]);
 
-  const handleAiSubmit = (e: React.FormEvent) => {
+  // Set default graph to JFK when graphs load
+  useEffect(() => {
+    if (graphsData?.graphs?.length > 0 && !selectedGraphId) {
+      // Find JFK graph or use first graph
+      const jfkGraph = graphsData.graphs.find((g: any) =>
+        g.name.includes('JFK') || g.name.includes('Assassination')
+      );
+      setSelectedGraphId(jfkGraph?.id || graphsData.graphs[0].id);
+    }
+  }, [graphsData, selectedGraphId]);
+
+  // Convert GraphQL nodes to display nodes with random positions
+  useEffect(() => {
+    if (nodesData?.search?.nodes) {
+      const displayNodes = nodesData.search.nodes.slice(0, 8).map((node: any, index: number) => ({
+        id: node.id,
+        title: node.title,
+        type: 'Node',
+        credibility: 85 + Math.floor(Math.random() * 15), // Random credibility 85-100%
+        x: 20 + (index % 4) * 20 + Math.random() * 10,
+        y: 30 + Math.floor(index / 4) * 30 + Math.random() * 10,
+        connections: [],
+      }));
+      setNodes(displayNodes);
+    }
+  }, [nodesData]);
+
+  const handleAiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (aiQuery.trim()) {
-      // TODO: Send to AI backend
-      console.log('AI Query:', aiQuery);
-      setAiQuery('');
+    if (!aiQuery.trim() || !selectedGraphId) return;
+
+    // Clear previous responses
+    setAiResponse(null);
+    setAiError(null);
+
+    try {
+      const { data } = await askAI({
+        variables: {
+          input: {
+            graphId: selectedGraphId,
+            question: aiQuery,
+            userId: session?.user?.id || '00000000-0000-0000-0000-000000000000',
+          },
+        },
+      });
+
+      if (data?.askAI?.success) {
+        setAiResponse(data.askAI.message);
+      } else {
+        setAiError(data?.askAI?.error || 'Failed to get AI response');
+      }
+    } catch (error: any) {
+      setAiError(error.message || 'An error occurred while querying AI');
+      console.error('AI Query Error:', error);
+    }
+
+    setAiQuery('');
+    setShowSuggestions(false); // Hide suggestions after submitting
+  };
+
+  // Debounced search handler for autocomplete
+  const handleSearchInput = useCallback((value: string) => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If query too short, clear suggestions
+    if (value.length < 2) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    // Debounce search by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data } = await apolloClient.query({
+          query: AUTOCOMPLETE_QUERY,
+          variables: { query: value, limit: 5 },
+        });
+
+        if (data?.autocomplete && data.autocomplete.length > 0) {
+          setSearchSuggestions(data.autocomplete);
+          setShowSuggestions(true);
+        } else {
+          setSearchSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }, [apolloClient]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAiQuery(value);
+    handleSearchInput(value);
+  };
+
+  const handleSuggestionClick = async (suggestion: string) => {
+    setShowSuggestions(false);
+    setAiQuery('');
+
+    try {
+      // Search for the node to get its ID
+      const { data } = await apolloClient.query({
+        query: SEARCH_NODES_QUERY,
+        variables: { query: suggestion },
+      });
+
+      // Find exact match or first result
+      const node = data?.search?.nodes?.find((n: any) => n.title === suggestion)
+                   || data?.search?.nodes?.[0];
+
+      if (node?.id) {
+        // Navigate to node details page
+        router.push(`/nodes/${node.id}`);
+      }
+    } catch (error) {
+      console.error('Error finding node:', error);
     }
   };
 
@@ -242,41 +391,124 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Floating Avatar - Top Right */}
-      <button
-        onClick={handleAvatarClick}
-        className="fixed top-8 right-8 w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl z-50"
-        style={{ borderWidth: '1px' }}
-      >
-        {session?.user?.image ? (
-          <img
-            src={session.user.image}
-            alt={session.user.name || 'User'}
-            className="w-full h-full rounded-full object-cover"
-          />
-        ) : (
-          <User className="w-6 h-6 text-white" />
-        )}
-      </button>
+      {/* Floating Navigation - Top Right */}
+      <div className="fixed top-8 right-8 flex items-center gap-3 z-50">
+        {/* Articles Link */}
+        <button
+          onClick={() => router.push('/articles')}
+          className="px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg hover:bg-white/20 transition-all shadow-2xl flex items-center gap-2"
+          style={{ borderWidth: '1px' }}
+        >
+          <FileText className="w-4 h-4 text-white" />
+          <span className="text-white text-sm font-medium">Articles</span>
+        </button>
+
+        {/* Avatar */}
+        <button
+          onClick={handleAvatarClick}
+          className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
+          style={{ borderWidth: '1px' }}
+        >
+          {session?.user?.image ? (
+            <img
+              src={session.user.image}
+              alt={session.user.name || 'User'}
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <User className="w-6 h-6 text-white" />
+          )}
+        </button>
+      </div>
 
       {/* AI Chat Input - Bottom */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-8 z-50">
+        {/* AI Response Display */}
+        {(aiResponse || aiError) && (
+          <div className="mb-4 bg-zinc-900/90 backdrop-blur-xl border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+            {aiError ? (
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-400">Error</p>
+                  <p className="text-sm text-zinc-300 mt-1">{aiError}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-400 mb-2">AI Response</p>
+                  <p className="text-sm text-zinc-200 whitespace-pre-wrap">{aiResponse}</p>
+                </div>
+                <button
+                  onClick={() => setAiResponse(null)}
+                  className="text-zinc-500 hover:text-white transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleAiSubmit} className="relative">
+          {/* Search Suggestions Dropdown */}
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-900/95 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+              <div className="px-4 py-2 text-xs text-zinc-400 border-b border-white/5">
+                Search Results
+              </div>
+              {searchSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="block w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-zinc-400" />
+                    <span>{suggestion}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-4 bg-zinc-900/80 backdrop-blur-xl border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
             <input
               type="text"
               value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              placeholder="Ask AI anything about the graph..."
+              onChange={handleInputChange}
+              onBlur={() => {
+                // Delay hiding to allow click on suggestion
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              onFocus={() => {
+                // Show suggestions if there are any and query is long enough
+                if (aiQuery.length >= 2 && searchSuggestions.length > 0) {
+                  setShowSuggestions(true);
+                }
+              }}
+              placeholder="Search nodes or ask AI anything..."
               className="flex-1 bg-transparent border-none outline-none text-white text-base placeholder:text-zinc-500"
+              disabled={aiLoading}
             />
+            {isSearching && (
+              <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+            )}
             <button
               type="submit"
-              className="p-2 bg-white/10 hover:bg-white/20 transition-all border border-white/20"
+              className="p-2 bg-white/10 hover:bg-white/20 transition-all border border-white/20 disabled:opacity-50"
               style={{ borderWidth: '1px', borderRadius: '8px' }}
-              disabled={!aiQuery.trim()}
+              disabled={!aiQuery.trim() || aiLoading}
+              title="Ask AI (press Enter)"
             >
-              <Send className="w-5 h-5 text-white" />
+              {aiLoading ? (
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-white" />
+              )}
             </button>
           </div>
         </form>

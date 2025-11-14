@@ -5,7 +5,28 @@ import { EvidenceMetadata } from '../entities/EvidenceMetadata';
 import { EvidenceReview } from '../entities/EvidenceReview';
 import { Evidence } from '../entities/Evidence';
 import { FileStorageService } from '../services/FileStorageService';
-import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { doclingService } from '../services/DoclingProcessingService';
+import { videoProcessingService } from '../services/VideoProcessingService';
+import { VideoMetadata } from '../entities/VideoMetadata';
+import { VideoFrame } from '../entities/VideoFrame';
+import { MediaProcessingStatus } from '../types/MediaProcessingStatus';
+import { autoEnqueueMediaProcessing } from '../utils/media-processing-helper';
+import { VideoScene } from '../entities/VideoScene';
+import { GraphQLScalarType } from 'graphql';
+import * as path from 'path';
+
+// Custom Upload scalar type to handle file uploads
+const GraphQLUpload = new GraphQLScalarType({
+  name: 'Upload',
+  description: 'The `Upload` scalar type represents a file upload.',
+  parseValue: (value) => value,
+  serialize: () => {
+    throw new Error('Upload serialization is not supported');
+  },
+  parseLiteral: () => {
+    throw new Error('Upload literal parsing is not supported');
+  },
+});
 
 // FileUpload type definition
 interface FileUpload {
@@ -676,6 +697,511 @@ export class EvidenceFileResolver {
 
     return true;
   }
+
+  /**
+   * Process a document file using Docling (extract text, tables, figures)
+   */
+  @Mutation(() => DocumentProcessingResultType)
+  async processDocument(
+    @Arg('fileId', () => ID) fileId: string,
+    @Arg('extractTables', { nullable: true, defaultValue: true }) extractTables: boolean,
+    @Arg('extractFigures', { nullable: true, defaultValue: true }) extractFigures: boolean,
+    @Arg('extractSections', { nullable: true, defaultValue: true }) extractSections: boolean,
+    @Ctx() { pool, userId }: Context
+  ): Promise<any> {
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+
+    const startTime = Date.now();
+
+    try {
+      // Get file information
+      const fileResult = await pool.query(
+        `SELECT ef.*, e.id as evidence_id
+         FROM public."EvidenceFiles" ef
+         LEFT JOIN public."Evidence" e ON ef.evidence_id = e.id
+         WHERE ef.id = $1 AND ef.deleted_at IS NULL`,
+        [fileId]
+      );
+
+      if (fileResult.rows.length === 0) {
+        throw new Error('File not found');
+      }
+
+      const file = fileResult.rows[0];
+
+      // Check if file format is supported by Docling
+      if (!doclingService.isSupportedFormat(file.original_filename)) {
+        throw new Error(`File format not supported for processing: ${file.file_extension}`);
+      }
+
+      // Get file from storage
+      const storagePath = process.env.LOCAL_STORAGE_PATH || './uploads';
+      const filePath = `${storagePath}/${file.storage_key}`;
+
+      // Process document with Docling
+      const doclingResult = await doclingService.processDocument(filePath, {
+        extractTables,
+        extractFigures,
+        extractSections,
+        outputFormat: 'markdown',
+      });
+
+      if (!doclingResult.success) {
+        throw new Error(doclingResult.error || 'Document processing failed');
+      }
+
+      // Update EvidenceFiles record with processing results
+      await pool.query(
+        `UPDATE public."EvidenceFiles"
+         SET extracted_text = $2,
+             markdown_content = $3,
+             page_count = $4,
+             processing_service = 'docling',
+             processing_time_ms = $5,
+             document_title = $6,
+             document_author = $7,
+             document_subject = $8,
+             document_creator = $9,
+             document_producer = $10,
+             document_creation_date = $11,
+             document_modification_date = $12,
+             processed_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [
+          fileId,
+          doclingResult.text,
+          doclingResult.markdown,
+          doclingResult.pageCount,
+          doclingResult.processingTime,
+          doclingResult.metadata.title,
+          doclingResult.metadata.author,
+          doclingResult.metadata.subject,
+          doclingResult.metadata.creator,
+          doclingResult.metadata.producer,
+          doclingResult.metadata.creationDate,
+          doclingResult.metadata.modificationDate,
+        ]
+      );
+
+      // Store extracted tables
+      const tableIds: string[] = [];
+      for (const table of doclingResult.tables) {
+        const tableResult = await pool.query(
+          `INSERT INTO public."DocumentTables" (
+            file_id, page_number, bbox_left, bbox_top, bbox_right, bbox_bottom,
+            caption, rows, row_count, column_count
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING id`,
+          [
+            fileId,
+            table.page,
+            table.bbox.l,
+            table.bbox.t,
+            table.bbox.r,
+            table.bbox.b,
+            table.caption,
+            JSON.stringify(table.rows),
+            table.rows.length,
+            table.rows[0]?.length || 0,
+          ]
+        );
+        tableIds.push(tableResult.rows[0].id);
+      }
+
+      // Store extracted figures
+      const figureIds: string[] = [];
+      for (const figure of doclingResult.figures) {
+        const figureResult = await pool.query(
+          `INSERT INTO public."DocumentFigures" (
+            file_id, page_number, bbox_left, bbox_top, bbox_right, bbox_bottom,
+            caption, image_data, image_type
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING id`,
+          [
+            fileId,
+            figure.page,
+            figure.bbox.l,
+            figure.bbox.t,
+            figure.bbox.r,
+            figure.bbox.b,
+            figure.caption,
+            figure.image_data,
+            'png', // Docling returns PNG by default
+          ]
+        );
+        figureIds.push(figureResult.rows[0].id);
+      }
+
+      // Store extracted sections
+      const sectionIds: string[] = [];
+      for (let i = 0; i < doclingResult.sections.length; i++) {
+        const section = doclingResult.sections[i];
+        const sectionResult = await pool.query(
+          `INSERT INTO public."DocumentSections" (
+            file_id, heading, level, section_order, content
+          ) VALUES ($1, $2, $3, $4, $5)
+          RETURNING id`,
+          [
+            fileId,
+            section.heading,
+            section.level,
+            i + 1,
+            section.content,
+          ]
+        );
+        sectionIds.push(sectionResult.rows[0].id);
+      }
+
+      const processingTimeMs = Date.now() - startTime;
+
+      return {
+        success: true,
+        fileId,
+        extractedText: doclingResult.text,
+        markdown: doclingResult.markdown,
+        pageCount: doclingResult.pageCount,
+        tableCount: tableIds.length,
+        figureCount: figureIds.length,
+        sectionCount: sectionIds.length,
+        metadata: doclingResult.metadata,
+        processingTimeMs,
+      };
+    } catch (error: any) {
+      const processingTimeMs = Date.now() - startTime;
+
+      // Log error to database
+      await pool.query(
+        `UPDATE public."EvidenceFiles"
+         SET processing_error = $2,
+             processing_time_ms = $3,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [fileId, error.message, processingTimeMs]
+      );
+
+      return {
+        success: false,
+        fileId,
+        error: error.message,
+        processingTimeMs,
+      };
+    }
+  }
+
+  /**
+   * Get document processing result
+   */
+  @Query(() => DocumentProcessingResultType, { nullable: true })
+  async getDocumentProcessingResult(
+    @Arg('fileId', () => ID) fileId: string,
+    @Ctx() { pool }: Context
+  ): Promise<any | null> {
+    const result = await pool.query(
+      `SELECT * FROM public."DocumentProcessingResults"
+       WHERE file_id = $1`,
+      [fileId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+
+    return {
+      fileId: row.file_id,
+      extractedText: row.extracted_text,
+      summary: row.summary,
+      extractedAt: row.extracted_at,
+      summaryGeneratedAt: row.summary_generated_at,
+      processingStats: row.processing_stats,
+    };
+  }
+
+  /**
+   * Process a video file (extract frames, perform OCR, detect scenes)
+   */
+  @Mutation(() => VideoProcessingResultType)
+  async processVideo(
+    @Arg('fileId', () => ID) fileId: string,
+    @Arg('extractFrames', { nullable: true, defaultValue: true }) extractFrames: boolean,
+    @Arg('performOCR', { nullable: true, defaultValue: true }) performOCR: boolean,
+    @Arg('detectScenes', { nullable: true, defaultValue: true }) detectScenes: boolean,
+    @Arg('framesPerSecond', () => Float, { nullable: true, defaultValue: 1 }) framesPerSecond: number,
+    @Ctx() { pool, userId }: Context
+  ): Promise<any> {
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+
+    const startTime = Date.now();
+
+    try {
+      // Get file information
+      const fileResult = await pool.query(
+        `SELECT ef.*, e.id as evidence_id
+         FROM public."EvidenceFiles" ef
+         LEFT JOIN public."Evidence" e ON ef.evidence_id = e.id
+         WHERE ef.id = $1 AND ef.deleted_at IS NULL`,
+        [fileId]
+      );
+
+      if (fileResult.rows.length === 0) {
+        throw new Error('File not found');
+      }
+
+      const file = fileResult.rows[0];
+
+      // Check if file is a video
+      if (file.file_type !== 'video') {
+        throw new Error(`File is not a video: ${file.file_type}`);
+      }
+
+      // Check if video format is supported
+      if (!videoProcessingService.isSupportedFormat(file.original_filename)) {
+        throw new Error(`Video format not supported: ${file.file_extension}`);
+      }
+
+      // Update processing status
+      await pool.query(
+        `UPDATE public."EvidenceFiles"
+         SET video_processing_started_at = NOW(),
+             video_processed = false
+         WHERE id = $1`,
+        [fileId]
+      );
+
+      // Get file from storage
+      const storagePath = process.env.LOCAL_STORAGE_PATH || './uploads';
+      const filePath = path.join(storagePath, file.storage_key);
+
+      // Process video
+      const result = await videoProcessingService.processVideo(filePath, {
+        extractFrames,
+        performOCR,
+        detectScenes,
+        framesPerSecond,
+        generateThumbnails: true,
+        sceneThreshold: 0.4,
+      });
+
+      if (!result.success) {
+        // Update error status
+        await pool.query(
+          `UPDATE public."EvidenceFiles"
+           SET video_processing_error = $2,
+               video_processing_completed_at = NOW()
+           WHERE id = $1`,
+          [fileId, result.error]
+        );
+
+        return {
+          success: false,
+          fileId,
+          error: result.error,
+          processingTimeMs: result.processingTimeMs,
+        };
+      }
+
+      // Store video metadata
+      const metadataResult = await pool.query(
+        `INSERT INTO public."VideoMetadata" (
+          file_id, duration_seconds, width, height, fps, codec, bitrate, file_format,
+          total_frames
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (file_id) DO UPDATE SET
+          duration_seconds = EXCLUDED.duration_seconds,
+          width = EXCLUDED.width,
+          height = EXCLUDED.height,
+          fps = EXCLUDED.fps,
+          codec = EXCLUDED.codec,
+          bitrate = EXCLUDED.bitrate,
+          file_format = EXCLUDED.file_format,
+          total_frames = EXCLUDED.total_frames,
+          updated_at = NOW()
+        RETURNING *`,
+        [
+          fileId,
+          result.metadata.duration_seconds,
+          result.metadata.width,
+          result.metadata.height,
+          result.metadata.fps,
+          result.metadata.codec,
+          result.metadata.bitrate,
+          result.metadata.file_format,
+          Math.floor(result.metadata.duration_seconds * result.metadata.fps),
+        ]
+      );
+
+      // Store extracted frames
+      const frameIds: string[] = [];
+      for (const frame of result.frames) {
+        const frameResult = await pool.query(
+          `INSERT INTO public."VideoFrames" (
+            file_id, frame_number, timestamp_seconds, frame_type, storage_key,
+            ocr_text, storage_provider
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id`,
+          [
+            fileId,
+            frame.frame_number,
+            frame.timestamp_seconds,
+            frame.frame_type,
+            frame.file_path,
+            frame.ocr_text,
+            'local',
+          ]
+        );
+        frameIds.push(frameResult.rows[0].id);
+      }
+
+      // Store detected scenes
+      const sceneIds: string[] = [];
+      for (const scene of result.scenes) {
+        const sceneResult = await pool.query(
+          `INSERT INTO public."VideoScenes" (
+            file_id, scene_number, start_time, end_time, frame_count
+          ) VALUES ($1, $2, $3, $4, $5)
+          RETURNING id`,
+          [
+            fileId,
+            scene.scene_number,
+            scene.start_time,
+            scene.end_time,
+            Math.floor((scene.end_time - scene.start_time) * result.metadata.fps),
+          ]
+        );
+        sceneIds.push(sceneResult.rows[0].id);
+      }
+
+      // Update file processing status
+      await pool.query(
+        `UPDATE public."EvidenceFiles"
+         SET video_processed = true,
+             video_processing_completed_at = NOW(),
+             video_processing_error = NULL,
+             duration_seconds = $2
+         WHERE id = $1`,
+        [fileId, result.metadata.duration_seconds]
+      );
+
+      const processingTimeMs = Date.now() - startTime;
+
+      return {
+        success: true,
+        fileId,
+        metadata: metadataResult.rows[0],
+        frameCount: frameIds.length,
+        sceneCount: sceneIds.length,
+        thumbnails: {
+          first: result.thumbnails.first,
+          middle: result.thumbnails.middle,
+          keyFrameCount: result.thumbnails.keyFrames.length,
+        },
+        processingTimeMs,
+      };
+    } catch (error: any) {
+      const processingTimeMs = Date.now() - startTime;
+
+      // Log error to database
+      await pool.query(
+        `UPDATE public."EvidenceFiles"
+         SET video_processing_error = $2,
+             video_processing_completed_at = NOW()
+         WHERE id = $1`,
+        [fileId, error.message]
+      );
+
+      return {
+        success: false,
+        fileId,
+        error: error.message,
+        processingTimeMs,
+      };
+    }
+  }
+
+  /**
+   * Get video metadata
+   */
+  @Query(() => VideoMetadata, { nullable: true })
+  async getVideoMetadata(
+    @Arg('fileId', () => ID) fileId: string,
+    @Ctx() { pool }: Context
+  ): Promise<VideoMetadata | null> {
+    const result = await pool.query(
+      `SELECT * FROM public."VideoMetadata" WHERE file_id = $1`,
+      [fileId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Get video frames
+   */
+  @Query(() => [VideoFrame])
+  async getVideoFrames(
+    @Arg('fileId', () => ID) fileId: string,
+    @Arg('withOCROnly', { nullable: true, defaultValue: false }) withOCROnly: boolean,
+    @Arg('limit', () => Int, { nullable: true, defaultValue: 100 }) limit: number,
+    @Ctx() { pool }: Context
+  ): Promise<VideoFrame[]> {
+    const ocrFilter = withOCROnly ? 'AND ocr_text IS NOT NULL' : '';
+
+    const result = await pool.query(
+      `SELECT * FROM public."VideoFrames"
+       WHERE file_id = $1 ${ocrFilter}
+       ORDER BY timestamp_seconds ASC
+       LIMIT $2`,
+      [fileId, limit]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Get video scenes
+   */
+  @Query(() => [VideoScene])
+  async getVideoScenes(
+    @Arg('fileId', () => ID) fileId: string,
+    @Ctx() { pool }: Context
+  ): Promise<VideoScene[]> {
+    const result = await pool.query(
+      `SELECT * FROM public."VideoScenes"
+       WHERE file_id = $1
+       ORDER BY scene_number ASC`,
+      [fileId]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Search video content (OCR text and scene descriptions)
+   */
+  @Query(() => [VideoSearchResult])
+  async searchVideoContent(
+    @Arg('query') query: string,
+    @Arg('fileId', () => ID, { nullable: true }) fileId: string | null,
+    @Arg('limit', () => Int, { nullable: true, defaultValue: 20 }) limit: number,
+    @Ctx() { pool }: Context
+  ): Promise<any[]> {
+    const result = await pool.query(
+      `SELECT * FROM search_video_content($1, $2, $3)`,
+      [query, fileId, limit]
+    );
+
+    return result.rows;
+  }
 }
 
 // ============================================================================
@@ -709,4 +1235,167 @@ class EvidenceQualityStats {
 
   @Field(() => Float, { nullable: true })
   calculated_quality_score?: number;
+}
+
+@ObjectType()
+class EntityType {
+  @Field()
+  type!: string;
+
+  @Field()
+  value!: string;
+
+  @Field(() => Float)
+  confidence!: number;
+
+  @Field({ nullable: true })
+  context?: string;
+}
+
+@ObjectType()
+class DocumentMetadataType {
+  @Field({ nullable: true })
+  title?: string;
+
+  @Field({ nullable: true })
+  author?: string;
+
+  @Field({ nullable: true })
+  subject?: string;
+
+  @Field({ nullable: true })
+  creator?: string;
+
+  @Field({ nullable: true })
+  producer?: string;
+
+  @Field({ nullable: true })
+  creationDate?: string;
+
+  @Field({ nullable: true })
+  modificationDate?: string;
+}
+
+@ObjectType()
+class DocumentProcessingResultType {
+  @Field()
+  success!: boolean;
+
+  @Field(() => ID)
+  fileId!: string;
+
+  @Field({ nullable: true })
+  extractedText?: string;
+
+  @Field({ nullable: true })
+  markdown?: string;
+
+  @Field(() => Int, { nullable: true })
+  pageCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  tableCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  figureCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  sectionCount?: number;
+
+  @Field(() => DocumentMetadataType, { nullable: true })
+  metadata?: DocumentMetadataType;
+
+  @Field({ nullable: true })
+  error?: string;
+
+  @Field(() => Int)
+  processingTimeMs!: number;
+}
+
+@ObjectType()
+class VideoThumbnailsType {
+  @Field()
+  first!: string;
+
+  @Field()
+  middle!: string;
+
+  @Field(() => Int)
+  keyFrameCount!: number;
+}
+
+@ObjectType()
+class VideoProcessingResultType {
+  @Field()
+  success!: boolean;
+
+  @Field(() => ID)
+  fileId!: string;
+
+  @Field(() => VideoMetadata, { nullable: true })
+  metadata?: VideoMetadata;
+
+  @Field(() => Int, { nullable: true })
+  frameCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  sceneCount?: number;
+
+  @Field(() => VideoThumbnailsType, { nullable: true })
+  thumbnails?: VideoThumbnailsType;
+
+  @Field({ nullable: true })
+  error?: string;
+
+  @Field(() => Int)
+  processingTimeMs!: number;
+}
+
+@ObjectType()
+class VideoSearchResult {
+  @Field()
+  content_type!: string;
+
+  @Field(() => ID)
+  content_id!: string;
+
+  @Field(() => ID)
+  file_id!: string;
+
+  @Field()
+  filename!: string;
+
+  @Field()
+  match_text!: string;
+
+  @Field(() => Float)
+  timestamp_seconds!: number;
+
+  @Field(() => Float)
+  relevance!: number;
+
+  /**
+   * Get media processing status for a file
+   */
+  @Query(() => MediaProcessingStatus, { nullable: true })
+  async getMediaProcessingStatus(
+    @Arg('fileId', () => ID) fileId: string,
+    @Ctx() { pool }: Context
+  ): Promise<MediaProcessingStatus | null> {
+    const jobStatus = await mediaQueueService.getJobStatus(fileId);
+
+    if (!jobStatus) {
+      return null;
+    }
+
+    return {
+      fileId,
+      status: jobStatus.status,
+      progress: jobStatus.progress,
+      error: jobStatus.error,
+      startedAt: jobStatus.startedAt,
+      completedAt: jobStatus.completedAt,
+      processingTimeMs: jobStatus.processingTimeMs,
+    };
+  }
 }

@@ -214,7 +214,7 @@ export class AIAssistantService {
       `SELECT g.*, m.id as methodology_id, m.name as methodology_name,
               m.description as methodology_description, m.category as methodology_category
        FROM public."Graphs" g
-       LEFT JOIN public."Methodologies" m ON g.methodology = m.id
+       LEFT JOIN public."Methodologies" m ON g.methodology = m.name
        WHERE g.id = $1`,
       [graphId]
     );
@@ -697,12 +697,40 @@ Format as JSON array with keys: type, description, searchQuery, priority, ration
     // Get conversation history
     const history = this.getConversationHistory(graphId);
 
-    // Build context
+    // Build context with actual node and edge details
+    // Extract node titles and types (limit to 50 nodes to manage token usage)
+    const nodesSummary = analysis.nodes.slice(0, 50).map((n: any) => {
+      try {
+        const props = typeof n.props === 'string' ? JSON.parse(n.props) : n.props;
+        const title = n.title || props.title || props.name || 'Untitled';
+        return `  - ${n.node_type || 'Node'}: "${title}"`;
+      } catch {
+        return `  - ${n.node_type || 'Node'}: "${n.id.substring(0, 8)}"`;
+      }
+    }).join('\n');
+
+    // Extract edge connections (limit to 30 edges)
+    const edgesSummary = analysis.edges.slice(0, 30).map((e: any) => {
+      const sourceNode: any = analysis.nodes.find((n: any) => n.id === e.source_node_id);
+      const targetNode: any = analysis.nodes.find((n: any) => n.id === e.target_node_id);
+      const sourceTitle = sourceNode?.title || sourceNode?.id?.substring(0, 8) || 'Unknown';
+      const targetTitle = targetNode?.title || targetNode?.id?.substring(0, 8) || 'Unknown';
+      return `  - ${e.edge_type || 'connects'}: "${sourceTitle}" → "${targetTitle}"`;
+    }).join('\n');
+
     const graphContext = `Current graph state:
-- Nodes: ${analysis.nodes.length}
-- Edges: ${analysis.edges.length}
+- Total Nodes: ${analysis.nodes.length}
+- Total Edges: ${analysis.edges.length}
 - Methodology: ${analysis.methodology?.name || 'None'}
-${analysis.methodology ? `\nMethodology Description: ${analysis.methodology.description}` : ''}`;
+${analysis.methodology ? `\nMethodology Description: ${analysis.methodology.description}` : ''}
+
+Nodes in this graph:
+${nodesSummary}
+${analysis.nodes.length > 50 ? `... and ${analysis.nodes.length - 50} more nodes` : ''}
+
+Connections between nodes:
+${edgesSummary}
+${analysis.edges.length > 30 ? `... and ${analysis.edges.length - 30} more edges` : ''}`;
 
     const systemPrompt = this.buildSystemPrompt(analysis.methodology);
 

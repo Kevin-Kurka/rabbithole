@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import PerformanceMonitor from "@/components/PerformanceMonitor";
+import { UniversalFileViewer } from "@/components/universal-file-viewer";
 
 export const metadata: Metadata = {
   title: "Rabbit Hole - Collaborative Knowledge Graphs",
@@ -21,7 +21,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Providers>
           {children}
-          {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
+          <UniversalFileViewer />
         </Providers>
       </body>
     </html>

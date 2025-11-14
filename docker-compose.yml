@@ -30,12 +30,19 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      docling:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/rabbithole_db
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-large
       VECTORIZATION_QUEUE_NAME: vectorization_queue
+      OLLAMA_MODEL: deepseek-r1:1.5b
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      OLLAMA_URL: http://host.docker.internal:11434
+      DOCLING_URL: http://docling:5001
 
   frontend:
     build:
@@ -72,6 +79,20 @@ services:
       timeout: 5s
       retries: 5
 
+  docling:
+    image: quay.io/docling-project/docling-serve:latest
+    container_name: rabbithole-docling
+    restart: always
+    ports:
+      - "5001:5001"   # Docling API port (default is 5001)
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   vectorization-worker:
     build:
       context: ./backend
@@ -88,11 +109,41 @@ services:
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-large
       VECTORIZATION_QUEUE_NAME: vectorization_queue
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      OLLAMA_URL: http://host.docker.internal:11434
       NODE_ENV: production
+    restart: unless-stopped
+
+  media-processing-worker:
+    build:
+      context: ./backend
+    command: npm run worker:media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      docling:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rabbithole_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      MEDIA_QUEUE_NAME: media_processing_queue
+      DOCLING_URL: http://docling:5001
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LOCAL_STORAGE_PATH: /uploads
+      NODE_ENV: production
+    volumes:
+      - media_uploads:/uploads
     restart: unless-stopped
 
 volumes:
   postgres_data:
   rabbitmq_data:
   rabbitmq_logs:
+  media_uploads:

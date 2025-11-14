@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import { BrainCircuit, Search, List, Puzzle, Settings, LucideIcon } from 'lucide-react';
+import { BrainCircuit, Search, List, Puzzle, Settings, FileText, LucideIcon } from 'lucide-react';
 import { theme } from '@/styles/theme';
 
-export type IconNavItem = 'graphs' | 'search' | 'structure' | 'extensions' | 'settings';
+export type IconNavItem = 'graphs' | 'search' | 'structure' | 'articles' | 'extensions' | 'settings';
 
 export interface IconNavigationBarProps {
   /** Currently active navigation item */
@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'graphs', icon: BrainCircuit, label: 'Graphs', shortcut: '⇧⌘G' },
   { id: 'search', icon: Search, label: 'Search', shortcut: '⇧⌘F' },
   { id: 'structure', icon: List, label: 'Structure', shortcut: '⇧⌘O' },
+  { id: 'articles', icon: FileText, label: 'Articles', shortcut: '⇧⌘A' },
   { id: 'extensions', icon: Puzzle, label: 'Extensions', shortcut: '⇧⌘X' },
   { id: 'settings', icon: Settings, label: 'Settings', shortcut: '⌘,' },
 ];

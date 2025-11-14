@@ -611,6 +611,7 @@ export class GraphTraversalService {
   private mapToNode(row: any): Node {
     return {
       id: row.id,
+      title: row.title || '',
       weight: row.weight,
       props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
       meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),

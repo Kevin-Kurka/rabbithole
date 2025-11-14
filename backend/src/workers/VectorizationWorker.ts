@@ -83,8 +83,8 @@ export class VectorizationWorker {
     // Verify database connection
     await this.verifyDatabaseConnection();
 
-    // Verify OpenAI API configuration
-    await this.verifyOpenAIConnection();
+    // Verify embedding service configuration
+    await this.verifyEmbeddingService();
 
     // Connect to RabbitMQ
     await this.connectToRabbitMQ();
@@ -95,7 +95,6 @@ export class VectorizationWorker {
     console.log('✓ Vectorization Worker is running');
     console.log(`  Queue: ${this.queueName}`);
     console.log(`  Database: ${config.database.url.replace(/:([^@]+)@/, ':***@')}`);
-    console.log(`  OpenAI Model: ${config.openai.embeddingModel}`);
   }
 
   /**
@@ -114,14 +113,22 @@ export class VectorizationWorker {
   }
 
   /**
-   * Verify OpenAI API connection
+   * Verify embedding service is configured (OpenAI or Ollama)
    */
-  private async verifyOpenAIConnection(): Promise<void> {
-    if (!config.openai.apiKey) {
-      throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable.');
+  private async verifyEmbeddingService(): Promise<void> {
+    // Check if either OpenAI or Ollama is configured
+    const hasOpenAI = config.openai.apiKey && config.openai.apiKey !== 'sk-your-api-key-here';
+    const hasOllama = process.env.OLLAMA_URL;
+
+    if (!hasOpenAI && !hasOllama) {
+      throw new Error('No embedding service configured. Set OPENAI_API_KEY or OLLAMA_URL environment variable.');
     }
 
-    console.log('✓ OpenAI API key configured');
+    if (hasOpenAI) {
+      console.log('✓ Using OpenAI for embeddings');
+    } else {
+      console.log('✓ Using Ollama for embeddings');
+    }
   }
 
   /**

@@ -4,6 +4,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { setContext } from "@apollo/client/link/context";
 import { getSession } from "next-auth/react";
+import createUploadLink from "apollo-upload-client/createUploadLink.mjs";
 
 /**
  * Detect if we're running in SSR (server-side) or browser context
@@ -72,12 +73,13 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
-const httpLink = new HttpLink({
+// Use upload link for file upload support
+const uploadLink = createUploadLink({
   uri: getHttpUri(),
 });
 
-// Combine auth link with http link
-const httpLinkWithAuth = authLink.concat(httpLink);
+// Combine auth link with upload link
+const httpLinkWithAuth = authLink.concat(uploadLink as any);
 
 /**
  * Only create WebSocket link in browser context

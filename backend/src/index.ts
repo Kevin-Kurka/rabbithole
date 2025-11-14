@@ -24,8 +24,11 @@ import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from '
 import { VeracityScoreResolver, EvidenceResolver, SourceResolver, VeracityScoreHistoryResolver } from './resolvers/VeracityResolver';
 import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
 import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
-// Temporarily disabled - ESM import issue
-// import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
+import { SearchResolver } from './resolvers/SearchResolver';
+import { InquiryResolver } from './resolvers/InquiryResolver';
+import { FormalInquiryResolver } from './resolvers/FormalInquiryResolver';
+import { ArticleResolver } from './resolvers/ArticleResolver';
+import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
 import {
   CollaborationResolver,
   GraphShareResolver,
@@ -37,12 +40,20 @@ import { GamificationResolver } from './resolvers/GamificationResolver';
 import { GraphVersionResolver } from './resolvers/GraphVersionResolver';
 import { ContentAnalysisResolver } from './resolvers/ContentAnalysisResolver';
 import { GraphTraversalResolver } from './resolvers/GraphTraversalResolver';
+import { AdminConfigurationResolver } from './resolvers/AdminConfigurationResolver';
+import {
+  ConversationalAIResolver,
+  ConversationFieldResolver,
+  ConversationMessageFieldResolver,
+  ConversationalAIResponseFieldResolver
+} from './resolvers/ConversationalAIResolver';
+import { FactCheckingResolver } from './resolvers/FactCheckingResolver';
+import { PostActivityResolver } from './resolvers/ActivityResolver';
+import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import Redis from 'ioredis';
-// Temporarily disabled - ESM import issue
-// import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { NotificationService } from './services/NotificationService';
 
 async function main() {
@@ -91,7 +102,11 @@ async function main() {
       VeracityScoreHistoryResolver,
       ProcessValidationResolver,
       AIAssistantResolver,
-      // EvidenceFileResolver, // Temporarily disabled
+      SearchResolver,
+      InquiryResolver,
+      FormalInquiryResolver,
+      ArticleResolver,
+      EvidenceFileResolver,
       CollaborationResolver,
       GraphShareResolver,
       PresenceResolver,
@@ -100,7 +115,15 @@ async function main() {
       GamificationResolver,
       GraphVersionResolver,
       ContentAnalysisResolver,
-      GraphTraversalResolver
+      GraphTraversalResolver,
+      AdminConfigurationResolver,
+      ConversationalAIResolver,
+      ConversationFieldResolver,
+      ConversationMessageFieldResolver,
+      ConversationalAIResponseFieldResolver,
+      FactCheckingResolver,
+      PostActivityResolver,
+      NodeAssociationResolver
     ],
     pubSub,
     validate: false,
@@ -185,12 +208,26 @@ async function main() {
 
   await server.start();
 
-  // Configure GraphQL middleware (file uploads temporarily disabled)
+  // Import graphql-upload middleware dynamically (ESM module)
+  let uploadMiddleware: any;
+  try {
+    const { default: graphqlUploadExpress } = await import('graphql-upload/graphqlUploadExpress.mjs');
+    uploadMiddleware = graphqlUploadExpress({
+      maxFileSize: 104857600, // 100MB
+      maxFiles: 10
+    });
+    console.log('✓ File upload middleware enabled');
+  } catch (error) {
+    console.warn('⚠ File upload middleware not available:', error);
+    uploadMiddleware = (req: any, res: any, next: any) => next(); // Noop middleware
+  }
+
+  // Configure GraphQL middleware
   app.use(
     '/graphql',
     cors<cors.CorsRequest>(),
     bodyParser.json({ limit: '50mb' }),
-    // graphqlUploadExpress({ maxFileSize: 104857600, maxFiles: 10 }), // TODO: Fix ESM import
+    uploadMiddleware,
     expressMiddleware(server, {
       context: async ({ req }) => {
         // Extract user context from JWT token or fallback to header

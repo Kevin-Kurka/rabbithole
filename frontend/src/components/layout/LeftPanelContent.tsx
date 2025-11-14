@@ -7,6 +7,7 @@ import { IconNavItem } from './IconNavigationBar';
 import GraphListPanel from '@/components/panels/GraphListPanel';
 import SearchPanel from '@/components/panels/SearchPanel';
 import StructurePanel from '@/components/panels/StructurePanel';
+import ArticlesPanel from '@/components/panels/ArticlesPanel';
 
 export interface LeftPanelContentProps {
   /** Active navigation item determining content */
@@ -57,6 +58,9 @@ export default function LeftPanelContent({
 
       case 'structure':
         return <StructurePanel graphId={activeGraphs[0]} />;
+
+      case 'articles':
+        return <ArticlesPanel />;
 
       case 'extensions':
         return (

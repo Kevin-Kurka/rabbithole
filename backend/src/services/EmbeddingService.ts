@@ -1,13 +1,15 @@
 import OpenAI from 'openai';
+import axios from 'axios';
 import { config } from '../config';
 
 /**
  * EmbeddingService
  *
- * Handles all vector embedding generation using OpenAI's text-embedding-3-large API.
- * This service provides 1536-dimension vectors for semantic search capabilities.
+ * Handles all vector embedding generation using either OpenAI or Ollama.
+ * This service provides semantic search capabilities with configurable providers.
  *
  * Features:
+ * - Support for OpenAI (1536-dim) and Ollama (768-dim nomic-embed-text)
  * - Automatic retry with exponential backoff
  * - Rate limiting protection
  * - Error handling with detailed logging
@@ -29,30 +31,44 @@ export interface EmbeddingError {
   retryable: boolean;
 }
 
+type EmbeddingProvider = 'openai' | 'ollama';
+
 export class EmbeddingService {
-  private client: OpenAI;
+  private provider: EmbeddingProvider;
+  private client?: OpenAI;
   private model: string;
   private maxRetries: number;
+  private ollamaUrl: string;
+  private expectedDimension: number;
 
   constructor() {
-    if (!config.openai.apiKey) {
-      throw new Error('OpenAI API key is required. Please set OPENAI_API_KEY environment variable.');
+    // Determine provider based on API key availability
+    if (config.openai.apiKey && config.openai.apiKey !== 'sk-your-api-key-here') {
+      this.provider = 'openai';
+      this.client = new OpenAI({
+        apiKey: config.openai.apiKey,
+        timeout: config.openai.timeout,
+        maxRetries: 0, // We handle retries manually for better control
+      });
+      this.model = config.openai.embeddingModel;
+      this.expectedDimension = 1536; // OpenAI text-embedding-3-large
+      console.log(`✓ EmbeddingService initialized with OpenAI (${this.model})`);
+    } else {
+      // Fall back to Ollama
+      this.provider = 'ollama';
+      this.ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+      this.model = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
+      this.expectedDimension = 768; // nomic-embed-text dimension
+      console.log(`✓ EmbeddingService initialized with Ollama (${this.model}) at ${this.ollamaUrl}`);
     }
 
-    this.client = new OpenAI({
-      apiKey: config.openai.apiKey,
-      timeout: config.openai.timeout,
-      maxRetries: 0, // We handle retries manually for better control
-    });
-
-    this.model = config.openai.embeddingModel;
     this.maxRetries = config.openai.maxRetries;
   }
 
   /**
    * Generates a vector embedding for the given text
    *
-   * @param text - The text content to embed (max ~8191 tokens for text-embedding-3-large)
+   * @param text - The text content to embed
    * @returns Promise<EmbeddingResult> - The embedding vector and metadata
    * @throws Error if embedding generation fails after all retries
    */
@@ -68,7 +84,7 @@ export class EmbeddingService {
       throw new Error('Text input cannot be empty after trimming');
     }
 
-    // Warn if text is very long (8191 tokens ≈ 32,000 characters)
+    // Warn if text is very long
     if (trimmedText.length > 30000) {
       console.warn(`Text length (${trimmedText.length} chars) may exceed token limit. Consider chunking.`);
     }
@@ -80,41 +96,21 @@ export class EmbeddingService {
       try {
         const startTime = Date.now();
 
-        const response = await this.client.embeddings.create({
-          model: this.model,
-          input: trimmedText,
-          encoding_format: 'float',
-        });
+        let result: EmbeddingResult;
+
+        if (this.provider === 'openai') {
+          result = await this.generateOpenAIEmbedding(trimmedText);
+        } else {
+          result = await this.generateOllamaEmbedding(trimmedText);
+        }
 
         const duration = Date.now() - startTime;
-
-        if (!response.data || response.data.length === 0) {
-          throw new Error('OpenAI API returned no embedding data');
-        }
-
-        const embedding = response.data[0];
-
-        // Validate embedding dimension
-        if (embedding.embedding.length !== 1536) {
-          throw new Error(
-            `Expected 1536-dimension vector, got ${embedding.embedding.length} dimensions`
-          );
-        }
-
-        // Log success metrics
         console.log(
           `✓ Generated embedding in ${duration}ms ` +
-          `(${response.usage.prompt_tokens} tokens, model: ${response.model})`
+          `(provider: ${this.provider}, model: ${result.model})`
         );
 
-        return {
-          vector: embedding.embedding,
-          model: response.model,
-          usage: {
-            promptTokens: response.usage.prompt_tokens,
-            totalTokens: response.usage.total_tokens,
-          },
-        };
+        return result;
       } catch (error: any) {
         lastError = error;
         attempt++;
@@ -142,6 +138,75 @@ export class EmbeddingService {
     // All retries exhausted
     const errorMessage = lastError?.message || 'Unknown error';
     throw new Error(`Failed to generate embedding after ${attempt} attempts: ${errorMessage}`);
+  }
+
+  /**
+   * Generate embedding using OpenAI
+   */
+  private async generateOpenAIEmbedding(text: string): Promise<EmbeddingResult> {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const response = await this.client.embeddings.create({
+      model: this.model,
+      input: text,
+      encoding_format: 'float',
+    });
+
+    if (!response.data || response.data.length === 0) {
+      throw new Error('OpenAI API returned no embedding data');
+    }
+
+    const embedding = response.data[0];
+
+    // Validate embedding dimension
+    if (embedding.embedding.length !== this.expectedDimension) {
+      throw new Error(
+        `Expected ${this.expectedDimension}-dimension vector, got ${embedding.embedding.length} dimensions`
+      );
+    }
+
+    return {
+      vector: embedding.embedding,
+      model: response.model,
+      usage: {
+        promptTokens: response.usage.prompt_tokens,
+        totalTokens: response.usage.total_tokens,
+      },
+    };
+  }
+
+  /**
+   * Generate embedding using Ollama
+   */
+  private async generateOllamaEmbedding(text: string): Promise<EmbeddingResult> {
+    const response = await axios.post(`${this.ollamaUrl}/api/embeddings`, {
+      model: this.model,
+      prompt: text,
+    });
+
+    if (!response.data || !response.data.embedding) {
+      throw new Error('Ollama API returned no embedding data');
+    }
+
+    const embedding = response.data.embedding;
+
+    // Validate embedding dimension
+    if (embedding.length !== this.expectedDimension) {
+      throw new Error(
+        `Expected ${this.expectedDimension}-dimension vector, got ${embedding.length} dimensions`
+      );
+    }
+
+    return {
+      vector: embedding,
+      model: this.model,
+      usage: {
+        promptTokens: Math.ceil(text.length / 4), // Rough estimate
+        totalTokens: Math.ceil(text.length / 4),
+      },
+    };
   }
 
   /**
