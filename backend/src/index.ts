@@ -51,6 +51,7 @@ import { FactCheckingResolver } from './resolvers/FactCheckingResolver';
 import { PostActivityResolver } from './resolvers/ActivityResolver';
 import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
 import { WhiteboardResolver } from './resolvers/WhiteboardResolver';
+import { StickyNoteResolver } from './resolvers/StickyNoteResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -125,7 +126,8 @@ async function main() {
       FactCheckingResolver,
       PostActivityResolver,
       NodeAssociationResolver,
-      WhiteboardResolver
+      WhiteboardResolver,
+      StickyNoteResolver
     ],
     pubSub,
     validate: false,
