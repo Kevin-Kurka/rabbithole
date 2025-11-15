@@ -73,24 +73,6 @@ class AddReferenceInput {
 import { ObjectType } from 'type-graphql';
 
 @ObjectType()
-class ProcessedReference {
-  @Field(() => ID)
-  nodeId!: string;
-
-  @Field()
-  title!: string;
-
-  @Field(() => Float)
-  confidence!: number;
-
-  @Field()
-  content!: string;
-
-  @Field(() => ReferenceMetadata)
-  metadata!: ReferenceMetadata;
-}
-
-@ObjectType()
 class ReferenceMetadata {
   @Field()
   sourceUrl!: string;
@@ -109,6 +91,24 @@ class ReferenceMetadata {
 
   @Field({ nullable: true })
   domain?: string;
+}
+
+@ObjectType()
+class ProcessedReference {
+  @Field(() => ID)
+  nodeId!: string;
+
+  @Field()
+  title!: string;
+
+  @Field(() => Float)
+  confidence!: number;
+
+  @Field()
+  content!: string;
+
+  @Field(() => ReferenceMetadata)
+  metadata!: ReferenceMetadata;
 }
 
 @ObjectType()
