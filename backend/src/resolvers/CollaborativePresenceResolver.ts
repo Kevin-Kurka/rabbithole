@@ -15,6 +15,7 @@ import {
   PubSubEngine,
 } from 'type-graphql';
 import { Context } from '../types/context';
+import { UserPresence } from '../entities/Collaboration';
 
 // ============================================================================
 // SUBSCRIPTION TOPICS
@@ -56,29 +57,7 @@ class CursorPosition {
   timestamp!: Date;
 }
 
-@ObjectType()
-class UserPresence {
-  @Field(() => ID)
-  userId!: string;
-
-  @Field()
-  userName!: string;
-
-  @Field({ nullable: true })
-  userAvatar?: string;
-
-  @Field(() => ID)
-  graphId!: string;
-
-  @Field()
-  status!: string; // 'online', 'idle', 'offline'
-
-  @Field(() => [ID], { nullable: true })
-  selectedNodeIds?: string[];
-
-  @Field(() => Date)
-  lastActive!: Date;
-}
+// UserPresence is imported from entities/Collaboration.ts
 
 @ObjectType()
 class NodeSelection {
