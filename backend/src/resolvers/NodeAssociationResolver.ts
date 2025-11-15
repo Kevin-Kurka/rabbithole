@@ -402,15 +402,11 @@ export class NodeAssociationResolver {
            e.created_at,
            n.id as target_id,
            n.title as target_title,
-           n.type as target_type,
-           n.veracity as target_veracity,
            n.weight as target_weight,
            n.props as target_props,
            n.is_level_0 as target_is_level_0,
            n.created_at as target_created_at,
-           n.updated_at as target_updated_at,
-           n.node_type_id as target_node_type_id,
-           n.graph_id as target_graph_id
+           n.updated_at as target_updated_at
          FROM public."Edges" e
          INNER JOIN public."Nodes" n ON e.target_node_id = n.id
          WHERE e.source_node_id = $1
@@ -428,16 +424,14 @@ export class NodeAssociationResolver {
         targetNode: {
           id: row.target_id,
           title: row.target_title,
-          type: row.target_type,
-          veracity: parseFloat(row.target_veracity),
           weight: parseFloat(row.target_weight),
           props: row.target_props,
           is_level_0: row.target_is_level_0,
           created_at: row.target_created_at,
           updated_at: row.target_updated_at,
-          node_type_id: row.target_node_type_id,
-          graph_id: row.target_graph_id,
-        },
+          edges: [],
+          comments: [],
+        } as any,
       }));
     } catch (error) {
       console.error('Error fetching node associations:', error);
