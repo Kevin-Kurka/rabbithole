@@ -43,7 +43,7 @@ class CreateTextBoxNodeInput {
   graphId!: string;
 
   @Field()
-  nodeType!: string; // 'Thesis', 'Citation', or 'Reference'
+  type!: string; // 'Thesis', 'Citation', or 'Reference'
 
   @Field()
   title!: string;
@@ -276,7 +276,7 @@ export class WhiteboardResolver {
 
     // Validate node type
     const validTypes = ['Thesis', 'Citation', 'Reference'];
-    if (!validTypes.includes(input.nodeType)) {
+    if (!validTypes.includes(input.type)) {
       throw new Error(`Invalid node type. Must be one of: ${validTypes.join(', ')}`);
     }
 
@@ -292,11 +292,11 @@ export class WhiteboardResolver {
       // Get node type ID
       const nodeTypeResult = await pool.query(
         'SELECT id FROM public."NodeTypes" WHERE name = $1',
-        [input.nodeType]
+        [input.type]
       );
 
       if (nodeTypeResult.rows.length === 0) {
-        throw new Error(`Node type '${input.nodeType}' not found`);
+        throw new Error(`Node type '${input.type}' not found`);
       }
 
       const nodeTypeId = nodeTypeResult.rows[0].id;
@@ -433,7 +433,7 @@ export class WhiteboardResolver {
 
     for (const update of input.updates) {
       try {
-        await this.updateNodePosition({ input: update }, { pool, userId } as any);
+        await this.updateNodePosition(update, { pool, userId } as any);
         updatedCount++;
       } catch (error) {
         errors.push(`Failed to update node ${update.nodeId}: ${(error as Error).message}`);
