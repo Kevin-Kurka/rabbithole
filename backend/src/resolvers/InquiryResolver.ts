@@ -1,238 +1,200 @@
-import { Resolver, Query, Mutation, Arg, Ctx, InputType, Field, ID } from 'type-graphql';
-import { Inquiry, InquiryStatus } from '../entities/Inquiry';
-import { Context } from '../types/context';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Arg,
+  Ctx,
+  Subscription,
+  Root,
+  Int,
+  Float,
+  PubSub,
+  Publisher
+} from 'type-graphql';
+import { Pool } from 'pg';
+import { PubSubEngine } from 'graphql-subscriptions';
+import { InquiryDeduplicationService } from '../services/InquiryDeduplicationService';
+import { CredibilityCalculationService } from '../services/CredibilityCalculationService';
+import { ThresholdFilteringService } from '../services/ThresholdFilteringService';
+import { AIEvaluationService } from '../services/AIEvaluationService';
+import { AmendmentService } from '../services/AmendmentService';
+import { EmbeddingService } from '../services/EmbeddingService';
 
-@InputType()
+// Subscription topics
+const INQUIRY_CREATED = 'INQUIRY_CREATED';
+const INQUIRY_UPDATED = 'INQUIRY_UPDATED';
+const POSITION_CREATED = 'POSITION_CREATED';
+const POSITION_UPDATED = 'POSITION_UPDATED';
+const NODE_CREDIBILITY_UPDATED = 'NODE_CREDIBILITY_UPDATED';
+const AMENDMENT_PROPOSED = 'AMENDMENT_PROPOSED';
+const AMENDMENT_APPLIED = 'AMENDMENT_APPLIED';
+
+/**
+ * Input types
+ */
 class CreateInquiryInput {
-  @Field(() => ID, { nullable: true })
-  target_node_id?: string;
-
-  @Field(() => ID, { nullable: true })
-  target_edge_id?: string;
-
-  @Field()
-  content!: string;
-
-  @Field(() => ID, { nullable: true })
-  parent_inquiry_id?: string;
+  nodeId!: string;
+  inquiryType!: string;
+  title!: string;
+  description!: string;
+  evidenceIds?: string[];
+  bypassDuplicateCheck?: boolean;
+  duplicateJustification?: string;
 }
 
-@InputType()
-class UpdateInquiryStatusInput {
-  @Field(() => ID)
-  inquiry_id!: string;
-
-  @Field(() => String)
-  status!: InquiryStatus;
+class CreatePositionInput {
+  inquiryId!: string;
+  stance!: string; // 'supporting' | 'opposing' | 'neutral'
+  argument!: string;
+  evidenceTypeCode!: string;
+  evidenceLinks?: string[];
+  evidenceIds?: string[];
 }
 
-@Resolver(() => Inquiry)
+class VoteOnPositionInput {
+  positionId!: string;
+  voteType!: string; // 'upvote' | 'downvote'
+}
+
+class ApplyAmendmentInput {
+  amendmentId!: string;
+}
+
+class ProposeManualAmendmentInput {
+  nodeId!: string;
+  inquiryId!: string;
+  positionId!: string;
+  fieldPath!: string;
+  newValue!: string;
+  explanation!: string;
+}
+
+/**
+ * Context interface
+ */
+interface Context {
+  pool: Pool;
+  pubSub: PubSubEngine;
+  userId?: string;
+}
+
+@Resolver()
 export class InquiryResolver {
-  @Query(() => [Inquiry])
-  async getInquiries(
-    @Arg('nodeId', () => ID, { nullable: true }) nodeId: string | undefined,
-    @Arg('edgeId', () => ID, { nullable: true }) edgeId: string | undefined,
+  /**
+   * QUERIES
+   */
+
+  @Query(() => [Object], { nullable: true })
+  async inquiries(
+    @Arg('nodeId', { nullable: true }) nodeId: string,
+    @Arg('inquiryType', { nullable: true }) inquiryType: string,
+    @Arg('status', { nullable: true }) status: string,
+    @Arg('limit', type => Int, { nullable: true, defaultValue: 20 }) limit: number,
+    @Arg('offset', type => Int, { nullable: true, defaultValue: 0 }) offset: number,
     @Ctx() { pool }: Context
-  ): Promise<Inquiry[]> {
-    try {
-      let sql = `
-        SELECT
-          i.*,
-          u.username,
-          u.email
-        FROM public."Inquiries" i
-        JOIN public."Users" u ON i.user_id = u.id
-        WHERE 1=1
-      `;
-      const params: any[] = [];
+  ): Promise<any[]> {
+    let query = `
+      SELECT
+        i.*,
+        u.username as created_by_username,
+        COUNT(DISTINCT p.id) as position_count,
+        AVG(p.credibility_score) as avg_position_credibility
+      FROM public."Inquiries" i
+      JOIN public."Users" u ON i.created_by_user_id = u.id
+      LEFT JOIN public."InquiryPositions" p ON i.id = p.inquiry_id AND p.status != 'archived'
+    `;
 
-      if (nodeId) {
-        params.push(nodeId);
-        sql += ` AND i.target_node_id = $${params.length}`;
-      }
+    const conditions = [];
+    const params = [];
+    let paramCount = 1;
 
-      if (edgeId) {
-        params.push(edgeId);
-        sql += ` AND i.target_edge_id = $${params.length}`;
-      }
-
-      sql += ` ORDER BY i.created_at DESC`;
-
-      const result = await pool.query(sql, params);
-
-      return result.rows.map(row => ({
-        id: row.id,
-        target_node_id: row.target_node_id,
-        target_edge_id: row.target_edge_id,
-        user_id: row.user_id,
-        content: row.content,
-        status: row.status as InquiryStatus,
-        parent_inquiry_id: row.parent_inquiry_id,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        user: {
-          id: row.user_id,
-          username: row.username,
-          email: row.email,
-        },
-      })) as Inquiry[];
-    } catch (error) {
-      console.error('Error fetching inquiries:', error);
-      return [];
+    if (nodeId) {
+      conditions.push(`i.node_id = $${paramCount}`);
+      params.push(nodeId);
+      paramCount++;
     }
+
+    if (inquiryType) {
+      conditions.push(`i.inquiry_type = $${paramCount}`);
+      params.push(inquiryType);
+      paramCount++;
+    }
+
+    if (status) {
+      conditions.push(`i.status = $${paramCount}`);
+      params.push(status);
+      paramCount++;
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += `
+      GROUP BY i.id, u.username
+      ORDER BY i.created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+    return result.rows;
   }
 
-  @Mutation(() => Inquiry)
-  async createInquiry(
-    @Arg('input') input: CreateInquiryInput,
-    @Ctx() { pool, userId }: Context
-  ): Promise<Inquiry> {
-    if (!userId) {
-      throw new Error('Authentication required to create inquiry');
-    }
-
-    // Validate that either node_id or edge_id is provided, but not both
-    if (
-      (!input.target_node_id && !input.target_edge_id) ||
-      (input.target_node_id && input.target_edge_id)
-    ) {
-      throw new Error('Must provide either target_node_id or target_edge_id, but not both');
-    }
-
-    try {
-      const sql = `
-        INSERT INTO public."Inquiries" (
-          target_node_id,
-          target_edge_id,
-          user_id,
-          content,
-          parent_inquiry_id,
-          status,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, 'open', NOW(), NOW())
-        RETURNING *
-      `;
-
-      const result = await pool.query(sql, [
-        input.target_node_id || null,
-        input.target_edge_id || null,
-        userId,
-        input.content,
-        input.parent_inquiry_id || null,
-      ]);
-
-      const row = result.rows[0];
-
-      return {
-        id: row.id,
-        target_node_id: row.target_node_id,
-        target_edge_id: row.target_edge_id,
-        user_id: row.user_id,
-        content: row.content,
-        status: row.status as InquiryStatus,
-        parent_inquiry_id: row.parent_inquiry_id,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-      } as Inquiry;
-    } catch (error) {
-      console.error('Error creating inquiry:', error);
-      throw new Error('Failed to create inquiry');
-    }
-  }
-
-  @Mutation(() => Inquiry)
-  async updateInquiryStatus(
-    @Arg('input') input: UpdateInquiryStatusInput,
-    @Ctx() { pool, userId }: Context
-  ): Promise<Inquiry> {
-    if (!userId) {
-      throw new Error('Authentication required to update inquiry status');
-    }
-
-    try {
-      const sql = `
-        UPDATE public."Inquiries"
-        SET status = $1, updated_at = NOW()
-        WHERE id = $2
-        RETURNING *
-      `;
-
-      const result = await pool.query(sql, [input.status, input.inquiry_id]);
-
-      if (result.rows.length === 0) {
-        throw new Error('Inquiry not found');
-      }
-
-      const row = result.rows[0];
-
-      return {
-        id: row.id,
-        target_node_id: row.target_node_id,
-        target_edge_id: row.target_edge_id,
-        user_id: row.user_id,
-        content: row.content,
-        status: row.status as InquiryStatus,
-        parent_inquiry_id: row.parent_inquiry_id,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-      } as Inquiry;
-    } catch (error) {
-      console.error('Error updating inquiry status:', error);
-      throw new Error('Failed to update inquiry status');
-    }
-  }
-
-  @Query(() => [Inquiry])
-  async getInquiryThread(
-    @Arg('inquiryId', () => ID) inquiryId: string,
+  @Query(() => Object, { nullable: true })
+  async inquiry(
+    @Arg('id') id: string,
     @Ctx() { pool }: Context
-  ): Promise<Inquiry[]> {
-    try {
-      // Get inquiry and all its replies recursively
-      const sql = `
-        WITH RECURSIVE inquiry_thread AS (
-          -- Base case: the root inquiry
-          SELECT * FROM public."Inquiries"
-          WHERE id = $1
+  ): Promise<any> {
+    const result = await pool.query(
+      `
+      SELECT
+        i.*,
+        u.username as created_by_username,
+        n.title as node_title
+      FROM public."Inquiries" i
+      JOIN public."Users" u ON i.created_by_user_id = u.id
+      JOIN public."Nodes" n ON i.node_id = n.id
+      WHERE i.id = $1
+      `,
+      [id]
+    );
 
-          UNION ALL
-
-          -- Recursive case: replies to inquiries in the thread
-          SELECT i.*
-          FROM public."Inquiries" i
-          INNER JOIN inquiry_thread it ON i.parent_inquiry_id = it.id
-        )
-        SELECT
-          t.*,
-          u.username,
-          u.email
-        FROM inquiry_thread t
-        JOIN public."Users" u ON t.user_id = u.id
-        ORDER BY t.created_at ASC
-      `;
-
-      const result = await pool.query(sql, [inquiryId]);
-
-      return result.rows.map(row => ({
-        id: row.id,
-        target_node_id: row.target_node_id,
-        target_edge_id: row.target_edge_id,
-        user_id: row.user_id,
-        content: row.content,
-        status: row.status as InquiryStatus,
-        parent_inquiry_id: row.parent_inquiry_id,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        user: {
-          id: row.user_id,
-          username: row.username,
-          email: row.email,
-        },
-      })) as Inquiry[];
-    } catch (error) {
-      console.error('Error fetching inquiry thread:', error);
-      return [];
+    if (result.rows.length === 0) {
+      throw new Error('Inquiry not found');
     }
+
+    return result.rows[0];
   }
+
+  // TODO: Complete implementation with remaining methods:
+  // - inquiryPositions(inquiryId, groupByThreshold)
+  // - inquiryThresholdStatistics(inquiryId)
+  // - checkInquirySimilarity(title, description, nodeId, inquiryType)
+  // - nodeAmendments(nodeId, fieldPath)
+  // - nodeWithAmendments(nodeId)
+  // - pendingAmendments(nodeId)
+  // - evidenceTypes()
+  // - credibilityThresholds()
+  //
+  // MUTATIONS:
+  // - createInquiry(input): Check duplicates, generate embedding, create inquiry
+  // - createPosition(input): Validate inquiry, create position, trigger AI evaluation
+  // - voteOnPosition(input): Update vote, recalculate credibility, check amendments
+  // - mergeInquiries(sourceId, targetId, justification)
+  // - proposeManualAmendment(input)
+  // - applyAmendment(input): Apply amendment, update node credibility
+  // - rejectAmendment(amendmentId, reason)
+  // - recalculateNodeCredibility(nodeId)
+  //
+  // SUBSCRIPTIONS:
+  // - inquiryCreated(nodeId): Subscribe to new inquiries
+  // - positionCreated(inquiryId): Subscribe to new positions
+  // - positionUpdated(inquiryId): Subscribe to position updates
+  // - nodeCredibilityUpdated(nodeId): Subscribe to credibility changes
+  // - amendmentProposed(nodeId): Subscribe to new amendments
+  // - amendmentApplied(nodeId): Subscribe to applied amendments
+  //
+  // PRIVATE METHODS:
+  // - evaluatePositionAsync(position, inquiry, pool, pubSub): AI evaluation workflow
 }
