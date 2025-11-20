@@ -7,6 +7,7 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, Plus, X } from 'lucide-react';
 import LoginDialog from '@/components/LoginDialog';
+import { CredibilityBadge } from '@/components/credibility-badge';
 
 // GraphQL queries and mutations
 const GET_GRAPHS_QUERY = gql`
@@ -25,6 +26,11 @@ const SEARCH_NODES_QUERY = gql`
       nodes {
         id
         title
+        veracityScore {
+          veracityScore
+          evidenceCount
+          challengeCount
+        }
       }
     }
   }
@@ -54,6 +60,8 @@ interface Node {
   title: string;
   type: string;
   credibility: number;
+  evidenceCount: number;
+  challengeCount: number;
   x: number;
   y: number;
   connections: string[];
@@ -115,7 +123,9 @@ export default function HomePage() {
         id: node.id,
         title: node.title,
         type: 'Node',
-        credibility: 85 + Math.floor(Math.random() * 15), // Random credibility 85-100%
+        credibility: node.veracityScore?.veracityScore || 0.85, // Use actual veracity score or default to 85%
+        evidenceCount: node.veracityScore?.evidenceCount || 0,
+        challengeCount: node.veracityScore?.challengeCount || 0,
         x: 20 + (index % 4) * 20 + Math.random() * 10,
         y: 30 + Math.floor(index / 4) * 30 + Math.random() * 10,
         connections: [],
@@ -363,19 +373,22 @@ export default function HomePage() {
                   </h3>
                 </div>
 
-                {/* Bottom Row - Type, Credibility, Link Icon */}
+                {/* Bottom Row - Type, Credibility Badge, Link Icon */}
                 <div className="px-4 py-2 flex items-center justify-between">
-                  {/* Left: Type Icon and Credibility */}
+                  {/* Left: Type Icon and Credibility Badge */}
                   <div className="flex items-center gap-2">
                     {/* Type Icon */}
                     <div className="text-zinc-400">
                       {getNodeTypeIcon(node.type)}
                     </div>
 
-                    {/* Credibility Score */}
-                    <div className="text-zinc-400">
-                      <span className="text-xs font-medium">{node.credibility}%</span>
-                    </div>
+                    {/* Credibility Badge */}
+                    <CredibilityBadge
+                      score={node.credibility}
+                      evidenceCount={node.evidenceCount}
+                      challengeCount={node.challengeCount}
+                      variant="compact"
+                    />
                   </div>
 
                   {/* Right: Link Icon */}
