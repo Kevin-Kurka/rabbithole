@@ -3,6 +3,10 @@
 import React, { useState } from 'react';
 import { X, User, MapPin, Calendar, Box, FileText, ChevronRight } from 'lucide-react';
 import { PersonForm } from './person-form';
+import { EventForm } from './event-form';
+import { PlaceForm } from './place-form';
+import { ThingForm } from './thing-form';
+import { SourceForm } from './source-form';
 
 export type NodeType = 'Person' | 'Event' | 'Place' | 'Thing' | 'Source';
 
@@ -157,22 +161,36 @@ export function ReferenceWizard({ isOpen, onClose, onSuccess }: ReferenceWizardP
               />
             )}
 
-            {step === 'form' && selectedType !== 'Person' && (
-              <div className="p-6">
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">Coming Soon</h3>
-                  <p className="text-zinc-400 max-w-md mx-auto mb-6">
-                    The {selectedType} form is being developed. For now, only Person nodes can be created.
-                  </p>
-                  <button
-                    onClick={handleBack}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
-                  >
-                    Back to Selection
-                  </button>
-                </div>
-              </div>
+            {step === 'form' && selectedType === 'Event' && (
+              <EventForm
+                onBack={handleBack}
+                onClose={handleFormClose}
+                onSuccess={handleFormSuccess}
+              />
+            )}
+
+            {step === 'form' && selectedType === 'Place' && (
+              <PlaceForm
+                onBack={handleBack}
+                onClose={handleFormClose}
+                onSuccess={handleFormSuccess}
+              />
+            )}
+
+            {step === 'form' && selectedType === 'Thing' && (
+              <ThingForm
+                onBack={handleBack}
+                onClose={handleFormClose}
+                onSuccess={handleFormSuccess}
+              />
+            )}
+
+            {step === 'form' && selectedType === 'Source' && (
+              <SourceForm
+                onBack={handleBack}
+                onClose={handleFormClose}
+                onSuccess={handleFormSuccess}
+              />
             )}
           </div>
         </div>
