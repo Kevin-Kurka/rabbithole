@@ -14,6 +14,7 @@
     "worker:start": "ts-node src/workers/VectorizationWorker.ts",
     "worker:media": "ts-node src/workers/MediaProcessingWorker.ts",
     "rabbitmq:health": "ts-node src/utils/rabbitmq-health-check.ts",
+    "recalculate-credibility": "ts-node scripts/recalculate-node-credibility.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
