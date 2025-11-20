@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('VS Code Layout - Basic Tests', () => {
   test('should render VS Code layout on graph page', async ({ page }) => {
     // Go directly to graph page (authentication handled by Next.js)
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
 
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
@@ -22,7 +22,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
   });
 
   test('should have main menu at top', async ({ page }) => {
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
@@ -36,7 +36,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
   });
 
   test('should have left panel with icon navigation', async ({ page }) => {
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
@@ -49,7 +49,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
   });
 
   test('should toggle panel with keyboard shortcut', async ({ page }) => {
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
@@ -66,7 +66,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
   });
 
   test('should have status bar at bottom', async ({ page }) => {
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
@@ -79,7 +79,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
   });
 
   test('should display graph canvas or empty state', async ({ page }) => {
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
 
@@ -106,7 +106,7 @@ test.describe('VS Code Layout - Basic Tests', () => {
       }
     });
 
-    await page.goto('http://localhost:3001/graph');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
 
