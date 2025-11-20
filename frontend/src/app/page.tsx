@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
-import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, Plus, X } from 'lucide-react';
 import LoginDialog from '@/components/LoginDialog';
 
 // GraphQL queries and mutations
@@ -64,6 +64,7 @@ export default function HomePage() {
   const router = useRouter();
   const apolloClient = useApolloClient();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showProposalModal, setShowProposalModal] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -393,14 +394,14 @@ export default function HomePage() {
 
       {/* Floating Navigation - Top Right */}
       <div className="fixed top-8 right-8 flex items-center gap-3 z-50">
-        {/* Articles Link */}
+        {/* Propose New Topic Button */}
         <button
-          onClick={() => router.push('/articles')}
-          className="px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg hover:bg-white/20 transition-all shadow-2xl flex items-center gap-2"
+          onClick={() => setShowProposalModal(true)}
+          className="px-4 py-2 bg-blue-600/20 backdrop-blur-xl border border-blue-400/30 rounded-lg hover:bg-blue-600/30 transition-all shadow-2xl flex items-center gap-2"
           style={{ borderWidth: '1px' }}
         >
-          <FileText className="w-4 h-4 text-white" />
-          <span className="text-white text-sm font-medium">Articles</span>
+          <Plus className="w-4 h-4 text-blue-300" />
+          <span className="text-blue-100 text-sm font-medium">Propose New Topic</span>
         </button>
 
         {/* Avatar */}
@@ -519,6 +520,65 @@ export default function HomePage() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+
+      {/* Topic Proposal Modal */}
+      {showProposalModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl mx-4">
+            <div className="bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-white">Propose New Topic</h2>
+                <button
+                  onClick={() => setShowProposalModal(false)}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-8">
+                <div className="text-center py-12">
+                  <AlertTriangle className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">Coming Soon</h3>
+                  <p className="text-zinc-400 max-w-md mx-auto">
+                    The formal topic proposal process is being developed. This will include:
+                  </p>
+                  <ul className="text-zinc-400 text-sm mt-4 space-y-2 max-w-md mx-auto text-left">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>AI-powered duplicate detection</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>Reference quality assessment</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>Formal justification requirements</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>AI evaluation and approval workflow</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+                <button
+                  onClick={() => setShowProposalModal(false)}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         /* Layer 1 - Fastest, Largest Stars */
