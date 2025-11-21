@@ -114,13 +114,13 @@ export function EnrichedContent({
       if (enrichment.type === 'citation') {
         const citation = enrichment.data as Citation;
         elements.push(
-          <span key={`citation-${citation.id}`} className="inline-flex items-center gap-1">
+          <span key={`citation-${citation.id}`} className="inline-flex items-baseline gap-0.5">
             <span dangerouslySetInnerHTML={{ __html: enrichedText }} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Badge
                   variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-1.5 py-0"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <Quote className="w-2.5 h-2.5" />
                 </Badge>
@@ -164,13 +164,13 @@ export function EnrichedContent({
         const nodeLink = enrichment.data as NodeLink;
         const NodeIcon = getNodeIcon(nodeLink.nodeType);
         elements.push(
-          <span key={`node-${nodeLink.id}`} className="inline-flex items-center gap-1">
+          <span key={`node-${nodeLink.id}`} className="inline-flex items-baseline gap-0.5">
             <span dangerouslySetInnerHTML={{ __html: enrichedText }} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="cursor-pointer hover:bg-accent transition-colors text-xs px-1.5 py-0"
+                  className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <NodeIcon className="w-2.5 h-2.5" />
                 </Badge>

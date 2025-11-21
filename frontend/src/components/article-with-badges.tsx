@@ -24,13 +24,13 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
           The JFK assassination investigation has produced extensive documentation including the{' '}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <span className="inline-flex items-baseline gap-1">
+              <span className="inline-flex items-baseline gap-0.5">
                 <span className="font-medium cursor-pointer hover:text-primary">
                   Zapruder film frame analysis
                 </span>
                 <Badge
                   variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-middle"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <Quote className="w-2.5 h-2.5" />
                 </Badge>
@@ -68,7 +68,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 <span className="font-medium cursor-pointer hover:text-primary">Warren Commission</span>
                 <Badge
                   variant="outline"
-                  className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-middle"
+                  className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <Briefcase className="w-2 h-2" />
                 </Badge>
@@ -98,13 +98,13 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
           Multiple investigations have examined the trajectory evidence. The{' '}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <span className="inline-flex items-baseline gap-1">
+              <span className="inline-flex items-baseline gap-0.5">
                 <span className="font-medium cursor-pointer hover:text-primary">
                   Warren Commission Report
                 </span>
                 <Badge
                   variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-middle"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <Quote className="w-2.5 h-2.5" />
                 </Badge>
@@ -142,7 +142,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 <span className="font-medium cursor-pointer hover:text-primary">Lee Harvey Oswald</span>
                 <Badge
                   variant="outline"
-                  className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-middle"
+                  className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-text-top"
                 >
                   <User className="w-2 h-2" />
                 </Badge>
