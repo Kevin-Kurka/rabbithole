@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ExternalLink, Eye, MessageSquare, Link2 } from 'lucide-react';
+import { ExternalLink, Eye, MessageSquare, Link2, Quote, User, Briefcase } from 'lucide-react';
 
 interface ArticleWithBadgesProps {
   onNavigateToNode?: (nodeId: string) => void;
@@ -32,7 +32,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                   variant="secondary"
                   className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-middle"
                 >
-                  cite
+                  <Quote className="w-2.5 h-2.5" />
                 </Badge>
               </span>
             </DropdownMenuTrigger>
@@ -70,7 +70,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                   variant="outline"
                   className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-middle"
                 >
-                  <Link2 className="w-2 h-2" />
+                  <Briefcase className="w-2 h-2" />
                 </Badge>
               </span>
             </DropdownMenuTrigger>
@@ -106,7 +106,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                   variant="secondary"
                   className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] px-1 py-0 align-middle"
                 >
-                  cite
+                  <Quote className="w-2.5 h-2.5" />
                 </Badge>
               </span>
             </DropdownMenuTrigger>
@@ -144,7 +144,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                   variant="outline"
                   className="cursor-pointer hover:bg-accent transition-colors text-[10px] px-1 py-0 align-middle"
                 >
-                  <Link2 className="w-2 h-2" />
+                  <User className="w-2 h-2" />
                 </Badge>
               </span>
             </DropdownMenuTrigger>

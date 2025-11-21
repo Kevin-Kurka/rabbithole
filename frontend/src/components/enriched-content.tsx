@@ -9,7 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ExternalLink, Eye, MessageSquare, Link2 } from 'lucide-react';
+import {
+  ExternalLink,
+  Eye,
+  MessageSquare,
+  Link2,
+  Quote,
+  User,
+  MapPin,
+  Calendar,
+  FileText,
+  Building,
+  Briefcase
+} from 'lucide-react';
 
 interface Citation {
   id: string;
@@ -24,6 +36,7 @@ interface NodeLink {
   id: string;
   nodeId: string;
   nodeTitle: string;
+  nodeType?: string; // e.g., "Person", "Place", "Event", "Document", "Organization"
   text: string;
   startOffset: number;
   endOffset: number;
@@ -36,6 +49,21 @@ interface EnrichedContentProps {
   onNavigateToNode?: (nodeId: string) => void;
   onViewCitation?: (citation: Citation) => void;
   onCommentOnCitation?: (citation: Citation) => void;
+}
+
+// Helper function to get icon based on node type
+function getNodeIcon(nodeType?: string) {
+  if (!nodeType) return Link2;
+
+  const type = nodeType.toLowerCase();
+  if (type.includes('person') || type.includes('individual')) return User;
+  if (type.includes('place') || type.includes('location')) return MapPin;
+  if (type.includes('event') || type.includes('incident')) return Calendar;
+  if (type.includes('document') || type.includes('report') || type.includes('evidence')) return FileText;
+  if (type.includes('organization') || type.includes('agency') || type.includes('institution')) return Building;
+  if (type.includes('investigation') || type.includes('inquiry')) return Briefcase;
+
+  return Link2; // Default icon
 }
 
 export function EnrichedContent({
@@ -94,7 +122,7 @@ export function EnrichedContent({
                   variant="secondary"
                   className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-1.5 py-0"
                 >
-                  [cite]
+                  <Quote className="w-2.5 h-2.5" />
                 </Badge>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
@@ -134,6 +162,7 @@ export function EnrichedContent({
         );
       } else if (enrichment.type === 'nodeLink') {
         const nodeLink = enrichment.data as NodeLink;
+        const NodeIcon = getNodeIcon(nodeLink.nodeType);
         elements.push(
           <span key={`node-${nodeLink.id}`} className="inline-flex items-center gap-1">
             <span dangerouslySetInnerHTML={{ __html: enrichedText }} />
@@ -143,7 +172,7 @@ export function EnrichedContent({
                   variant="outline"
                   className="cursor-pointer hover:bg-accent transition-colors text-xs px-1.5 py-0"
                 >
-                  <Link2 className="w-2.5 h-2.5" />
+                  <NodeIcon className="w-2.5 h-2.5" />
                 </Badge>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
