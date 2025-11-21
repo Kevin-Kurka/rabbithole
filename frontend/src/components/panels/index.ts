@@ -20,3 +20,6 @@ export { default as OutputPanel } from './OutputPanel';
 export type { OutputPanelProps } from './OutputPanel';
 
 export { NodeAssociationsPanel } from './node-associations-panel';
+export { ContextPanel } from './context-panel';
+export { FilterPanel } from './filter-panel';
+export { GraphSidebar } from './graph-sidebar';
