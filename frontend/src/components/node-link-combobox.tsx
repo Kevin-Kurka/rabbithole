@@ -73,14 +73,14 @@ export function NodeLinkCombobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[300px] p-0 bg-background border" align="start">
-          <Command shouldFilter={false} className="bg-background">
+          <Command shouldFilter={false} className="bg-transparent">
             <CommandInput
               placeholder="Search nodes to link..."
               value={searchTerm}
               onValueChange={handleSearch}
-              className="bg-background"
+              className="bg-transparent"
             />
-            <CommandList className="bg-background">
+            <CommandList className="bg-transparent">
               {loading && (
                 <div className="py-6 text-center text-sm text-muted-foreground">
                   Searching...
@@ -90,7 +90,7 @@ export function NodeLinkCombobox({
                 <CommandEmpty>No nodes found.</CommandEmpty>
               )}
               {!loading && data?.searchNodes && data.searchNodes.length > 0 && (
-                <CommandGroup className="bg-background">
+                <CommandGroup className="bg-transparent">
                   {data.searchNodes
                     .filter((node) => node.id !== sourceNodeId)
                     .map((node) => (
@@ -98,7 +98,7 @@ export function NodeLinkCombobox({
                         key={node.id}
                         value={node.id}
                         onSelect={() => handleSelect(node)}
-                        className="cursor-pointer bg-background hover:bg-accent"
+                        className="cursor-pointer bg-transparent hover:bg-accent"
                       >
                         <FileText className="w-4 h-4 mr-2 text-muted-foreground" />
                         <div className="flex-1">

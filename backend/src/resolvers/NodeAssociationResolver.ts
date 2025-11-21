@@ -338,7 +338,9 @@ export class NodeAssociationResolver {
       }
 
       const node = nodeResult.rows[0];
-      const props = node.props ? JSON.parse(node.props) : {};
+      // Handle both string and object props
+      const propsData = node.props;
+      const props = typeof propsData === 'string' ? JSON.parse(propsData) : (propsData || {});
 
       // Initialize references/citations arrays if they don't exist
       if (!props.references) props.references = [];
@@ -458,7 +460,9 @@ export class NodeAssociationResolver {
         return [];
       }
 
-      const props = result.rows[0].props ? JSON.parse(result.rows[0].props) : {};
+      // Handle both string and object props
+      const propsData = result.rows[0].props;
+      const props = typeof propsData === 'string' ? JSON.parse(propsData) : (propsData || {});
       const references: any[] = [];
 
       // Get references

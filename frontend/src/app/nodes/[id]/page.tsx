@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/breadcrumb';
 import { CreateInquirySidebar } from '@/components/create-inquiry-sidebar';
 import { FormalInquiryCard } from '@/components/formal-inquiry-card';
+import { TextSelectionMenu } from '@/components/text-selection-menu';
+import { AddCommentDialog } from '@/components/add-comment-dialog';
+import { ArticleWithBadges } from '@/components/article-with-badges';
 import { useQuery } from '@apollo/client';
 import { GET_FORMAL_INQUIRIES, type FormalInquiry } from '@/graphql/queries/formal-inquiries';
 import {
@@ -85,8 +88,53 @@ export default function NodeDetailsPage() {
   // File upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
+  // Comment dialog state
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  const [textSelection, setTextSelection] = useState<Selection | null>(null);
+
   // Mock evidence ID - replace with actual evidence from GraphQL
   const mockEvidenceId = 'evidence-1';
+
+  // Mock citations for article content
+  const mockCitations = [
+    {
+      id: 'cite-1',
+      text: 'Zapruder film frame analysis',
+      url: 'https://example.com/zapruder-analysis',
+      title: 'Zapruder Film Technical Analysis',
+      startOffset: 150,
+      endOffset: 180,
+    },
+    {
+      id: 'cite-2',
+      text: 'Warren Commission Report',
+      url: 'https://example.com/warren-commission',
+      title: 'Official Warren Commission Report',
+      startOffset: 300,
+      endOffset: 325,
+    },
+  ];
+
+  // Mock node links for article content
+  const mockNodeLinks = [
+    {
+      id: 'link-1',
+      nodeId: '2',
+      nodeTitle: 'Warren Commission',
+      text: 'Warren Commission',
+      startOffset: 200,
+      endOffset: 218,
+    },
+    {
+      id: 'link-2',
+      nodeId: '3',
+      nodeTitle: 'Lee Harvey Oswald',
+      text: 'Lee Harvey Oswald',
+      startOffset: 400,
+      endOffset: 417,
+    },
+  ];
 
   // Mock related nodes - replace with actual GraphQL query
   const [relatedNodes, setRelatedNodes] = useState<RelatedNode[]>([
@@ -256,6 +304,18 @@ export default function NodeDetailsPage() {
     }
   };
 
+  const handleTextComment = (text: string, selection: Selection) => {
+    setSelectedText(text);
+    setTextSelection(selection);
+    setCommentDialogOpen(true);
+  };
+
+  const handleTextInquiry = (text: string, selection: Selection) => {
+    setSelectedText(text);
+    setTextSelection(selection);
+    setCreateInquiryOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -382,7 +442,7 @@ export default function NodeDetailsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="start"
-                        className="z-[100] bg-card backdrop-blur-sm border border-border shadow-lg"
+                        className="z-[100] bg-card border border-border shadow-lg"
                       >
                         <DropdownMenuLabel>Contents</DropdownMenuLabel>
                         <DropdownMenuSeparator />
@@ -490,21 +550,16 @@ export default function NodeDetailsPage() {
 
                   <div className="flex-1 overflow-y-auto p-6">
                     <TabsContent value="article" className="mt-0 h-full">
-                      <div className="prose dark:prose-invert max-w-none">
-                        <h2 id="section-overview">Overview</h2>
-                        <p>Full article or document content will be displayed here.</p>
-                        <p>{node.content}</p>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-
-                        <h2 id="section-evidence">Evidence Analysis</h2>
-                        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-                        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-                        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-                        <h2 id="section-conclusions">Conclusions</h2>
-                        <p>Final analysis and conclusions based on the evidence presented.</p>
-                        <p>Additional context and summary of findings.</p>
-                      </div>
+                      <ArticleWithBadges
+                        onNavigateToNode={(nodeId) => router.push(`/nodes/${nodeId}`)}
+                      />
+                      {activeTab === 'article' && (
+                        <TextSelectionMenu
+                          onComment={handleTextComment}
+                          onInquiry={handleTextInquiry}
+                          containerId="article-content"
+                        />
+                      )}
                     </TabsContent>
 
                     <TabsContent value="inquiries" className="mt-0 h-full">
@@ -651,7 +706,7 @@ export default function NodeDetailsPage() {
                                   }}
                                   className="group relative"
                                 >
-                                  <div className="w-56 bg-zinc-900/90 backdrop-blur-xl border border-white/20 rounded shadow-2xl hover:border-white/40 hover:bg-zinc-800/90 transition-all overflow-hidden" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+                                  <div className="w-56 bg-zinc-900 border border-white/20 rounded shadow-2xl hover:border-white/40 hover:bg-zinc-800 transition-all overflow-hidden" style={{ borderWidth: '1px', borderRadius: '8px' }}>
                                     <div className="px-4 py-3 border-b border-white/10" style={{ borderBottomWidth: '1px' }}>
                                       <h3 className="text-sm font-medium text-white line-clamp-2">{relatedNode.title}</h3>
                                     </div>
@@ -876,6 +931,18 @@ export default function NodeDetailsPage() {
         onUploadComplete={() => {
           // Refresh file list
           setUploadDialogOpen(false);
+        }}
+      />
+
+      {/* Add Comment Dialog */}
+      <AddCommentDialog
+        open={commentDialogOpen}
+        onOpenChange={setCommentDialogOpen}
+        selectedText={selectedText}
+        nodeId={id}
+        onCommentAdded={() => {
+          // Refresh comments or activity feed
+          setCommentDialogOpen(false);
         }}
       />
     </div>

@@ -9,14 +9,22 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CreateArticleDialog } from '@/components/create-article-dialog';
 import { GET_ARTICLES, type Article } from '@/graphql/queries/articles';
-import { FileText, Plus, Search, Calendar, User, Eye } from 'lucide-react';
+import { FileText, Plus, Search, Calendar, User, Eye, Grid3x3, GitBranch } from 'lucide-react';
 import { format } from 'date-fns';
+import dynamic from 'next/dynamic';
+
+// Dynamically import GraphView to avoid SSR issues with React Flow
+const GraphView = dynamic(() => import('@/components/graph/GraphView'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center py-12">Loading graph...</div>
+});
 
 export default function ArticlesPage() {
   const router = useRouter();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPublished, setFilterPublished] = useState<boolean | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<'card' | 'graph'>('card');
 
   const { data, loading, error } = useQuery(GET_ARTICLES, {
     variables: {
@@ -96,6 +104,28 @@ export default function ArticlesPage() {
                 Drafts
               </Button>
             </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'card' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('card')}
+                className="gap-2"
+              >
+                <Grid3x3 className="w-4 h-4" />
+                Card
+              </Button>
+              <Button
+                variant={viewMode === 'graph' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('graph')}
+                className="gap-2"
+              >
+                <GitBranch className="w-4 h-4" />
+                Graph
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -136,15 +166,16 @@ export default function ArticlesPage() {
           </div>
         )}
 
-        {/* Articles Grid */}
+        {/* Articles Display - Card or Graph View */}
         {!loading && !error && filteredArticles.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <Card
-                key={article.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => handleArticleClick(article.id)}
-              >
+          viewMode === 'card' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredArticles.map((article) => (
+                <Card
+                  key={article.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => handleArticleClick(article.id)}
+                >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
@@ -183,6 +214,9 @@ export default function ArticlesPage() {
               </Card>
             ))}
           </div>
+          ) : (
+            <GraphView articles={filteredArticles} graphId="articles-graph" />
+          )
         )}
 
         {/* Pagination Info */}

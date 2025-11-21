@@ -1,0 +1,22 @@
+{
+  "name": "rabbithole",
+  "version": "1.0.0",
+  "description": "Collaborative knowledge graph platform for evidence-based inquiry",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "playwright:install": "playwright install --with-deps chromium"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

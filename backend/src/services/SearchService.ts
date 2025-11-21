@@ -6,6 +6,7 @@ import { Pool } from 'pg';
  */
 
 export interface SearchResult {
+  veracityScore?: { veracityScore: number; evidenceCount?: number; challengeCount?: number; };
   id: string;
   title: string;
   type: string; // article, fact, claim, person, etc.

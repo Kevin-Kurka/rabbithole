@@ -40,7 +40,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
-      <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
+      <div className="bg-white/10 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
         <h1 className="text-3xl font-bold text-white mb-6 text-center">
           Sign In
         </h1>

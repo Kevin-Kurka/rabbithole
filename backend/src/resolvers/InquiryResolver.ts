@@ -9,16 +9,20 @@ import {
   Int,
   Float,
   PubSub,
-  Publisher
+  Publisher,
+  InputType,
+  Field
 } from 'type-graphql';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';
+import GraphQLJSON from 'graphql-type-json';
 import { InquiryDeduplicationService } from '../services/InquiryDeduplicationService';
 import { CredibilityCalculationService } from '../services/CredibilityCalculationService';
 import { ThresholdFilteringService } from '../services/ThresholdFilteringService';
 import { AIEvaluationService } from '../services/AIEvaluationService';
 import { AmendmentService } from '../services/AmendmentService';
 import { EmbeddingService } from '../services/EmbeddingService';
+import { ConversationalAIService } from '../services/ConversationalAIService';
 
 // Subscription topics
 const INQUIRY_CREATED = 'INQUIRY_CREATED';
@@ -32,40 +36,84 @@ const AMENDMENT_APPLIED = 'AMENDMENT_APPLIED';
 /**
  * Input types
  */
+@InputType()
 class CreateInquiryInput {
+  @Field()
   nodeId!: string;
+
+  @Field()
   inquiryType!: string;
+
+  @Field()
   title!: string;
+
+  @Field()
   description!: string;
+
+  @Field(() => [String], { nullable: true })
   evidenceIds?: string[];
+
+  @Field({ nullable: true })
   bypassDuplicateCheck?: boolean;
+
+  @Field({ nullable: true })
   duplicateJustification?: string;
 }
 
+@InputType()
 class CreatePositionInput {
+  @Field()
   inquiryId!: string;
-  stance!: string; // 'supporting' | 'opposing' | 'neutral'
+
+  @Field() // 'supporting' | 'opposing' | 'neutral'
+  stance!: string;
+
+  @Field()
   argument!: string;
+
+  @Field()
   evidenceTypeCode!: string;
+
+  @Field(() => [String], { nullable: true })
   evidenceLinks?: string[];
+
+  @Field(() => [String], { nullable: true })
   evidenceIds?: string[];
 }
 
+@InputType()
 class VoteOnPositionInput {
+  @Field()
   positionId!: string;
-  voteType!: string; // 'upvote' | 'downvote'
+
+  @Field() // 'upvote' | 'downvote'
+  voteType!: string;
 }
 
+@InputType()
 class ApplyAmendmentInput {
+  @Field()
   amendmentId!: string;
 }
 
+@InputType()
 class ProposeManualAmendmentInput {
+  @Field()
   nodeId!: string;
+
+  @Field()
   inquiryId!: string;
+
+  @Field()
   positionId!: string;
+
+  @Field()
   fieldPath!: string;
+
+  @Field()
   newValue!: string;
+
+  @Field()
   explanation!: string;
 }
 
@@ -84,7 +132,7 @@ export class InquiryResolver {
    * QUERIES
    */
 
-  @Query(() => [Object], { nullable: true })
+  @Query(() => [GraphQLJSON], { nullable: true })
   async inquiries(
     @Arg('nodeId', { nullable: true }) nodeId: string,
     @Arg('inquiryType', { nullable: true }) inquiryType: string,
@@ -141,7 +189,7 @@ export class InquiryResolver {
     return result.rows;
   }
 
-  @Query(() => Object, { nullable: true })
+  @Query(() => GraphQLJSON, { nullable: true })
   async inquiry(
     @Arg('id') id: string,
     @Ctx() { pool }: Context
@@ -167,7 +215,7 @@ export class InquiryResolver {
     return result.rows[0];
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async inquiryPositions(
     @Arg('inquiryId') inquiryId: string,
     @Arg('groupByThreshold', { nullable: true, defaultValue: false }) groupByThreshold: boolean,
@@ -189,7 +237,7 @@ export class InquiryResolver {
     }
   }
 
-  @Query(() => Object, { nullable: true })
+  @Query(() => GraphQLJSON, { nullable: true })
   async inquiryThresholdStatistics(
     @Arg('inquiryId') inquiryId: string,
     @Ctx() { pool }: Context
@@ -198,7 +246,7 @@ export class InquiryResolver {
     return await thresholdService.getThresholdStatistics(inquiryId);
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async checkInquirySimilarity(
     @Arg('title') title: string,
     @Arg('description') description: string,
@@ -219,7 +267,7 @@ export class InquiryResolver {
     return matches;
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async nodeAmendments(
     @Arg('nodeId') nodeId: string,
     @Arg('fieldPath', { nullable: true }) fieldPath: string,
@@ -229,7 +277,7 @@ export class InquiryResolver {
     return await amendmentService.getAmendmentHistory(nodeId, fieldPath);
   }
 
-  @Query(() => Object)
+  @Query(() => GraphQLJSON)
   async nodeWithAmendments(
     @Arg('nodeId') nodeId: string,
     @Ctx() { pool }: Context
@@ -238,7 +286,7 @@ export class InquiryResolver {
     return await amendmentService.getNodeWithAmendments(nodeId);
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async pendingAmendments(
     @Arg('nodeId') nodeId: string,
     @Ctx() { pool }: Context
@@ -247,7 +295,7 @@ export class InquiryResolver {
     return await amendmentService.getPendingAmendments(nodeId);
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async evidenceTypes(@Ctx() { pool }: Context): Promise<any[]> {
     const result = await pool.query(
       `SELECT * FROM public."EvidenceTypes" ORDER BY weight DESC`
@@ -255,7 +303,7 @@ export class InquiryResolver {
     return result.rows;
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async credibilityThresholds(@Ctx() { pool }: Context): Promise<any[]> {
     const result = await pool.query(
       `SELECT * FROM public."CredibilityThresholds" ORDER BY inquiry_type`
@@ -267,7 +315,7 @@ export class InquiryResolver {
    * MUTATIONS
    */
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async createInquiry(
     @Arg('input') input: CreateInquiryInput,
     @Ctx() { pool, userId, pubSub }: Context
@@ -366,7 +414,7 @@ export class InquiryResolver {
     }
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async createPosition(
     @Arg('input') input: CreatePositionInput,
     @Ctx() { pool, userId, pubSub }: Context
@@ -459,7 +507,7 @@ export class InquiryResolver {
     }
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async voteOnPosition(
     @Arg('input') input: VoteOnPositionInput,
     @Ctx() { pool, userId, pubSub }: Context
@@ -497,7 +545,7 @@ export class InquiryResolver {
     return vote;
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async mergeInquiries(
     @Arg('sourceInquiryId') sourceInquiryId: string,
     @Arg('targetInquiryId') targetInquiryId: string,
@@ -521,7 +569,7 @@ export class InquiryResolver {
     return { success: true, message: 'Inquiries merged successfully' };
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async proposeManualAmendment(
     @Arg('input') input: ProposeManualAmendmentInput,
     @Ctx() { pool, userId }: Context
@@ -550,7 +598,7 @@ export class InquiryResolver {
     return amendment.rows[0];
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async applyAmendment(
     @Arg('input') input: ApplyAmendmentInput,
     @Ctx() { pool, userId, pubSub }: Context
@@ -585,7 +633,7 @@ export class InquiryResolver {
     return { success: true, message: 'Amendment applied successfully' };
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async rejectAmendment(
     @Arg('amendmentId') amendmentId: string,
     @Arg('reason') reason: string,
@@ -601,7 +649,7 @@ export class InquiryResolver {
     return { success: true, message: 'Amendment rejected successfully' };
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async recalculateNodeCredibility(
     @Arg('nodeId') nodeId: string,
     @Ctx() { pool, pubSub }: Context
@@ -631,7 +679,7 @@ export class InquiryResolver {
    * SUBSCRIPTIONS
    */
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: INQUIRY_CREATED,
     filter: ({ payload, args }) => {
       if (args.nodeId && payload.node_id !== args.nodeId) {
@@ -647,7 +695,7 @@ export class InquiryResolver {
     return inquiry;
   }
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: POSITION_CREATED,
     filter: ({ payload, args }) => payload.inquiry_id === args.inquiryId
   })
@@ -658,7 +706,7 @@ export class InquiryResolver {
     return position;
   }
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: POSITION_UPDATED,
     filter: ({ payload, args }) => payload.inquiry_id === args.inquiryId
   })
@@ -669,7 +717,7 @@ export class InquiryResolver {
     return position;
   }
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: NODE_CREDIBILITY_UPDATED,
     filter: ({ payload, args }) => payload.nodeId === args.nodeId
   })
@@ -680,7 +728,7 @@ export class InquiryResolver {
     return update;
   }
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: AMENDMENT_PROPOSED,
     filter: ({ payload, args }) => payload.nodeId === args.nodeId
   })
@@ -691,7 +739,7 @@ export class InquiryResolver {
     return amendment;
   }
 
-  @Subscription(() => Object, {
+  @Subscription(() => GraphQLJSON, {
     topics: AMENDMENT_APPLIED,
     filter: ({ payload, args }) => payload.nodeId === args.nodeId
   })
@@ -719,7 +767,8 @@ export class InquiryResolver {
   ): Promise<void> {
     try {
       // AI evaluation
-      const aiService = new AIEvaluationService(pool);
+      const conversationalAIService = new ConversationalAIService();
+      const aiService = new AIEvaluationService(pool, conversationalAIService);
       const evaluation = await aiService.evaluatePosition({
         id: position.id,
         inquiryType: inquiry.inquiry_type,

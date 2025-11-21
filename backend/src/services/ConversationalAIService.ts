@@ -420,6 +420,35 @@ export class ConversationalAIService {
     }
   }
 
+  /**
+   * Simple chat method for inquiry evaluation (no database interaction)
+   * @param prompt - The prompt to send to the AI
+   * @param context - Optional context string (e.g., 'inquiry-evaluation')
+   * @returns AI response as string
+   */
+  async chat(prompt: string, context?: string): Promise<string> {
+    try {
+      const messages: OllamaMessage[] = [
+        { role: 'system', content: context || 'You are an AI assistant evaluating inquiry positions.' },
+        { role: 'user', content: prompt },
+      ];
+
+      const response = await axios.post<OllamaChatResponse>(
+        `${this.ollamaUrl}/api/chat`,
+        {
+          model: this.chatModel,
+          messages,
+          stream: false,
+        }
+      );
+
+      return response.data.message.content;
+    } catch (error) {
+      console.error('Error in chat:', error);
+      throw new Error('Failed to generate AI response');
+    }
+  }
+
   // ==================== PRIVATE HELPER METHODS ====================
 
   /**

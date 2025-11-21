@@ -78,7 +78,7 @@ const EdgeCreationModal: React.FC<EdgeCreationModalProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black z-50"
         onClick={handleCancel}
       />
 

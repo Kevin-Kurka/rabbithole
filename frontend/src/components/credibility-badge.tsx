@@ -100,7 +100,7 @@ export function CredibilityBadge({
         {/* Tooltip */}
         {showTooltip && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64">
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl p-3" style={{ borderWidth: '1px' }}>
+            <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl p-3" style={{ borderWidth: '1px' }}>
               <div className="flex items-start gap-2 mb-2">
                 <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                 <div>

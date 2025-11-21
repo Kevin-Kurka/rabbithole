@@ -15,7 +15,7 @@ import {
   PubSubEngine,
 } from 'type-graphql';
 import { Context } from '../types/context';
-import { UserPresence } from '../entities/Collaboration';
+import { UserPresence, PresenceStatus } from '../entities/Collaboration';
 
 // ============================================================================
 // SUBSCRIPTION TOPICS
@@ -32,6 +32,17 @@ const EDIT_LOCK_RELEASED = 'EDIT_LOCK_RELEASED';
 // ============================================================================
 // TYPES
 // ============================================================================
+
+// Internal type for presence data stored in Redis
+interface InternalUserPresence {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  graphId: string;
+  status: PresenceStatus;
+  selectedNodeIds?: string[];
+  lastActive: Date;
+}
 
 @ObjectType()
 class CursorPosition {
@@ -309,12 +320,12 @@ export class CollaborativePresenceResolver {
       const userName = userResult.rows[0]?.username || 'Anonymous';
       const userAvatar = userResult.rows[0]?.avatar_url;
 
-      const presence: UserPresence = {
+      const presence: InternalUserPresence = {
         userId,
         userName,
         userAvatar,
         graphId: input.graphId,
-        status: input.status,
+        status: input.status as PresenceStatus,
         selectedNodeIds: input.selectedNodeIds,
         lastActive: new Date(),
       };

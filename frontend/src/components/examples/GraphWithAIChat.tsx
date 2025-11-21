@@ -90,7 +90,7 @@ export function GraphWithAIChat({ graphIds, methodologyId }: GraphWithAIChatProp
 
         {/* Floating context indicator */}
         {selectedNodes.length > 0 && chatMode === 'ai' && (
-          <div className="absolute top-4 left-4 bg-purple-900/90 border border-purple-700 px-3 py-2 rounded-lg shadow-lg">
+          <div className="absolute top-4 left-4 bg-purple-900 border border-purple-700 px-3 py-2 rounded-lg shadow-lg">
             <p className="text-xs text-purple-200">
               <Sparkles className="w-3 h-3 inline mr-1" />
               AI has context of {selectedNodes.length} selected node{selectedNodes.length !== 1 ? 's' : ''}

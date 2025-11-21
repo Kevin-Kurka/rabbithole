@@ -63,7 +63,7 @@ export function ChatInput({
   return (
     <form onSubmit={handleSubmit} className="relative">
       <div className={cn(
-        "flex items-end gap-2 p-4 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-lg",
+        "flex items-end gap-2 p-4 bg-zinc-900 border border-zinc-700/50 rounded-lg",
         "focus-within:border-blue-500/50 transition-colors"
       )}>
         {/* File Upload */}

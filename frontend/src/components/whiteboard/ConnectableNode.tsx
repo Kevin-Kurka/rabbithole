@@ -56,7 +56,6 @@ const ConnectableNode: React.FC<NodeProps<ConnectableNodeData>> = ({ data, selec
         ${selected ? 'ring-2 ring-blue-400 shadow-lg' : 'shadow-md'}
         ${isHovered ? 'shadow-xl scale-105' : ''}
         min-w-[150px] max-w-[300px]
-        backdrop-blur-sm
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

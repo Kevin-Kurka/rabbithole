@@ -96,9 +96,9 @@ export function ReferenceWizard({ isOpen, onClose, onSuccess }: ReferenceWizardP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
       <div className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden">
-        <div className="bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
+        <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
           {/* Header */}
           <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <div>

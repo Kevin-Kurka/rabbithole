@@ -94,7 +94,7 @@ export function VideoPlayer({ url, className }: VideoPlayerProps) {
       </div>
 
       {/* Controls */}
-      <div className="bg-background/95 p-4 space-y-2">
+      <div className="bg-background p-4 space-y-2">
         {/* Progress bar */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground w-12">

@@ -1,6 +1,18 @@
-import { Resolver, Query, Arg, Ctx, ObjectType, Field, InputType, Int } from 'type-graphql';
+import { Resolver, Query, Arg, Ctx, ObjectType, Field, InputType, Int, Float } from 'type-graphql';
 import { SearchService, SearchResult as ServiceSearchResult } from '../services/SearchService';
 import { Context } from '../types/context';
+
+@ObjectType()
+class VeracityScoreInfo {
+  @Field(() => Float)
+  veracityScore!: number;
+
+  @Field(() => Int, { nullable: true })
+  evidenceCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  challengeCount?: number;
+}
 
 @ObjectType()
 class SearchResult {
@@ -24,6 +36,9 @@ class SearchResult {
 
   @Field({ nullable: true })
   graph_name?: string;
+
+  @Field(() => VeracityScoreInfo, { nullable: true })
+  veracityScore?: VeracityScoreInfo;
 }
 
 @ObjectType()
@@ -107,6 +122,11 @@ export class SearchResolver {
       relevance: result.relevance,
       graph_id: result.graph_id,
       graph_name: result.graph_name,
+      veracityScore: result.veracityScore ? {
+        veracityScore: result.veracityScore.veracityScore,
+        evidenceCount: result.veracityScore.evidenceCount,
+        challengeCount: result.veracityScore.challengeCount,
+      } : undefined,
     };
   }
 }

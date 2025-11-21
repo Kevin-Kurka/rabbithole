@@ -173,3 +173,12 @@ body {
   top: 0;
   left: 0;
 }
+
+/* Input field active state - 1px stroke */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--ring);
+}

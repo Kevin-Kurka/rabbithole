@@ -365,7 +365,7 @@ export default function HomePage() {
               className="group relative"
             >
               {/* Node Card */}
-              <div className="w-56 bg-zinc-900/90 backdrop-blur-xl border border-white/20 rounded shadow-2xl hover:border-white/40 hover:bg-zinc-800/90 transition-all overflow-hidden" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+              <div className="w-56 bg-zinc-900 border border-white/20 rounded shadow-2xl hover:border-white/40 hover:bg-zinc-800 transition-all overflow-hidden" style={{ borderWidth: '1px', borderRadius: '8px' }}>
                 {/* Top Row - Node Title */}
                 <div className="px-4 py-3 border-b border-white/10" style={{ borderBottomWidth: '1px' }}>
                   <h3 className="text-white font-medium text-sm leading-tight text-left truncate">
@@ -410,7 +410,7 @@ export default function HomePage() {
         {/* Propose New Topic Button */}
         <button
           onClick={() => setShowProposalModal(true)}
-          className="px-4 py-2 bg-blue-600/20 backdrop-blur-xl border border-blue-400/30 rounded-lg hover:bg-blue-600/30 transition-all shadow-2xl flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600/20 border border-blue-400/30 rounded-lg hover:bg-blue-600/30 transition-all shadow-2xl flex items-center gap-2"
           style={{ borderWidth: '1px' }}
         >
           <Plus className="w-4 h-4 text-blue-300" />
@@ -420,7 +420,7 @@ export default function HomePage() {
         {/* Avatar */}
         <button
           onClick={handleAvatarClick}
-          className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
+          className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
           style={{ borderWidth: '1px' }}
         >
           {session?.user?.image ? (
@@ -439,7 +439,7 @@ export default function HomePage() {
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-8 z-50">
         {/* AI Response Display */}
         {(aiResponse || aiError) && (
-          <div className="mb-4 bg-zinc-900/90 backdrop-blur-xl border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+          <div className="mb-4 bg-zinc-900 border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
             {aiError ? (
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -469,7 +469,7 @@ export default function HomePage() {
         <form onSubmit={handleAiSubmit} className="relative">
           {/* Search Suggestions Dropdown */}
           {showSuggestions && searchSuggestions.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-900/95 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
               <div className="px-4 py-2 text-xs text-zinc-400 border-b border-white/5">
                 Search Results
               </div>
@@ -489,7 +489,7 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="flex items-center gap-4 bg-zinc-900/80 backdrop-blur-xl border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+          <div className="flex items-center gap-4 bg-zinc-900 border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
             <input
               type="text"
               value={aiQuery}
@@ -536,9 +536,9 @@ export default function HomePage() {
 
       {/* Topic Proposal Modal */}
       {showProposalModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
           <div className="relative w-full max-w-2xl mx-4">
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
+            <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
               {/* Header */}
               <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-white">Propose New Topic</h2>
