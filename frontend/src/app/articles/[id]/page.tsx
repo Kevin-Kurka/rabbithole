@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { MarkdownEditor } from '@/components/markdown-editor';
+import { MarkdownEditor } from '@/components/forms/markdown-editor';
 import { useToast } from '@/hooks/use-toast';
 import {
   GET_ARTICLE,

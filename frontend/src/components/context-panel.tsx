@@ -3,7 +3,7 @@
 import React from 'react';
 import { Layers, X } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { NodeLinkCard, NodeLinkCardProps } from '@/components/node-link-card';
+import { NodeLinkCard, NodeLinkCardProps } from '@/components/shared';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

@@ -7,9 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Paperclip, Send } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { CREATE_POST, REPLY_TO_POST, NodeSearchResult } from '@/graphql/queries/activity';
-import { NodeLinkCombobox } from '@/components/node-link-combobox';
-import { NodeMentionCombobox } from '@/components/node-mention-combobox';
-import { UploadFileDialog } from '@/components/upload-file-dialog';
+import { NodeLinkCombobox, NodeMentionCombobox } from '@/components/shared';
+import { UploadFileDialog } from '@/components/forms';
 
 interface PostComposerProps {
   targetNodeId: string;

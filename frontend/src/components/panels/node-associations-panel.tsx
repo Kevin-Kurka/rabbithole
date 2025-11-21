@@ -22,10 +22,9 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { FileAttachmentList } from '@/components/media/file-attachment-list';
-import { NodeLinkCombobox } from '@/components/node-link-combobox';
-import { UploadFileDialog } from '@/components/upload-file-dialog';
-import { AddReferenceDialog } from '@/components/add-reference-dialog';
-import { AIReferenceProcessorDialog } from '@/components/ai-reference-processor-dialog';
+import { NodeLinkCombobox } from '@/components/shared';
+import { UploadFileDialog } from '@/components/forms';
+import { AddReferenceDialog, AIReferenceProcessorDialog } from '@/components/forms';
 import { useFileViewerStore } from '@/stores/file-viewer-store';
 import type { NodeSearchResult } from '@/graphql/queries/activity';
 import { useQuery, useMutation } from '@apollo/client';

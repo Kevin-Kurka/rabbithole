@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, Plus, X } from 'lucide-react';
-import LoginDialog from '@/components/login-dialog';
+import LoginDialog from '@/components/forms/login-dialog';
 import { CredibilityBadge } from '@/components/credibility/credibility-badge';
 
 // GraphQL queries and mutations

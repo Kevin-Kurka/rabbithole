@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useLazyQuery } from '@apollo/client';
 import { SEARCH_NODES, NodeSearchResult } from '@/graphql/queries/activity';
 import { Link2, FileText } from 'lucide-react';
-import { CreateNodeRelationshipDialog } from './create-node-relationship-dialog';
+import { CreateNodeRelationshipDialog  } from '../forms/create-node-relationship-dialog';
 
 interface NodeLinkComboboxProps {
   sourceNodeId: string;

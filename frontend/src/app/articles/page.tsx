@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CreateArticleDialog } from '@/components/create-article-dialog';
+import { CreateArticleDialog } from '@/components/forms';
 import { GET_ARTICLES, type Article } from '@/graphql/queries/articles';
 import { FileText, Plus, Search, Calendar, User, Eye, Grid3x3, GitBranch } from 'lucide-react';
 import { format } from 'date-fns';

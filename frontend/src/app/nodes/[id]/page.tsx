@@ -13,10 +13,9 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
-import { CreateInquirySidebar } from '@/components/create-inquiry-sidebar';
-import { FormalInquiryCard } from '@/components/formal-inquiry-card';
-import { TextSelectionMenu } from '@/components/text-selection-menu';
-import { AddCommentDialog } from '@/components/add-comment-dialog';
+import { CreateInquirySidebar, FormalInquiryCard } from '@/components/inquiry';
+import { TextSelectionMenu } from '@/components/shared';
+import { AddCommentDialog } from '@/components/forms';
 import { ArticleWithBadges } from '@/components/content/article-with-badges';
 import { useQuery } from '@apollo/client';
 import { GET_FORMAL_INQUIRIES, type FormalInquiry } from '@/graphql/queries/formal-inquiries';
@@ -38,10 +37,10 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UploadFileDialog } from '@/components/upload-file-dialog';
+import { UploadFileDialog } from '@/components/forms';
 import { FileAttachmentList } from '@/components/media/file-attachment-list';
 import { ActivityFeed } from '@/components/collaboration/activity-feed';
-import { NodeAssociationsPanel } from '@/components/node-associations-panel';
+import { NodeAssociationsPanel } from '@/components/panels';
 
 interface RelatedNode {
   id: string;

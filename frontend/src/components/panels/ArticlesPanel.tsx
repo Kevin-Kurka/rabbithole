@@ -6,7 +6,7 @@ import { useQuery } from '@apollo/client';
 import { theme } from '@/styles/theme';
 import { FileText, Plus, Eye, EyeOff } from 'lucide-react';
 import { GET_ARTICLES, type Article } from '@/graphql/queries/articles';
-import { CreateArticleDialog } from '@/components/create-article-dialog';
+import { CreateArticleDialog } from '@/components/forms';
 import { format } from 'date-fns';
 
 export default function ArticlesPanel() {

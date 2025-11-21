@@ -18,3 +18,5 @@ export type { ConsolePanelProps } from './ConsolePanel';
 
 export { default as OutputPanel } from './OutputPanel';
 export type { OutputPanelProps } from './OutputPanel';
+
+export { NodeAssociationsPanel } from './node-associations-panel';

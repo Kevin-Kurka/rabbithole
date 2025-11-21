@@ -17,3 +17,6 @@ export {
   CompactPrivacyControl,
   type PrivacyLevel,
 } from './privacy-control';
+export { CreateInquiryDialog } from './create-inquiry-dialog';
+export { CreateInquirySidebar } from './create-inquiry-sidebar';
+export { FormalInquiryCard } from './formal-inquiry-card';
