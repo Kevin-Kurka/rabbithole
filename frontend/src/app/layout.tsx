@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import { Providers  } from '@/components/layout/providers';
 import { UniversalFileViewer } from "@/components/media/universal-file-viewer";
 
 export const metadata: Metadata = {

@@ -3,7 +3,7 @@
 import client from "@/lib/apollo-client";
 import { ApolloProvider as Provider } from "@apollo/client";
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider  } from '@/components/layout/theme-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

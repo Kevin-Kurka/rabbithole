@@ -9,7 +9,7 @@ import { Loader2, Sparkles, Search, Layers, Home } from 'lucide-react';
 import { ChatMessage, ChatMessageProps } from '@/components/collaboration/chat-message';
 import { ChatInput } from '@/components/collaboration/chat-input';
 import { ChatSidebar, Conversation } from '@/components/collaboration/chat-sidebar';
-import { ContextPanel } from '@/components/context-panel';
+import { ContextPanel  } from '@/components/panels';
 import { NodeLinkCardProps } from '@/components/node-link-card';
 import { UploadedFile } from '@/components/media/file-upload-button';
 import { Button } from '@/components/ui/button';
