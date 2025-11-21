@@ -208,7 +208,7 @@ export function NodeAssociationsPanel({ nodeId, evidenceId, nodeData }: NodeAsso
         <Collapsible open={quickFactsOpen} onOpenChange={setQuickFactsOpen}>
           <div className="flex items-center gap-2 py-2 hover:bg-accent/50 rounded px-2 transition-colors">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1">
-              <ChevronDown className="h-4 w-4 transition-transform duration-200 -rotate-90 data-[state=open]:rotate-0" />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${quickFactsOpen ? 'rotate-0' : '-rotate-90'}`} />
               <CardTitle className="text-sm font-semibold">Quick Facts</CardTitle>
             </CollapsibleTrigger>
           </div>
@@ -242,7 +242,7 @@ export function NodeAssociationsPanel({ nodeId, evidenceId, nodeData }: NodeAsso
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
           <div className="group flex items-center justify-between py-2 hover:bg-accent/50 rounded px-2 transition-colors">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1">
-              <ChevronDown className="h-4 w-4 transition-transform duration-200 -rotate-90 data-[state=open]:rotate-0" />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`} />
               <CardTitle className="text-sm font-semibold">Files</CardTitle>
               {fileCount > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({fileCount})</span>
@@ -283,7 +283,7 @@ export function NodeAssociationsPanel({ nodeId, evidenceId, nodeData }: NodeAsso
         <Collapsible open={nodesOpen} onOpenChange={setNodesOpen}>
           <div className="group flex items-center justify-between py-2 hover:bg-accent/50 rounded px-2 transition-colors">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1">
-              <ChevronDown className="h-4 w-4 transition-transform duration-200 -rotate-90 data-[state=open]:rotate-0" />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${nodesOpen ? 'rotate-0' : '-rotate-90'}`} />
               <CardTitle className="text-sm font-semibold">Nodes</CardTitle>
               {associatedNodes.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({associatedNodes.length})</span>
@@ -330,7 +330,7 @@ export function NodeAssociationsPanel({ nodeId, evidenceId, nodeData }: NodeAsso
         <Collapsible open={referencesOpen} onOpenChange={setReferencesOpen}>
           <div className="group flex items-center justify-between py-2 hover:bg-accent/50 rounded px-2 transition-colors">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1">
-              <ChevronDown className="h-4 w-4 transition-transform duration-200 -rotate-90 data-[state=open]:rotate-0" />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${referencesOpen ? 'rotate-0' : '-rotate-90'}`} />
               <CardTitle className="text-sm font-semibold">References</CardTitle>
               {references.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({references.length})</span>
@@ -403,7 +403,7 @@ export function NodeAssociationsPanel({ nodeId, evidenceId, nodeData }: NodeAsso
         <Collapsible open={citationsOpen} onOpenChange={setCitationsOpen}>
           <div className="group flex items-center justify-between py-2 hover:bg-accent/50 rounded px-2 transition-colors">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1">
-              <ChevronDown className="h-4 w-4 transition-transform duration-200 -rotate-90 data-[state=open]:rotate-0" />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${citationsOpen ? 'rotate-0' : '-rotate-90'}`} />
               <CardTitle className="text-sm font-semibold">Citations</CardTitle>
               {citations.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({citations.length})</span>
