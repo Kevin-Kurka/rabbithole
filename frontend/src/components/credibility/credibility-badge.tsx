@@ -89,7 +89,6 @@ export function CredibilityBadge({
       >
         <div
           className={`flex items-center gap-1.5 px-2 py-1 ${style.bg} ${style.border} border rounded ${onClick ? 'cursor-pointer hover:opacity-80' : ''} transition-all`}
-          style={{ borderWidth: '1px' }}
         >
           <span className="text-xs">{style.icon}</span>
           <span className={`text-xs font-semibold ${style.text}`}>
@@ -100,7 +99,7 @@ export function CredibilityBadge({
         {/* Tooltip */}
         {showTooltip && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64">
-            <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl p-3" style={{ borderWidth: '1px' }}>
+            <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl p-3">
               <div className="flex items-start gap-2 mb-2">
                 <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                 <div>
@@ -144,7 +143,6 @@ export function CredibilityBadge({
   return (
     <div
       className={`flex items-center gap-3 px-4 py-3 ${style.bg} ${style.border} border rounded-lg ${onClick ? 'cursor-pointer hover:opacity-80' : ''} transition-all`}
-      style={{ borderWidth: '1px' }}
       onClick={onClick}
     >
       <div className="text-2xl">{style.icon}</div>
