@@ -97,7 +97,7 @@ export function EnrichedContent({
                   [cite]
                 </Badge>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 bg-card">
+              <DropdownMenuContent align="start" className="w-64">
                 <div className="px-2 py-1.5">
                   <div className="text-xs font-medium mb-1">{citation.title}</div>
                   <div className="text-xs text-muted-foreground truncate">{citation.url}</div>
@@ -146,7 +146,7 @@ export function EnrichedContent({
                   <Link2 className="w-2.5 h-2.5" />
                 </Badge>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 bg-card">
+              <DropdownMenuContent align="start" className="w-56">
                 <div className="px-2 py-1.5">
                   <div className="text-xs font-medium">{nodeLink.nodeTitle}</div>
                 </div>

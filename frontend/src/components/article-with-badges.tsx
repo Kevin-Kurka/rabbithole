@@ -36,7 +36,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 </Badge>
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 bg-card">
+            <DropdownMenuContent align="start" className="w-64">
               <div className="px-2 py-1.5">
                 <div className="text-xs font-medium mb-1">Zapruder Film Technical Analysis</div>
                 <div className="text-xs text-muted-foreground truncate">
@@ -74,7 +74,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 </Badge>
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-card">
+            <DropdownMenuContent align="start" className="w-56">
               <div className="px-2 py-1.5">
                 <div className="text-xs font-medium">Warren Commission Investigation</div>
               </div>
@@ -110,7 +110,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 </Badge>
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 bg-card">
+            <DropdownMenuContent align="start" className="w-64">
               <div className="px-2 py-1.5">
                 <div className="text-xs font-medium mb-1">Official Warren Commission Report</div>
                 <div className="text-xs text-muted-foreground truncate">
@@ -148,7 +148,7 @@ export function ArticleWithBadges({ onNavigateToNode }: ArticleWithBadgesProps) 
                 </Badge>
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-card">
+            <DropdownMenuContent align="start" className="w-56">
               <div className="px-2 py-1.5">
                 <div className="text-xs font-medium">Lee Harvey Oswald Profile</div>
               </div>
