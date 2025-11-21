@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MediaUploadDialog } from "@/components/media-upload-dialog";
-import { MediaProcessingStatus } from "@/components/media-processing-status";
+import { MediaUploadDialog } from "@/components/media/media-upload-dialog";
+import { MediaProcessingStatus } from "@/components/media/media-processing-status";
 import {
   Card,
   CardContent,

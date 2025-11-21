@@ -13,8 +13,8 @@
 
 import React, { useState, useCallback } from 'react';
 import GraphCanvas from '../graph-canvas';
-import AIChat from '../ai-chat';
-import Chat from '../in-graph-chat';
+import AIChat from '../ai-assistant/ai-chat';
+import Chat from '../collaboration/in-graph-chat';
 import { GraphCanvasNode, GraphCanvasEdge } from '@/types/graph';
 import { ChatMessage } from '@/types/collaboration';
 import { MessageSquare, Sparkles } from 'lucide-react';

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { FileText, Image, Film, Music, File as FileIcon } from 'lucide-react';
 import { GET_NODE_FILES } from '@/graphql/file-queries';
-import FileViewerSidebar from './file-viewer-sidebar';
+import FileViewerSidebar from './media/file-viewer-sidebar';
 import { theme } from '@/styles/theme';
 
 interface FileViewerExampleProps {

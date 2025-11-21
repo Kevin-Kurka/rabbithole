@@ -5,20 +5,20 @@
  * and interacting with veracity scores throughout the application.
  */
 
-export { default as VeracityBadge } from '../veracity-badge';
-export type { VeracityBadgeProps } from '../veracity-badge';
+export { default as VeracityBadge } from '../credibility/veracity-badge';
+export type { VeracityBadgeProps } from '../credibility/veracity-badge';
 
-export { default as VeracityIndicator } from '../veracity-indicator';
-export type { VeracityIndicatorProps } from '../veracity-indicator';
+export { default as VeracityIndicator } from '../credibility/veracity-indicator';
+export type { VeracityIndicatorProps } from '../credibility/veracity-indicator';
 
-export { default as VeracityTimeline } from '../veracity-timeline';
-export type { VeracityTimelineProps } from '../veracity-timeline';
+export { default as VeracityTimeline } from '../credibility/veracity-timeline';
+export type { VeracityTimelineProps } from '../credibility/veracity-timeline';
 
-export { default as VeracityBreakdown } from '../veracity-breakdown';
-export type { VeracityBreakdownProps, VeracityBreakdownData, Evidence } from '../veracity-breakdown';
+export { default as VeracityBreakdown } from '../credibility/veracity-breakdown';
+export type { VeracityBreakdownProps, VeracityBreakdownData, Evidence } from '../credibility/veracity-breakdown';
 
-export { default as VeracityPanel } from '../veracity-badge';
-export type { VeracityPanelProps } from '../veracity-badge';
+export { default as VeracityPanel } from '../credibility/veracity-badge';
+export type { VeracityPanelProps } from '../credibility/veracity-badge';
 
 // Re-export types
 export type {

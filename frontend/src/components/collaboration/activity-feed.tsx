@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_NODE_ACTIVITY, ActivityPost as ActivityPostType } from '@/graphql/queries/activity';
-import { ActivityPost } from '@/components/activity-post';
-import { PostComposer } from '@/components/post-composer';
+import { ActivityPost } from '@/components/collaboration/activity-post';
+import { PostComposer } from '@/components/collaboration/post-composer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, MessageSquare } from 'lucide-react';

@@ -75,8 +75,8 @@ import {
 import GraphNode from './graph-node';
 import GraphEdge from './graph-edge';
 import ContextMenu from './context-menu';
-import RemoteCursor from './remote-cursor';
-import LayoutControls from './layout-controls';
+import RemoteCursor from './collaboration/remote-cursor';
+import LayoutControls from './visualization/layout-controls';
 import { ActiveUser } from '@/types/collaboration';
 import { theme } from '@/styles/theme';
 import {

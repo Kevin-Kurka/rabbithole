@@ -6,10 +6,10 @@
  */
 
 import React, { useState } from 'react';
-import { PromotionEligibilityDashboard } from '../promotion-eligibility-dashboard';
-import { MethodologyProgressPanel } from '../methodology-progress-panel';
-import { ConsensusVotingWidget } from '../consensus-voting-widget';
-import { PromotionEligibilityBadge } from '../promotion-eligibility-badge';
+import { PromotionEligibilityDashboard } from '../promotion/promotion-eligibility-dashboard';
+import { MethodologyProgressPanel } from '../promotion/methodology-progress-panel';
+import { ConsensusVotingWidget } from '../promotion/consensus-voting-widget';
+import { PromotionEligibilityBadge } from '../promotion/promotion-eligibility-badge';
 import {
   mockEligibilityFullyEligible,
   mockEligibilityInProgress,

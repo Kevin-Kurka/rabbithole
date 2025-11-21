@@ -21,7 +21,7 @@ import {
   Sparkles,
   ExternalLink,
 } from 'lucide-react';
-import { FileAttachmentList } from '@/components/file-attachment-list';
+import { FileAttachmentList } from '@/components/media/file-attachment-list';
 import { NodeLinkCombobox } from '@/components/node-link-combobox';
 import { UploadFileDialog } from '@/components/upload-file-dialog';
 import { AddReferenceDialog } from '@/components/add-reference-dialog';

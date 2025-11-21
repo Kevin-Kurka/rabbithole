@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react';
 import { useCollaboration } from '@/hooks/useCollaboration';
-import Chat from './in-graph-chat';
+import Chat from './collaboration/in-graph-chat';
 import { Users, MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export interface CollaborationPanelProps {

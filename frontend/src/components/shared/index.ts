@@ -1,4 +1,4 @@
-export { ErrorBoundary } from './error-boundary';
+export { ErrorBoundary } from './shared/error-boundary';
 export { LoadingStates } from './loading-states';
 export { PerformanceMonitor } from './performance-monitor';
 export { CommandMenu } from './command-menu';

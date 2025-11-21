@@ -7,7 +7,7 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, Plus, X } from 'lucide-react';
 import LoginDialog from '@/components/login-dialog';
-import { CredibilityBadge } from '@/components/credibility-badge';
+import { CredibilityBadge } from '@/components/credibility/credibility-badge';
 
 // GraphQL queries and mutations
 const GET_GRAPHS_QUERY = gql`

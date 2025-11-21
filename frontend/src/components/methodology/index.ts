@@ -1,1 +1,1 @@
-export { MethodologySelector } from './methodology-selector';
+export { MethodologySelector } from './methodology/methodology-selector';

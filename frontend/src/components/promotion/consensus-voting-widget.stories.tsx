@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { ConsensusVotingWidget } from './consensus-voting-widget';
+import { ConsensusVotingWidget } from './promotion/consensus-voting-widget';
 import { ConsensusVote } from '../types/promotion';
 
 const meta: Meta<typeof ConsensusVotingWidget> = {

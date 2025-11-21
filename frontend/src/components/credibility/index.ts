@@ -1,6 +1,6 @@
-export { CredibilityBadge } from './credibility-badge';
-export { VeracityBadge } from './veracity-badge';
-export { VeracityPanel } from './veracity-panel';
-export { VeracityTimeline } from './veracity-timeline';
-export { VeracityBreakdown } from './veracity-breakdown';
-export { VeracityIndicator } from './veracity-indicator';
+export { CredibilityBadge } from './credibility/credibility-badge';
+export { VeracityBadge } from './credibility/veracity-badge';
+export { VeracityPanel } from './credibility/veracity-panel';
+export { VeracityTimeline } from './credibility/veracity-timeline';
+export { VeracityBreakdown } from './credibility/veracity-breakdown';
+export { VeracityIndicator } from './credibility/veracity-indicator';

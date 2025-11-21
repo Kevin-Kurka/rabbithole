@@ -18,8 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MediaUploadDialog } from "@/components/media-upload-dialog";
-import { MediaProcessingStatus } from "@/components/media-processing-status";
+import { MediaUploadDialog } from "@/components/media/media-upload-dialog";
+import { MediaProcessingStatus } from "@/components/media/media-processing-status";
 import {
   UPLOAD_MEDIA_FILE,
   PROCESS_DOCUMENT,

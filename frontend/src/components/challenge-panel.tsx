@@ -11,7 +11,7 @@ import { Challenge, ChallengeStatus, ChallengeType } from '@/types/challenge';
 import { groupChallengesByStatus, sortChallenges } from '@/utils/challengeHelpers';
 import { theme } from '@/styles/theme';
 import { ChallengeCard } from './challenge-card';
-import { ChallengeForm } from './challenge-form';
+import { ChallengeForm } from './forms/challenge-form';
 
 export interface ChallengePanelProps {
   nodeId?: string;

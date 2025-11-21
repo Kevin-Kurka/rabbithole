@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import VeracityBreakdown from './veracity-breakdown';
+import VeracityBreakdown from './credibility/veracity-breakdown';
 
 const meta: Meta<typeof VeracityBreakdown> = {
   title: 'Components/Veracity/VeracityBreakdown',

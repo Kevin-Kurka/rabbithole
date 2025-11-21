@@ -33,8 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MediaUploadDialog } from "@/components/media-upload-dialog";
-import { MediaProcessingStatus } from "@/components/media-processing-status";
+import { MediaUploadDialog } from "@/components/media/media-upload-dialog";
+import { MediaProcessingStatus } from "@/components/media/media-processing-status";
 import {
   GET_MEDIA_FILES,
   SEARCH_MEDIA_CONTENT,

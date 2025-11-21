@@ -8,7 +8,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MockedProvider } from '@apollo/client/testing';
 import { action } from '@storybook/addon-actions';
-import MethodologySelector from './methodology-selector';
+import MethodologySelector from './methodology/methodology-selector';
 import { METHODOLOGIES_QUERY } from '@/graphql/queries/methodologies';
 import { mockMethodologies } from '@/mocks/methodologies';
 

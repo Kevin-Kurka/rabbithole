@@ -15,10 +15,10 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { GraphCanvasNode, GraphCanvasEdge, GraphCanvasProps } from '@/types/graph';
 import GraphCanvas from './graph-canvas';
-import TimelineView from './timeline-view';
-import ClusterView from './cluster-view';
-import FilterPanel from './filter-panel';
-import VisualizationControls, { ViewMode } from './visualization-controls';
+import TimelineView from './visualization/timeline-view';
+import ClusterView from './visualization/cluster-view';
+import FilterPanel from './shared/filter-panel';
+import VisualizationControls, { ViewMode } from './visualization/visualization-controls';
 import {
   applyLayout,
   LayoutAlgorithm,

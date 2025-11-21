@@ -4,7 +4,7 @@ import React, { useState, useRef, KeyboardEvent } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileUploadButton, UploadedFile } from '@/components/file-upload-button';
+import { FileUploadButton, UploadedFile } from '@/components/media/file-upload-button';
 import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
