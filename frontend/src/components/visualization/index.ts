@@ -4,23 +4,23 @@
  * Export all advanced visualization components and utilities.
  */
 
-export { default as EnhancedGraphCanvas } from '../EnhancedGraphCanvas';
-export type { EnhancedGraphCanvasProps } from '../EnhancedGraphCanvas';
+export { default as EnhancedGraphCanvas } from '../enhanced-graph-canvas';
+export type { EnhancedGraphCanvasProps } from '../enhanced-graph-canvas';
 
-export { default as TimelineView } from '../TimelineView';
-export type { TimelineViewProps, TimelineGrouping } from '../TimelineView';
+export { default as TimelineView } from '../timeline-view';
+export type { TimelineViewProps, TimelineGrouping } from '../timeline-view';
 
-export { default as ClusterView } from '../ClusterView';
-export type { ClusterViewProps, ClusterGrouping } from '../ClusterView';
+export { default as ClusterView } from '../cluster-view';
+export type { ClusterViewProps, ClusterGrouping } from '../cluster-view';
 
-export { default as FilterPanel } from '../FilterPanel';
-export type { FilterPanelProps, FilterState } from '../FilterPanel';
+export { default as FilterPanel } from '../filter-panel';
+export type { FilterPanelProps, FilterState } from '../filter-panel';
 
-export { default as VisualizationControls } from '../VisualizationControls';
+export { default as VisualizationControls } from '../visualization-controls';
 export type {
   VisualizationControlsProps,
   ViewMode,
-} from '../VisualizationControls';
+} from '../visualization-controls';
 
 // Utilities
 export {

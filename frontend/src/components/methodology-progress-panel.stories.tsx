@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { MethodologyProgressPanel } from './MethodologyProgressPanel';
+import { MethodologyProgressPanel } from './methodology-progress-panel';
 import { MethodologyStep } from '../types/promotion';
 
 const meta: Meta<typeof MethodologyProgressPanel> = {

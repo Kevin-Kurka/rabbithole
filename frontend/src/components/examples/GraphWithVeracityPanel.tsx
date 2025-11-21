@@ -14,8 +14,8 @@ import { ReactFlow, Node, Edge, NodeMouseHandler } from '@xyflow/react';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { VeracityPanel } from '../veracity';
-import GraphNode from '../GraphNode';
-import GraphEdge from '../GraphEdge';
+import GraphNode from '../graph-node';
+import GraphEdge from '../graph-edge';
 import { NodeData, EdgeData } from '@/types/graph';
 
 // GraphQL query for fetching veracity data

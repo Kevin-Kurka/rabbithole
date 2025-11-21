@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { PromotionEligibilityDashboard } from './PromotionEligibilityDashboard';
+import { PromotionEligibilityDashboard } from './promotion-eligibility-dashboard';
 import { PromotionEligibility } from '../types/promotion';
 
 const meta: Meta<typeof PromotionEligibilityDashboard> = {

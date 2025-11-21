@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing';
-import GraphCanvas from '../GraphCanvas';
+import GraphCanvas from '../graph-canvas';
 import { GraphLevel } from '@/types/graph';
 import {
   GRAPH_QUERY,

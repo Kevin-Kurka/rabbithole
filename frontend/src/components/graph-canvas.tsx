@@ -72,11 +72,11 @@ import {
   EDGE_CREATED_SUBSCRIPTION,
   EDGE_DELETED_SUBSCRIPTION,
 } from '@/graphql/queries/graphs';
-import GraphNode from './GraphNode';
-import GraphEdge from './GraphEdge';
-import ContextMenu from './ContextMenu';
-import RemoteCursor from './RemoteCursor';
-import LayoutControls from './LayoutControls';
+import GraphNode from './graph-node';
+import GraphEdge from './graph-edge';
+import ContextMenu from './context-menu';
+import RemoteCursor from './remote-cursor';
+import LayoutControls from './layout-controls';
 import { ActiveUser } from '@/types/collaboration';
 import { theme } from '@/styles/theme';
 import {

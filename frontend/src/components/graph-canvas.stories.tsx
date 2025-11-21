@@ -6,7 +6,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { MockedProvider } from '@apollo/client/testing';
-import GraphCanvas from './GraphCanvas';
+import GraphCanvas from './graph-canvas';
 import { GraphLevel } from '@/types/graph';
 import { GRAPH_QUERY } from '@/graphql/queries/graphs';
 

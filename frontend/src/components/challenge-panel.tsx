@@ -10,8 +10,8 @@ import { AlertCircle, Filter, Plus } from 'lucide-react';
 import { Challenge, ChallengeStatus, ChallengeType } from '@/types/challenge';
 import { groupChallengesByStatus, sortChallenges } from '@/utils/challengeHelpers';
 import { theme } from '@/styles/theme';
-import { ChallengeCard } from './ChallengeCard';
-import { ChallengeForm } from './ChallengeForm';
+import { ChallengeCard } from './challenge-card';
+import { ChallengeForm } from './challenge-form';
 
 export interface ChallengePanelProps {
   nodeId?: string;

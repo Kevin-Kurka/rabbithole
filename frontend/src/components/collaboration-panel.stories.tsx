@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import CollaborationPanel from './CollaborationPanel';
+import CollaborationPanel from './collaboration-panel';
 
 export default {
   title: 'Collaboration/CollaborationPanel',

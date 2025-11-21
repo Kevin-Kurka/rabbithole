@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { theme } from '@/styles/theme';
 import { BrainCircuit, BookOpen, Home } from 'lucide-react';
-import NotificationBell from './NotificationBell';
+import NotificationBell from './notification-bell';
 
 export const Navigation: React.FC = () => {
   const pathname = usePathname();

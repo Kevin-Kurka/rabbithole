@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { ChallengeVotingWidget } from './ChallengeVotingWidget';
+import { ChallengeVotingWidget } from './challenge-voting-widget';
 import { mockChallenges, mockReputations } from './examples/mockChallengeData';
 import { ChallengeVoteType } from '@/types/challenge';
 

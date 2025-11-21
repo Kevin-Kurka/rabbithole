@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, TrendingUp, Clock, Info } from 'lucide-react';
 import { theme } from '../styles/theme';
-import VeracityBadge from './VeracityBadge';
-import VeracityTimeline, { VeracityHistoryEntry } from './VeracityTimeline';
-import VeracityBreakdown, { VeracityBreakdownData } from './VeracityBreakdown';
+import VeracityBadge from './veracity-badge';
+import VeracityTimeline, { VeracityHistoryEntry } from './veracity-timeline';
+import VeracityBreakdown, { VeracityBreakdownData } from './veracity-breakdown';
 
 export interface VeracityPanelProps {
   nodeId?: string;

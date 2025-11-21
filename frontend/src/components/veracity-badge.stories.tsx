@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import VeracityBadge from './VeracityBadge';
+import VeracityBadge from './veracity-badge';
 
 const meta: Meta<typeof VeracityBadge> = {
   title: 'Components/Veracity/VeracityBadge',

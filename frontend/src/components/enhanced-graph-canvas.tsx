@@ -14,11 +14,11 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { GraphCanvasNode, GraphCanvasEdge, GraphCanvasProps } from '@/types/graph';
-import GraphCanvas from './GraphCanvas';
-import TimelineView from './TimelineView';
-import ClusterView from './ClusterView';
-import FilterPanel from './FilterPanel';
-import VisualizationControls, { ViewMode } from './VisualizationControls';
+import GraphCanvas from './graph-canvas';
+import TimelineView from './timeline-view';
+import ClusterView from './cluster-view';
+import FilterPanel from './filter-panel';
+import VisualizationControls, { ViewMode } from './visualization-controls';
 import {
   applyLayout,
   LayoutAlgorithm,

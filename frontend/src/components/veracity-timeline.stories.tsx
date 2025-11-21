@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import VeracityTimeline from './VeracityTimeline';
+import VeracityTimeline from './veracity-timeline';
 
 const meta: Meta<typeof VeracityTimeline> = {
   title: 'Components/Veracity/VeracityTimeline',

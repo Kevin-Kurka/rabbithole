@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { ReputationBadge } from './ReputationBadge';
+import { ReputationBadge } from './reputation-badge';
 import { mockReputations } from './examples/mockChallengeData';
 
 const meta: Meta<typeof ReputationBadge> = {

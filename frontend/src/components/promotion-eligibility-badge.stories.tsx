@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { PromotionEligibilityBadge, PromotionEligibilityBadgeCompact } from './PromotionEligibilityBadge';
+import { PromotionEligibilityBadge, PromotionEligibilityBadgeCompact } from './promotion-eligibility-badge';
 import { PromotionEligibilityBadgeData } from '../types/promotion';
 
 const meta: Meta<typeof PromotionEligibilityBadge> = {

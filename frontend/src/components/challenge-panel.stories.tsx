@@ -3,7 +3,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { ChallengePanel } from './ChallengePanel';
+import { ChallengePanel } from './challenge-panel';
 import { mockChallenges, getChallengesByNode } from './examples/mockChallengeData';
 import { ChallengeVoteType } from '@/types/challenge';
 

@@ -18,7 +18,7 @@ import {
   formatTimeAgo,
 } from '@/utils/challengeHelpers';
 import { theme } from '@/styles/theme';
-import { ReputationBadge } from './ReputationBadge';
+import { ReputationBadge } from './reputation-badge';
 
 export interface ChallengeCardProps {
   challenge: Challenge;
