@@ -11,11 +11,9 @@ export const ARTICLE_FRAGMENT = gql`
     narrative
     weight
     props
-    meta
-    is_level_0
-    published_at
+    publishedAt
     permissions
-    author_id
+    authorId
     created_at
     updated_at
   }
@@ -90,11 +88,9 @@ export interface Article {
   narrative: string;
   weight: number;
   props: string;
-  meta?: string;
-  is_level_0: boolean;
-  published_at?: string;
+  publishedAt?: string;
   permissions?: string[];
-  author_id: string;
+  authorId?: string;
   created_at: string;
   updated_at: string;
 }

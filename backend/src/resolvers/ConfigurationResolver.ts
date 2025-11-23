@@ -232,9 +232,9 @@ export class ConfigurationResolver {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { models?: { name: string }[] };
       const latency = Date.now() - startTime;
-      const availableModels = data.models?.map((m: any) => m.name) || [];
+      const availableModels = data.models?.map((m) => m.name) || [];
 
       return {
         success: true,

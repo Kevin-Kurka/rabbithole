@@ -91,9 +91,9 @@ export class PromotionEligibilityService {
   private async calculateMethodologyCompletion(nodeId: string): Promise<number> {
     // Get node's methodology and required steps
     const nodeResult = await this.pool.query(
-      `SELECT n.graph_id, g.methodology
+      `SELECT n.props->>'graphId' as graph_id, g.methodology
        FROM public."Nodes" n
-       JOIN public."Graphs" g ON n.graph_id = g.id
+       JOIN public."Graphs" g ON (n.props->>'graphId')::uuid = g.id
        WHERE n.id = $1`,
       [nodeId]
     );
@@ -416,13 +416,7 @@ export class PromotionEligibilityService {
       // Update node to Level 0
       await client.query(
         `UPDATE public."Nodes"
-         SET is_level_0 = true,
-             weight = $1,
-             meta = jsonb_set(
-               COALESCE(meta, '{}'::jsonb),
-               '{promoted_at}',
-               to_jsonb(NOW())
-             ),
+         SET props = props || jsonb_build_object('weight', $1, 'promotedAt', NOW()),
              updated_at = NOW()
          WHERE id = $2`,
         [finalWeight, nodeId]
@@ -437,7 +431,7 @@ export class PromotionEligibilityService {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
         [
           nodeId,
-          node.graph_id,
+          (node.props as any).graphId,
           promotionType,
           finalWeight,
           eligibility.criteria.methodologyCompletion,
@@ -476,9 +470,9 @@ export class PromotionEligibilityService {
          g.name as graph_name
        FROM public."PromotionEligibility" pe
        JOIN public."Nodes" n ON n.id = pe.node_id
-       JOIN public."Graphs" g ON g.id = n.graph_id
+       JOIN public."Graphs" g ON g.id = (n.props->>'graphId')::uuid
        WHERE pe.eligible = true
-         AND n.is_level_0 = false
+         AND COALESCE((n.props->>'weight')::numeric, 0) < 0.90
        ORDER BY pe.overall_score DESC
        LIMIT $1`,
       [limit]

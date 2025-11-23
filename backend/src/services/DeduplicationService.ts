@@ -13,6 +13,7 @@
 import { Pool } from 'pg';
 import crypto from 'crypto';
 import { ContentAnalysisService } from './ContentAnalysisService';
+import { FileStorageService } from './FileStorageService';
 
 export interface DuplicateCandidate {
   nodeId: string;
@@ -48,9 +49,9 @@ export class DeduplicationService {
   private readonly PERCEPTUAL_HASH_THRESHOLD = 0.95;
   private readonly SEMANTIC_SIMILARITY_THRESHOLD = 0.90;
 
-  constructor(pool: Pool) {
+  constructor(pool: Pool, fileStorage: FileStorageService) {
     this.pool = pool;
-    this.contentAnalysis = new ContentAnalysisService(pool);
+    this.contentAnalysis = new ContentAnalysisService(pool, fileStorage);
   }
 
   /**
@@ -141,7 +142,7 @@ export class DeduplicationService {
       if (strategy.combineMetadata) {
         const combinedMeta = this.combineMetadata(nodes);
         await client.query(
-          `UPDATE public."Nodes" SET meta = $1 WHERE id = $2`,
+          `UPDATE public."Nodes" SET props = jsonb_set(props, '{meta}', $1) WHERE id = $2`,
           [JSON.stringify(combinedMeta), canonicalNodeId]
         );
       }
@@ -194,9 +195,9 @@ export class DeduplicationService {
         await client.query(
           `UPDATE public."Nodes"
            SET canonical_node_id = $1,
-               meta = jsonb_set(
-                 COALESCE(meta, '{}'::jsonb),
-                 '{merged}',
+               props = jsonb_set(
+                 COALESCE(props, '{}'::jsonb),
+                 '{meta,merged}',
                  'true'::jsonb
                )
            WHERE id = ANY($2)`,
@@ -232,7 +233,7 @@ export class DeduplicationService {
   ): Promise<DuplicateCandidate[]> {
     const query = graphId
       ? `SELECT id, props, weight FROM public."Nodes"
-         WHERE content_hash = $1 AND graph_id = $2 AND canonical_node_id IS NULL
+         WHERE content_hash = $1 AND props->>'graphId' = $2 AND canonical_node_id IS NULL
          LIMIT 10`
       : `SELECT id, props, weight FROM public."Nodes"
          WHERE content_hash = $1 AND canonical_node_id IS NULL
@@ -263,7 +264,7 @@ export class DeduplicationService {
                 hamming_distance(n.perceptual_hash, $1) AS distance
          FROM public."Nodes" n
          WHERE n.perceptual_hash IS NOT NULL
-           AND n.graph_id = $2
+           AND n.props->>'graphId' = $2
            AND n.canonical_node_id IS NULL
            AND hamming_distance(n.perceptual_hash, $1) < 10
          ORDER BY distance
@@ -316,11 +317,13 @@ export class DeduplicationService {
     contentType: 'image' | 'video' | 'audio'
   ): Promise<string | null> {
     try {
-      if (contentType === 'image') {
-        return await this.contentAnalysis.generateImageHash(content);
-      } else if (contentType === 'video') {
-        return await this.contentAnalysis.generateVideoHash(content);
-      }
+      // TODO: Implement perceptual hashing for images and videos
+      // if (contentType === 'image') {
+      //   return await this.contentAnalysis.generateImageHash(content);
+      // } else if (contentType === 'video') {
+      //   return await this.contentAnalysis.generateVideoHash(content);
+      // }
+      console.log(`Perceptual hash not yet implemented for ${contentType}`);
     } catch (error) {
       console.error('Failed to generate perceptual hash:', error);
     }
@@ -406,8 +409,8 @@ export class DeduplicationService {
     // Combine unique sources
     const sources = new Set<string>();
     for (const node of nodes) {
-      if (node.meta?.source) {
-        sources.add(node.meta.source);
+      if (node.props?.meta?.source) {
+        sources.add(node.props.meta.source);
       }
     }
     combined.sources = Array.from(sources);

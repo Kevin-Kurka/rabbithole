@@ -19,8 +19,11 @@ import Redis from 'ioredis';
  */
 
 export interface MediaProcessingJob {
+  jobId?: string;
   fileId: string;
-  processingType: 'document' | 'audio' | 'video';
+  fileType?: 'document' | 'audio' | 'video';
+  filePath?: string;
+  processingType?: 'document' | 'audio' | 'video';
   options: {
     // Document options
     extractTables?: boolean;
@@ -38,9 +41,12 @@ export interface MediaProcessingJob {
     extractAudio?: boolean;
     detectScenes?: boolean;
     generateThumbnail?: boolean;
+    frameRate?: number;
+    maxFrames?: number;
+    detectObjects?: boolean;
   };
   priority?: number; // 1-10, higher = more urgent
-  timestamp: string;
+  timestamp?: string;
   retryCount?: number;
 }
 

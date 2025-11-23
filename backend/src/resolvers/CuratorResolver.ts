@@ -54,9 +54,9 @@ export class CuratorRoleResolver {
 
   @Query(() => CuratorRole, { nullable: true })
   async curatorRole(
+    @Ctx() { pool }: Context,
     @Arg('id', () => ID, { nullable: true }) id?: string,
-    @Arg('roleName', { nullable: true }) roleName?: string,
-    @Ctx() { pool }: Context
+    @Arg('roleName', { nullable: true }) roleName?: string
   ): Promise<CuratorRole | null> {
     if (!id && !roleName) {
       throw new Error('Either id or roleName must be provided');
@@ -82,7 +82,7 @@ export class CuratorRoleResolver {
     return result.rows.map(this.mapRolePermission);
   }
 
-  private mapCuratorRole(row: any): CuratorRole {
+  public mapCuratorRole(row: any): CuratorRole {
     return {
       id: row.id,
       roleName: row.role_name,
@@ -178,9 +178,9 @@ export class UserCuratorResolver {
 
   @Query(() => UserCurator, { nullable: true })
   async curator(
+    @Ctx() { pool }: Context,
     @Arg('id', () => ID, { nullable: true }) id?: string,
-    @Arg('userId', () => ID, { nullable: true }) userId?: string,
-    @Ctx() { pool }: Context
+    @Arg('userId', () => ID, { nullable: true }) userId?: string
   ): Promise<UserCurator | null> {
     if (!id && !userId) {
       throw new Error('Either id or userId must be provided');
@@ -325,7 +325,7 @@ export class UserCuratorResolver {
     return result.rows[0] ? new CuratorRoleResolver().mapCuratorRole(result.rows[0]) : null;
   }
 
-  private mapUserCurator(row: any): UserCurator {
+  public mapUserCurator(row: any): UserCurator {
     return {
       id: row.id,
       userId: row.user_id,

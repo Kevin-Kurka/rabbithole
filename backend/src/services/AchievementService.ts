@@ -328,17 +328,19 @@ export class AchievementService {
       `SELECT COUNT(DISTINCT n.id) as count
        FROM public."Nodes" n
        JOIN public."VeracityScores" vs ON vs.target_node_id = n.id
-       WHERE n.created_by = $1 AND vs.final_score >= 0.9`,
+       WHERE n.props->>'createdBy' = $1 AND vs.final_score >= 0.9`,
       [userId]
     );
     metrics.high_veracity_nodes = parseInt(highVeracityResult.rows[0]?.count || '0');
 
-    // Level 0 contributions
-    const level0Result = await this.pool.query(
-      `SELECT COUNT(*) as count FROM public."Nodes" WHERE created_by = $1 AND is_level_0 = true`,
+    // High credibility contributions (weight >= 0.90)
+    const highCredibilityResult = await this.pool.query(
+      `SELECT COUNT(*) as count FROM public."Nodes"
+       WHERE props->>'createdBy' = $1
+       AND (props->>'weight')::numeric >= 0.90`,
       [userId]
     );
-    metrics.level0_contributions = parseInt(level0Result.rows[0]?.count || '0');
+    metrics.level0_contributions = parseInt(highCredibilityResult.rows[0]?.count || '0');
 
     // Methodologies completed
     const methodologyResult = await this.pool.query(

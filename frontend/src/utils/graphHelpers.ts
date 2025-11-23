@@ -13,6 +13,8 @@ import {
   GraphLevel,
   NodeData,
   EdgeData,
+  getLevelFromWeight,
+  isHighCredibility,
 } from '@/types/graph';
 
 /**
@@ -23,6 +25,8 @@ export function convertToFlowNode(
   methodologyId?: string
 ): GraphCanvasNode {
   const props = JSON.parse(node.props || '{}');
+  const weight = node.weight || 0.5;
+  const level = getLevelFromWeight(weight);
 
   return {
     id: node.id,
@@ -33,9 +37,9 @@ export function convertToFlowNode(
     },
     data: {
       label: props.label || 'Node',
-      weight: node.weight || 0.5,
-      level: node.level ?? GraphLevel.LEVEL_1,
-      isLocked: node.level === GraphLevel.LEVEL_0,
+      weight,
+      level,
+      isLocked: isHighCredibility(weight),
       methodology: methodologyId,
       metadata: props.metadata,
       ...props,
@@ -48,6 +52,8 @@ export function convertToFlowNode(
  */
 export function convertToFlowEdge(edge: GraphEdge): GraphCanvasEdge {
   const props = JSON.parse(edge.props || '{}');
+  const weight = edge.weight || 0.5;
+  const level = getLevelFromWeight(weight);
 
   return {
     id: edge.id,
@@ -56,9 +62,9 @@ export function convertToFlowEdge(edge: GraphEdge): GraphCanvasEdge {
     type: props.type || 'custom',
     data: {
       label: props.label,
-      weight: edge.weight || 0.5,
-      level: edge.level ?? GraphLevel.LEVEL_1,
-      isLocked: edge.level === GraphLevel.LEVEL_0,
+      weight,
+      level,
+      isLocked: isHighCredibility(weight),
       metadata: props.metadata,
       ...props,
     },
@@ -98,9 +104,9 @@ export function convertFromFlowEdge(edge: GraphCanvasEdge): string {
 /**
  * Get veracity color hex code
  */
-export function getVeracityColor(weight: number, level: GraphLevel): string {
-  if (level === GraphLevel.LEVEL_0 || weight >= 1.0) {
-    return '#10b981'; // green-500 - verified
+export function getVeracityColor(weight: number): string {
+  if (weight >= 0.90) {
+    return '#10b981'; // green-500 - high credibility
   }
 
   if (weight >= 0.7) {

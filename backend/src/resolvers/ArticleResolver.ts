@@ -59,14 +59,14 @@ export class ArticleResolver {
 
       if (graphId) {
         params.push(graphId);
-        sql += ` AND n.graph_id = $${params.length}`;
+        sql += ` AND n.props->>'graphId' = $${params.length}`;
       }
 
       if (published !== undefined) {
         if (published) {
-          sql += ` AND n.published_at IS NOT NULL`;
+          sql += ` AND n.props->>'publishedAt' IS NOT NULL`;
         } else {
-          sql += ` AND n.published_at IS NULL`;
+          sql += ` AND n.props->>'publishedAt' IS NULL`;
         }
       }
 
@@ -130,29 +130,29 @@ export class ArticleResolver {
 
       const articleNodeTypeId = nodeTypeResult.rows[0].id;
 
-      // Create the article node
+      // Create the article node using props-only schema
+      const props = {
+        graphId: input.graphId,
+        title: input.title,
+        narrative: input.narrative,
+        authorId: userId,
+        createdBy: userId,
+        weight: 0.5
+      };
+
       const sql = `
         INSERT INTO public."Nodes" (
-          graph_id,
           node_type_id,
-          title,
-          narrative,
-          author_id,
-          created_by,
-          weight,
-          is_level_0,
+          props,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $5, 0.5, false, NOW(), NOW())
+        ) VALUES ($1, $2, NOW(), NOW())
         RETURNING *
       `;
 
       const result = await pool.query(sql, [
-        input.graphId,
         articleNodeTypeId,
-        input.title,
-        input.narrative,
-        userId,
+        JSON.stringify(props)
       ]);
 
       const articleNode = this.mapRowToNode(result.rows[0]);
@@ -187,7 +187,7 @@ export class ArticleResolver {
     try {
       // Check if user has permission to edit
       const checkSql = `
-        SELECT author_id, permissions FROM public."Nodes"
+        SELECT props FROM public."Nodes"
         WHERE id = $1
       `;
       const checkResult = await pool.query(checkSql, [input.articleId]);
@@ -197,40 +197,35 @@ export class ArticleResolver {
       }
 
       const article = checkResult.rows[0];
+      const props = typeof article.props === 'string' ? JSON.parse(article.props) : article.props;
       const hasPermission =
-        article.author_id === userId ||
-        (article.permissions && article.permissions.includes(userId));
+        props.authorId === userId ||
+        (props.permissions && props.permissions.includes(userId));
 
       if (!hasPermission) {
         throw new Error('You do not have permission to edit this article');
       }
 
-      // Build update query dynamically
-      const updates: string[] = [];
-      const params: any[] = [];
-      let paramIndex = 1;
+      // Build props update object
+      const propsUpdate: any = {};
 
       if (input.title) {
-        updates.push(`title = $${paramIndex++}`);
-        params.push(input.title);
+        propsUpdate.title = input.title;
       }
 
       if (input.narrative) {
-        updates.push(`narrative = $${paramIndex++}`);
-        params.push(input.narrative);
+        propsUpdate.narrative = input.narrative;
       }
 
-      updates.push(`updated_at = NOW()`);
-
-      params.push(input.articleId);
+      // Update props using JSONB merge operator
       const updateSql = `
         UPDATE public."Nodes"
-        SET ${updates.join(', ')}
-        WHERE id = $${paramIndex}
+        SET props = props || $1::jsonb, updated_at = NOW()
+        WHERE id = $2
         RETURNING *
       `;
 
-      const result = await pool.query(updateSql, params);
+      const result = await pool.query(updateSql, [JSON.stringify(propsUpdate), input.articleId]);
 
       // Update referenced nodes if provided
       if (input.referencedNodeIds) {
@@ -242,7 +237,7 @@ export class ArticleResolver {
 
         // Create new reference edges
         const graphResult = await pool.query(
-          `SELECT graph_id FROM public."Nodes" WHERE id = $1`,
+          `SELECT props->>'graphId' as graph_id FROM public."Nodes" WHERE id = $1`,
           [input.articleId]
         );
         const graphId = graphResult.rows[0].graph_id;
@@ -275,12 +270,16 @@ export class ArticleResolver {
     try {
       const sql = `
         UPDATE public."Nodes"
-        SET published_at = NOW(), updated_at = NOW()
-        WHERE id = $1 AND author_id = $2
+        SET props = props || $1::jsonb, updated_at = NOW()
+        WHERE id = $2 AND props->>'authorId' = $3
         RETURNING *
       `;
 
-      const result = await pool.query(sql, [input.articleId, userId]);
+      const result = await pool.query(sql, [
+        JSON.stringify({ publishedAt: new Date().toISOString() }),
+        input.articleId,
+        userId
+      ]);
 
       if (result.rows.length === 0) {
         throw new Error('Article not found or you do not have permission to publish');
@@ -305,7 +304,7 @@ export class ArticleResolver {
     try {
       const sql = `
         DELETE FROM public."Nodes"
-        WHERE id = $1 AND author_id = $2
+        WHERE id = $1 AND props->>'authorId' = $2
       `;
 
       const result = await pool.query(sql, [articleId, userId]);
@@ -343,21 +342,24 @@ export class ArticleResolver {
       edgeTypeId = edgeTypeResult.rows[0].id;
     }
 
-    // Create edges
+    // Create edges using props-only schema
     for (const nodeId of nodeIds) {
+      const edgeProps = {
+        graphId,
+        createdBy: userId,
+        weight: 0.5
+      };
+
       await pool.query(
         `INSERT INTO public."Edges" (
-          graph_id,
           edge_type_id,
           source_node_id,
           target_node_id,
-          created_by,
-          weight,
-          is_level_0,
+          props,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, 0.5, false, NOW(), NOW())`,
-        [graphId, edgeTypeId, articleId, nodeId, userId]
+        ) VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [edgeTypeId, articleId, nodeId, JSON.stringify(edgeProps)]
       );
     }
   }
@@ -365,15 +367,9 @@ export class ArticleResolver {
   private mapRowToNode(row: any): Node {
     return {
       id: row.id,
-      title: row.title,
-      weight: row.weight,
-      props: row.props || '{}',
-      meta: row.meta,
-      is_level_0: row.is_level_0,
-      narrative: row.narrative,
-      published_at: row.published_at,
-      permissions: row.permissions,
-      author_id: row.author_id,
+      node_type_id: row.node_type_id,
+      props: row.props || {},
+      ai: row.ai,
       created_at: row.created_at,
       updated_at: row.updated_at,
     } as Node;

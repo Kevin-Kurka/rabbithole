@@ -2,6 +2,26 @@
 
 GraphQL API server with real-time subscriptions, AI assistant integration, and asynchronous vectorization processing.
 
+## 🔒 CRITICAL: Strict 4-Table Schema Requirement
+
+**This backend uses a props-only schema with ONLY 4 core tables:**
+
+1. **`node_types`** - Schema graph (defines what types of nodes can exist)
+2. **`edge_types`** - Schema graph (defines what types of relationships can exist)
+3. **`nodes`** - Data graph (6 columns: id, node_type_id, props, ai, created_at, updated_at)
+4. **`edges`** - Data graph (8 columns: id, source_node_id, target_node_id, edge_type_id, props, ai, created_at, updated_at)
+
+**ALL application data MUST be stored in JSONB `props` field - NO additional tables allowed.**
+
+See [/SCHEMA_COMPLIANCE_REPORT.md](../SCHEMA_COMPLIANCE_REPORT.md) for complete schema documentation and migration from legacy tables.
+
+### Weight-Based Credibility System
+
+- **High Credibility (weight >= 0.90)**: Immutable nodes/edges (cannot be edited/deleted)
+- **User Workspace (weight < 0.90)**: Fully editable
+- All nodes/edges have `weight` property in their `props` JSONB field
+- Backend GraphQL schema exposes getters that extract from props: `weight`, `title`, `graphId`, etc.
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)

@@ -18,5 +18,8 @@
     "@playwright/test": "^1.49.1",
     "@types/node": "^20.12.12",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "graphql-type-json": "^0.3.2"
   }
 }

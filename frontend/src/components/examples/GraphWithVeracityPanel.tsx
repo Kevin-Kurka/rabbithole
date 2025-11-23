@@ -16,7 +16,7 @@ import { gql } from '@apollo/client';
 import { VeracityPanel } from '../veracity';
 import GraphNode from '../graph-node';
 import GraphEdge from '../graph-edge';
-import { NodeData, EdgeData } from '@/types/graph';
+import { NodeData, EdgeData, isHighCredibility } from '@/types/graph';
 
 // GraphQL query for fetching veracity data
 const GET_NODE_VERACITY = gql`
@@ -116,7 +116,7 @@ export const GraphWithVeracityPanel: React.FC<GraphWithVeracityPanelProps> = ({
           isOpen={isPanelOpen}
           onClose={handlePanelClose}
           score={selectedNode.data.weight}
-          isLevel0={selectedNode.data.level === 0}
+          isLevel0={isHighCredibility(selectedNode.data.weight)}
           breakdownData={veracityData?.veracityBreakdown}
           historyData={veracityData?.veracityHistory?.map((entry: any) => ({
             ...entry,

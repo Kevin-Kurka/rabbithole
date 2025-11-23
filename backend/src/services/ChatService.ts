@@ -85,9 +85,9 @@ export class ChatService {
       // Store in database for persistence
       await this.pool.query(
         `INSERT INTO public."ChatMessages"
-         (id, graph_id, user_id, message, created_at)
+         (id, user_id, message, props, created_at)
          VALUES ($1, $2, $3, $4, $5)`,
-        [messageId, graphId, userId, message.trim(), timestamp]
+        [messageId, userId, message.trim(), JSON.stringify({ graphId }), timestamp]
       );
 
       // Publish to subscribers
@@ -133,10 +133,10 @@ export class ChatService {
           u.username,
           cm.message,
           cm.created_at as timestamp,
-          cm.graph_id as "graphId"
+          cm.props->>'graphId' as "graphId"
          FROM public."ChatMessages" cm
          JOIN public."Users" u ON cm.user_id = u.id
-         WHERE cm.graph_id = $1
+         WHERE cm.props->>'graphId' = $1
          ORDER BY cm.created_at DESC
          LIMIT $2`,
         [graphId, limit]
@@ -212,7 +212,7 @@ export class ChatService {
       await this.pool.query(
         `UPDATE public."ChatMessages"
          SET deleted_at = NOW()
-         WHERE graph_id = $1 AND deleted_at IS NULL`,
+         WHERE props->>'graphId' = $1 AND deleted_at IS NULL`,
         [graphId]
       );
 
@@ -232,7 +232,7 @@ export class ChatService {
     try {
       // Check if user owns the message
       const result = await this.pool.query(
-        `SELECT graph_id, user_id FROM public."ChatMessages"
+        `SELECT props->>'graphId' as graph_id, user_id FROM public."ChatMessages"
          WHERE id = $1 AND deleted_at IS NULL`,
         [messageId]
       );
@@ -298,7 +298,7 @@ export class ChatService {
       const result = await this.pool.query(
         `SELECT COUNT(*) as count
          FROM public."ChatMessages"
-         WHERE graph_id = $1 AND deleted_at IS NULL`,
+         WHERE props->>'graphId' = $1 AND deleted_at IS NULL`,
         [graphId]
       );
 
@@ -346,9 +346,9 @@ export class ChatService {
     try {
       await this.pool.query(
         `INSERT INTO public."GraphActivity"
-         (graph_id, user_id, action_type, created_at)
+         (user_id, action_type, props, created_at)
          VALUES ($1, $2, $3, NOW())`,
-        [graphId, userId, actionType]
+        [userId, actionType, JSON.stringify({ graphId })]
       );
     } catch (error) {
       console.error('Error logging activity:', error);

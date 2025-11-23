@@ -14,7 +14,6 @@ export const FIND_SIMILAR_NODES = gql`
       props
       weight
       similarity
-      is_level_0
     }
   }
 `;
@@ -74,7 +73,6 @@ export interface SimilarNode {
   props: Record<string, unknown>;
   weight: number;
   similarity: number;
-  is_level_0: boolean;
 }
 
 export interface CitedNode {

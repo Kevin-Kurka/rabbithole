@@ -76,8 +76,8 @@ export function useGraphData(graphIds: string[]): UseGraphDataResult {
         data: {
           label: node.label || node.title,
           description: node.description,
-          veracity: node.veracity,
-          level: node.level || 1,
+          weight: node.weight,
+          level: getLevelFromWeight(node.weight),
           ...node.data,
         },
       })));

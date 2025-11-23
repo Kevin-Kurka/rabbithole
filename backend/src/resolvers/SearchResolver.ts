@@ -32,7 +32,7 @@ class SearchResult {
   relevance!: number;
 
   @Field()
-  graph_id!: string;
+  graphId!: string;
 
   @Field({ nullable: true })
   graph_name?: string;
@@ -120,7 +120,7 @@ export class SearchResolver {
       type: result.type,
       narrative: result.narrative,
       relevance: result.relevance,
-      graph_id: result.graph_id,
+      graphId: result.graphId,
       graph_name: result.graph_name,
       veracityScore: result.veracityScore ? {
         veracityScore: result.veracityScore.veracityScore,

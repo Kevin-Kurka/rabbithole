@@ -312,7 +312,7 @@ export default function ClusterView({
                           <div className="text-xs text-white/80 mt-1">
                             Veracity: {(node.data.weight * 100).toFixed(0)}%
                           </div>
-                          {node.data.level === GraphLevel.LEVEL_0 && (
+                          {isHighCredibility(node.data.weight) && (
                             <div className="text-xs font-bold text-white bg-black/20 px-2 py-0.5 rounded mt-1 inline-block">
                               Level 0
                             </div>

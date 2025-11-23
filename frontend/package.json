@@ -47,6 +47,7 @@
     "pdfjs-dist": "^5.4.296",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-dropzone": "^14.3.8",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.2.0",
     "react-zoom-pan-pinch": "^3.7.0",

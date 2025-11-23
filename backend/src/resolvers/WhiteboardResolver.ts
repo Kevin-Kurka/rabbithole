@@ -202,19 +202,17 @@ export class WhiteboardResolver {
       const sql = `
         SELECT
           n.id,
-          n.graph_id,
+          n.props->>'graphId' as graph_id,
           nt.name as node_type,
-          n.title,
+          n.props->>'title' as title,
           n.props->>'position' as position_json,
           n.props->>'dimensions' as dimensions_json,
-          COALESCE((n.props->>'zIndex')::numeric, n.weight) as z_index,
+          COALESCE((n.props->>'zIndex')::numeric, (n.props->>'weight')::numeric, 0.5) as z_index,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0
+          (n.props->>'weight')::float as weight
         FROM public."Nodes" n
         JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-        WHERE n.graph_id = $1 AND n.props ? 'position'
+        WHERE n.props->>'graphId' = $1 AND n.props ? 'position'
         ORDER BY z_index ASC
       `;
 
@@ -228,10 +226,9 @@ export class WhiteboardResolver {
         position: row.position_json ? JSON.parse(row.position_json) : null,
         dimensions: row.dimensions_json ? JSON.parse(row.dimensions_json) : null,
         zIndex: row.z_index,
-        props: row.props,
-        meta: row.meta,
-        weight: row.weight,
-        isLevel0: row.is_level_0,
+        props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props,
+        weight: row.weight || 0.5,
+        isLevel0: row.weight >= 0.90, // Derived from weight
       }));
     } catch (error) {
       console.error('Error fetching canvas nodes:', error);
@@ -310,42 +307,41 @@ export class WhiteboardResolver {
       };
 
       // Build meta object with initial version history
-      const meta = {
-        isTextBox: true,
-        versionHistory: [
-          {
-            timestamp: new Date().toISOString(),
-            userId,
-            operation: 'create',
-            changes: { content: { old: null, new: input.content } },
-            position: input.position,
-          },
-        ],
+      // Merge meta into props (all data goes in props)
+      const nodeProps = {
+        ...props,
+        graphId: input.graphId,
+        title: input.title,
+        createdBy: userId,
+        weight: 0.5,
+        meta: {
+          isTextBox: true,
+          versionHistory: [
+            {
+              timestamp: new Date().toISOString(),
+              userId,
+              operation: 'create',
+              changes: { content: { old: null, new: input.content } },
+              position: input.position,
+            },
+          ],
+        }
       };
 
-      // Create the text box node (no credibility score - weight is NULL)
+      // Create the text box node using props-only schema
       const sql = `
         INSERT INTO public."Nodes" (
-          graph_id,
           node_type_id,
-          title,
           props,
-          meta,
-          created_by,
-          is_level_0,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, false, NOW(), NOW())
+        ) VALUES ($1, $2, NOW(), NOW())
         RETURNING *
       `;
 
       const result = await pool.query(sql, [
-        input.graphId,
         nodeTypeId,
-        input.title,
-        JSON.stringify(props),
-        JSON.stringify(meta),
-        userId,
+        JSON.stringify(nodeProps),
       ]);
 
       return this.serializeNode(result.rows[0]);
@@ -375,14 +371,16 @@ export class WhiteboardResolver {
       }
 
       const node = nodeResult.rows[0];
+      const nodeProps = typeof node.props === 'string' ? JSON.parse(node.props) : (node.props || {});
 
-      // Check if node is Level 0 (immutable)
-      if (node.is_level_0) {
-        throw new Error('Cannot update position of Level 0 (immutable) nodes');
+      // Check if node has high credibility (immutable)
+      const weight = nodeProps.weight || 0.5;
+      if (weight >= 0.90) {
+        throw new Error('Cannot update position of high credibility (weight >= 0.90) nodes');
       }
 
       // Update props with new position
-      const currentProps = node.props || {};
+      const currentProps = nodeProps;
       const updatedProps = {
         ...currentProps,
         position: input.position,
@@ -540,29 +538,32 @@ export class WhiteboardResolver {
         ...(input.properties || {}),
       };
 
-      // Create the edge
+      // Merge all edge data into props (props-only schema)
+      const edgeProps = {
+        ...props,
+        graphId: input.graphId,
+        createdBy: userId,
+        weight: 0.5
+      };
+
+      // Create the edge using props-only schema
       const sql = `
         INSERT INTO public."Edges" (
-          graph_id,
           edge_type_id,
           source_node_id,
           target_node_id,
           props,
-          created_by,
-          is_level_0,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, false, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, NOW(), NOW())
         RETURNING *
       `;
 
       const result = await pool.query(sql, [
-        input.graphId,
         edgeTypeId,
         input.sourceNodeId,
         input.targetNodeId,
-        JSON.stringify(props),
-        userId,
+        JSON.stringify(edgeProps),
       ]);
 
       const edge = result.rows[0];
@@ -595,14 +596,18 @@ export class WhiteboardResolver {
       }
 
       const node = nodeResult.rows[0];
+      const nodeProps = typeof node.props === 'string' ? JSON.parse(node.props) : (node.props || {});
 
-      // Check if node is Level 0 (immutable)
-      if (node.is_level_0) {
-        throw new Error('Cannot delete Level 0 (immutable) nodes');
+      // Check if node has high credibility (immutable)
+      const weight = nodeProps.weight || 0.5;
+      if (weight >= 0.90) {
+        throw new Error('Cannot delete high credibility (weight >= 0.90) nodes');
       }
 
       // Check permissions (owner or admin)
-      if (node.created_by !== userId && node.author_id !== userId) {
+      const createdBy = nodeProps.createdBy;
+      const authorId = nodeProps.authorId;
+      if (createdBy !== userId && authorId !== userId) {
         throw new Error('Only the node owner can delete this node');
       }
 

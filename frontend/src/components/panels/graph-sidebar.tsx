@@ -269,7 +269,7 @@ export default function GraphSidebar({ activeGraphs, onToggleGraph }: GraphSideb
                           >
                             {graph.name}
                           </span>
-                          {graph.level === 0 && (
+                          {graph.weight >= 0.90 && (
                             <span
                               style={{
                                 fontSize: '9px',

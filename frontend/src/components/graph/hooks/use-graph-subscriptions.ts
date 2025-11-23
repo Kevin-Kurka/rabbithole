@@ -52,7 +52,7 @@ export function useGraphSubscriptions({
             label: updatedNode.label || updatedNode.title,
             description: updatedNode.description,
             veracity: updatedNode.veracity,
-            level: updatedNode.level || 1,
+            level: getLevelFromWeight(updatedNode.weight) || 1,
             ...updatedNode.data,
           },
         });
@@ -104,7 +104,7 @@ export function useGraphSubscriptions({
           data: {
             label: updatedEdge.label,
             relationship: updatedEdge.relationship,
-            level: updatedEdge.level || 1,
+            level: getLevelFromWeight(updatedEdge.weight) || 1,
             ...updatedEdge.data,
           },
         });

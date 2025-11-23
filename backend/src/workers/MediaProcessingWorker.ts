@@ -422,13 +422,31 @@ export class MediaProcessingWorker {
 
     const result = await videoAnalysisService.analyzeVideo(filePath, {
       extractFrames: job.options.extractFrames,
+      frameRate: job.options.frameRate,
+      maxFrames: job.options.maxFrames,
       detectScenes: job.options.detectScenes,
+      detectObjects: job.options.detectObjects,
       generateThumbnail: job.options.generateThumbnail !== false,
       extractAudio: job.options.extractAudio,
     });
 
     if (!result.success) {
       throw new Error(result.error || 'Video analysis failed');
+    }
+
+    // Prepare detected objects summary if available
+    let detectedObjectsSummary: any = null;
+    if (result.detectedObjects) {
+      detectedObjectsSummary = {
+        totalObjects: result.detectedObjects.totalObjects,
+        totalFrames: result.detectedObjects.totalFrames,
+        avgObjectsPerFrame: result.detectedObjects.avgObjectsPerFrame,
+        allClasses: result.detectedObjects.allClasses,
+        classFrequency: Array.from(result.detectedObjects.classFrequency.entries()).map(([cls, count]) => ({
+          class: cls,
+          count,
+        })),
+      };
     }
 
     return {
@@ -439,9 +457,10 @@ export class MediaProcessingWorker {
       codec: result.codec,
       frames: result.frames,
       scenes: result.scenes,
+      detected_objects: detectedObjectsSummary,
       thumbnail: result.thumbnail,
       has_audio: result.audioTrack,
-      processing_service: 'ffmpeg',
+      processing_service: 'ffmpeg+tensorflow',
       processing_time_ms: result.processingTime,
     };
   }

@@ -53,7 +53,7 @@ interface VectorSearchResult {
   title: string;
   node_type?: string;
   props: any;
-  meta: any;
+  ai: any;
   veracity_score?: number;
   similarity: number;
   created_at: Date;
@@ -213,7 +213,7 @@ export class FactCheckingService {
           n.id,
           n.title,
           n.props,
-          n.meta,
+          n.ai,
           n.node_type_id,
           mnt.name as node_type,
           vs.veracity_score,
@@ -229,7 +229,7 @@ export class FactCheckingService {
 
       if (graphId) {
         params.push(graphId);
-        sql += ` AND n.graph_id = $${params.length}`;
+        sql += ` AND n.props->>'graphId' = $${params.length}`;
       }
 
       sql += `
@@ -245,7 +245,7 @@ export class FactCheckingService {
         title: row.title,
         node_type: row.node_type,
         props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props,
-        meta: typeof row.meta === 'string' ? JSON.parse(row.meta) : row.meta,
+        ai: typeof row.ai === 'string' ? JSON.parse(row.ai) : row.ai,
         veracity_score: row.veracity_score,
         similarity: parseFloat(row.similarity),
         created_at: row.created_at,
@@ -318,8 +318,9 @@ export class FactCheckingService {
       reliability = node.veracity_score;
     }
 
-    // Boost reliability for Level 0 nodes (immutable truth layer)
-    if (node.meta?.is_level_0 === true) {
+    // Boost reliability for high credibility nodes (weight >= 0.90)
+    const weight = node.props?.weight;
+    if (weight !== undefined && weight !== null && weight >= 0.90) {
       reliability = Math.max(reliability, 0.9);
     }
 

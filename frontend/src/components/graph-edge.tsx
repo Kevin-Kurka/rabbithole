@@ -16,16 +16,16 @@ import {
   BaseEdge,
 } from '@xyflow/react';
 import { Lock } from 'lucide-react';
-import { EdgeData, GraphLevel } from '@/types/graph';
+import { EdgeData, isHighCredibility } from '@/types/graph';
 import { theme } from '@/styles/theme';
 import { VeracityIndicator } from './veracity';
 
 /**
  * Get edge color based on veracity score
  */
-const getEdgeColor = (weight: number, level: GraphLevel): string => {
-  if (level === GraphLevel.LEVEL_0 || weight >= 1.0) {
-    return '#10b981'; // green-500
+const getEdgeColor = (weight: number): string => {
+  if (weight >= 0.90) {
+    return '#10b981'; // green-500 - High credibility
   }
 
   if (weight >= 0.7) {
@@ -44,11 +44,11 @@ const getEdgeColor = (weight: number, level: GraphLevel): string => {
 };
 
 /**
- * Get edge stroke width based on level and selection
+ * Get edge stroke width based on weight and selection
  */
-const getStrokeWidth = (level: GraphLevel, selected: boolean): number => {
+const getStrokeWidth = (weight: number, selected: boolean): number => {
   if (selected) return 3;
-  if (level === GraphLevel.LEVEL_0) return 2.5;
+  if (isHighCredibility(weight)) return 2.5;
   return 2;
 };
 
@@ -67,11 +67,7 @@ function GraphEdge({
   selected,
   markerEnd,
 }: EdgeProps<EdgeData>) {
-  const { label, weight, level, isLocked } = data || {
-    weight: 0.5,
-    level: GraphLevel.LEVEL_1,
-    isLocked: false,
-  };
+  const { label, weight = 0.5, isLocked } = data || {};
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -82,11 +78,12 @@ function GraphEdge({
     targetPosition,
   });
 
-  const edgeColor = getEdgeColor(weight, level);
-  const strokeWidth = getStrokeWidth(level, selected || false);
+  const edgeColor = getEdgeColor(weight);
+  const strokeWidth = getStrokeWidth(weight, selected || false);
+  const highCredibility = isHighCredibility(weight);
 
   // Animate low-confidence edges
-  const shouldAnimate = level === GraphLevel.LEVEL_1 && weight < 0.4;
+  const shouldAnimate = !highCredibility && weight < 0.4;
 
   return (
     <>
@@ -127,17 +124,17 @@ function GraphEdge({
           <VeracityIndicator
             score={weight}
             size="xs"
-            isLevel0={level === GraphLevel.LEVEL_0}
+            isLevel0={highCredibility}
           />
 
-          {(level === GraphLevel.LEVEL_0 || isLocked) && (
+          {(highCredibility || isLocked) && (
             <Lock size={10} style={{ color: edgeColor }} />
           )}
           {label && <span>{label}</span>}
           {!label && (
             <span style={{ color: theme.colors.text.tertiary }}>
-              {level === GraphLevel.LEVEL_0 || weight >= 1.0
-                ? 'Verified'
+              {highCredibility
+                ? 'High Credibility'
                 : `${(weight * 100).toFixed(0)}%`}
             </span>
           )}

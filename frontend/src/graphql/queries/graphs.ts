@@ -17,7 +17,6 @@ export const GRAPH_QUERY = gql`
       name
       description
       methodology
-      level
       privacy
       created_at
       updated_at
@@ -25,7 +24,6 @@ export const GRAPH_QUERY = gql`
         id
         weight
         props
-        is_level_0
         created_at
         updated_at
       }
@@ -39,7 +37,6 @@ export const GRAPH_QUERY = gql`
         }
         weight
         props
-        is_level_0
         created_at
         updated_at
       }
@@ -61,7 +58,6 @@ export const GRAPHS_QUERY = gql`
         id
         weight
         props
-        level
       }
       edges {
         id
@@ -73,7 +69,6 @@ export const GRAPHS_QUERY = gql`
         }
         weight
         props
-        level
       }
     }
   }
@@ -88,7 +83,6 @@ export const CREATE_NODE_MUTATION = gql`
       id
       weight
       props
-      is_level_0
       created_at
       updated_at
     }
@@ -104,7 +98,6 @@ export const UPDATE_NODE_MUTATION = gql`
       id
       props
       weight
-      is_level_0
       updated_at
     }
   }
@@ -134,7 +127,6 @@ export const CREATE_EDGE_MUTATION = gql`
       }
       weight
       props
-      is_level_0
       created_at
       updated_at
     }
@@ -150,7 +142,6 @@ export const UPDATE_EDGE_MUTATION = gql`
       id
       props
       weight
-      is_level_0
       updated_at
     }
   }
@@ -174,7 +165,6 @@ export const CREATE_NODES_MUTATION = gql`
       id
       weight
       props
-      level
     }
   }
 `;
@@ -194,7 +184,6 @@ export const NODE_UPDATED_SUBSCRIPTION = gql`
       id
       weight
       props
-      level
       updatedAt
     }
   }
@@ -206,7 +195,6 @@ export const NODE_CREATED_SUBSCRIPTION = gql`
       id
       weight
       props
-      level
       createdAt
     }
   }
@@ -232,7 +220,6 @@ export const EDGE_UPDATED_SUBSCRIPTION = gql`
       }
       weight
       props
-      level
       updatedAt
     }
   }
@@ -250,7 +237,6 @@ export const EDGE_CREATED_SUBSCRIPTION = gql`
       }
       weight
       props
-      level
       createdAt
     }
   }

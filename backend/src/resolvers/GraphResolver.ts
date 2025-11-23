@@ -13,13 +13,13 @@ import { Redis } from 'ioredis';
 const NODE_UPDATED = "NODE_UPDATED";
 const EDGE_UPDATED = "EDGE_UPDATED";
 
-// Helper function to serialize JSONB fields to strings for GraphQL
+// Helper function to ensure JSONB fields are parsed as objects
 function serializeNode(node: any): any {
   if (!node) return node;
   return {
     ...node,
-    props: typeof node.props === 'object' ? JSON.stringify(node.props) : node.props,
-    meta: typeof node.meta === 'object' ? JSON.stringify(node.meta) : node.meta
+    props: typeof node.props === 'string' ? JSON.parse(node.props) : (node.props || {}),
+    meta: typeof node.meta === 'string' ? JSON.parse(node.meta) : node.meta
   };
 }
 
@@ -27,8 +27,8 @@ function serializeEdge(edge: any): any {
   if (!edge) return edge;
   return {
     ...edge,
-    props: typeof edge.props === 'object' ? JSON.stringify(edge.props) : edge.props,
-    meta: typeof edge.meta === 'object' ? JSON.stringify(edge.meta) : edge.meta
+    props: typeof edge.props === 'string' ? JSON.parse(edge.props) : (edge.props || {}),
+    meta: typeof edge.meta === 'string' ? JSON.parse(edge.meta) : edge.meta
   };
 }
 
@@ -52,25 +52,25 @@ export class NodeResolver {
 
   @FieldResolver(() => VeracityScore, { nullable: true })
   async veracity(@Root() node: Node, @Ctx() { pool, redis }: { pool: Pool, redis: Redis }): Promise<VeracityScore | null> {
-    // Level 0 nodes have fixed veracity = 1.0
-    if (node.is_level_0) {
+    // High credibility nodes (weight >= 0.90) have veracity close to their weight
+    if (node.weight && node.weight >= 0.90) {
       return {
         id: node.id,
         target_node_id: node.id,
         target_edge_id: undefined,
-        veracity_score: 1.0,
+        veracity_score: node.weight,
         evidence_weight_sum: 0,
         evidence_count: 0,
         supporting_evidence_weight: 0,
         refuting_evidence_weight: 0,
-        consensus_score: 1.0,
+        consensus_score: node.weight,
         source_count: 0,
-        source_agreement_ratio: 1.0,
+        source_agreement_ratio: node.weight,
         challenge_count: 0,
         open_challenge_count: 0,
         challenge_impact: 0,
         temporal_decay_factor: 1.0,
-        calculation_method: 'level_0_fixed',
+        calculation_method: 'high_credibility_fixed',
         calculated_at: new Date(),
         calculated_by: 'system',
         updated_at: new Date(),
@@ -122,25 +122,25 @@ export class EdgeResolver {
 
   @FieldResolver(() => VeracityScore, { nullable: true })
   async veracity(@Root() edge: Edge, @Ctx() { pool }: { pool: Pool }): Promise<VeracityScore | null> {
-    // Level 0 edges have fixed veracity = 1.0
-    if (edge.is_level_0) {
+    // High credibility edges (weight >= 0.90) have veracity close to their weight
+    if (edge.weight && edge.weight >= 0.90) {
       return {
         id: edge.id,
         target_node_id: undefined,
         target_edge_id: edge.id,
-        veracity_score: 1.0,
+        veracity_score: edge.weight,
         evidence_weight_sum: 0,
         evidence_count: 0,
         supporting_evidence_weight: 0,
         refuting_evidence_weight: 0,
-        consensus_score: 1.0,
+        consensus_score: edge.weight,
         source_count: 0,
-        source_agreement_ratio: 1.0,
+        source_agreement_ratio: edge.weight,
         challenge_count: 0,
         open_challenge_count: 0,
         challenge_impact: 0,
         temporal_decay_factor: 1.0,
-        calculation_method: 'level_0_fixed',
+        calculation_method: 'high_credibility_fixed',
         calculated_at: new Date(),
         calculated_by: 'system',
         updated_at: new Date(),
@@ -160,7 +160,7 @@ export class GraphResolver {
   @FieldResolver(() => [Node])
   async nodes(@Root() graph: Graph, @Ctx() { pool }: { pool: Pool }): Promise<Node[]> {
     const result = await pool.query(
-      'SELECT * FROM public."Nodes" WHERE graph_id = $1',
+      'SELECT * FROM public."Nodes" WHERE props->>\'graphId\' = $1',
       [graph.id]
     );
     return result.rows.map(serializeNode);
@@ -169,7 +169,7 @@ export class GraphResolver {
   @FieldResolver(() => [Edge])
   async edges(@Root() graph: Graph, @Ctx() { pool }: { pool: Pool }): Promise<Edge[]> {
     const result = await pool.query(
-      'SELECT * FROM public."Edges" WHERE graph_id = $1',
+      'SELECT * FROM public."Edges" WHERE props->>\'graphId\' = $1',
       [graph.id]
     );
     return result.rows.map(serializeEdge);
@@ -224,8 +224,8 @@ export class GraphResolver {
     if (cached) {
       return cached;
     }
-    const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE graph_id = $1', [id]);
-    const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE graph_id = $1', [id]);
+    const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE props->>\'graphId\' = $1', [id]);
+    const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE props->>\'graphId\' = $1', [id]);
 
     // Convert JSONB to strings for GraphQL
     graph.nodes = nodesResult.rows.map(serializeNode);
@@ -246,20 +246,20 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to create nodes');
     }
-    // Check if the graph is Level 0 (read-only)
-    const graphCheck = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [graphId]);
-    if (graphCheck.rows[0]?.level === 0) {
-      throw new Error('Cannot create nodes in Level 0 (immutable) graphs');
-    }
 
     // Get a default node type if not specified
     const nodeTypeResult = await pool.query('SELECT id FROM public."NodeTypes" LIMIT 1');
     const defaultNodeTypeId = nodeTypeResult.rows[0]?.id;
 
-    // All user-created nodes in Level 1 graphs have is_level_0 = false
+    // Parse props JSON and add graphId and createdBy
+    const propsObj = typeof props === 'string' ? JSON.parse(props) : props;
+    propsObj.graphId = graphId;
+    propsObj.createdBy = userId;
+
+    // Insert with props-only schema
     const result = await pool.query(
-      'INSERT INTO public."Nodes" (graph_id, node_type_id, props, is_level_0) VALUES ($1, $2, $3, $4) RETURNING *',
-      [graphId, defaultNodeTypeId, props, false]
+      'INSERT INTO public."Nodes" (node_type_id, props) VALUES ($1, $2) RETURNING *',
+      [defaultNodeTypeId, JSON.stringify(propsObj)]
     );
     const newNode = serializeNode(result.rows[0]);
     await pubSub.publish(NODE_UPDATED, newNode);
@@ -280,20 +280,20 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to create edges');
     }
-    // Check if the graph is Level 0 (read-only)
-    const graphCheck = await pool.query('SELECT level FROM public."Graphs" WHERE id = $1', [graphId]);
-    if (graphCheck.rows[0]?.level === 0) {
-      throw new Error('Cannot create edges in Level 0 (immutable) graphs');
-    }
 
     // Get a default edge type if not specified
     const edgeTypeResult = await pool.query('SELECT id FROM public."EdgeTypes" LIMIT 1');
     const defaultEdgeTypeId = edgeTypeResult.rows[0]?.id;
 
-    // All user-created edges in Level 1 graphs have is_level_0 = false
+    // Parse props JSON and add graphId and createdBy
+    const propsObj = typeof props === 'string' ? JSON.parse(props) : props;
+    propsObj.graphId = graphId;
+    propsObj.createdBy = userId;
+
+    // Insert with props-only schema
     const result = await pool.query(
-      'INSERT INTO public."Edges" (graph_id, edge_type_id, source_node_id, target_node_id, props, is_level_0) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [graphId, defaultEdgeTypeId, from, to, props, false]
+      'INSERT INTO public."Edges" (edge_type_id, source_node_id, target_node_id, props) VALUES ($1, $2, $3, $4) RETURNING *',
+      [defaultEdgeTypeId, from, to, JSON.stringify(propsObj)]
     );
     const newEdge = serializeEdge(result.rows[0]);
     await pubSub.publish(EDGE_UPDATED, newEdge);
@@ -315,15 +315,11 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to update nodes');
     }
-    // Check if the node is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot modify Level 0 (immutable) nodes');
-    }
 
+    // Update weight in props JSONB
     const result = await pool.query(
-      'UPDATE public."Nodes" SET weight = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [weight, id]
+      'UPDATE public."Nodes" SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [JSON.stringify({ weight }), id]
     );
     const updatedNode = serializeNode(result.rows[0]);
     await pubSub.publish(NODE_UPDATED, updatedNode);
@@ -340,15 +336,11 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to update edges');
     }
-    // Check if the edge is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot modify Level 0 (immutable) edges');
-    }
 
+    // Update weight in props JSONB
     const result = await pool.query(
-      'UPDATE public."Edges" SET weight = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [weight, id]
+      'UPDATE public."Edges" SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [JSON.stringify({ weight }), id]
     );
     const updatedEdge = serializeEdge(result.rows[0]);
     await pubSub.publish(EDGE_UPDATED, updatedEdge);
@@ -364,12 +356,8 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to delete nodes');
     }
-    // Check if the node is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot delete Level 0 (immutable) nodes');
-    }
 
+    // All nodes are now editable (no Level 0 immutability)
     await pool.query('DELETE FROM public."Nodes" WHERE id = $1', [id]);
     await pubSub.publish('NODE_DELETED', { nodeId: id });
     return true;
@@ -384,12 +372,8 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to delete edges');
     }
-    // Check if the edge is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot delete Level 0 (immutable) edges');
-    }
 
+    // All edges are now editable (no Level 0 immutability)
     await pool.query('DELETE FROM public."Edges" WHERE id = $1', [id]);
     await pubSub.publish('EDGE_DELETED', { edgeId: id });
     return true;
@@ -405,14 +389,10 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to update nodes');
     }
-    // Check if the node is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Nodes" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot modify Level 0 (immutable) nodes');
-    }
 
+    // Merge props using JSONB || operator
     const result = await pool.query(
-      'UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE public."Nodes" SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2 RETURNING *',
       [props, id]
     );
     const updatedNode = serializeNode(result.rows[0]);
@@ -430,14 +410,10 @@ export class GraphResolver {
     if (!userId) {
       throw new Error('Authentication required to update edges');
     }
-    // Check if the edge is Level 0 (read-only)
-    const checkResult = await pool.query('SELECT is_level_0 FROM public."Edges" WHERE id = $1', [id]);
-    if (checkResult.rows[0]?.is_level_0) {
-      throw new Error('Cannot modify Level 0 (immutable) edges');
-    }
 
+    // Merge props using JSONB || operator
     const result = await pool.query(
-      'UPDATE public."Edges" SET props = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE public."Edges" SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2 RETURNING *',
       [props, id]
     );
     const updatedEdge = serializeEdge(result.rows[0]);
@@ -490,8 +466,8 @@ export class GraphResolver {
       [name, description || null, methodology || null, privacy || 'private', id]
     );
     const graph = result.rows[0];
-    const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE graph_id = $1', [id]);
-    const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE graph_id = $1', [id]);
+    const nodesResult = await pool.query('SELECT * FROM public."Nodes" WHERE props->>\'graphId\' = $1', [id]);
+    const edgesResult = await pool.query('SELECT * FROM public."Edges" WHERE props->>\'graphId\' = $1', [id]);
 
     // Convert JSONB to strings for GraphQL
     graph.nodes = nodesResult.rows.map(serializeNode);

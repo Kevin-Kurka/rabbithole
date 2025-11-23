@@ -351,9 +351,9 @@ ${documentText.substring(0, 12000)} ${documentText.length > 12000 ? '...(truncat
     try {
       // 1. Check for exact hash match in metadata
       const exactMatch = await pool.query(
-        `SELECT n.id, n.title, n.props->>'content_hash' as content_hash
+        `SELECT n.id, n.title, n.content_hash
          FROM public."Nodes" n
-         WHERE n.meta->>'content_hash' = $1
+         WHERE n.content_hash = $1
          LIMIT 1`,
         [fileHash]
       );
@@ -735,7 +735,7 @@ ${chunk}`;
   ): Promise<NodeMatch[]> {
     try {
       // Build query with optional graph filter
-      const graphFilter = graphId ? `AND n.graph_id = $2` : '';
+      const graphFilter = graphId ? `AND n.props->>'graphId' = $2` : '';
       const params = graphId
         ? [JSON.stringify(embedding), graphId]
         : [JSON.stringify(embedding)];
@@ -746,7 +746,7 @@ ${chunk}`;
           n.title,
           n.node_type_id,
           n.props,
-          n.is_level_0,
+          COALESCE((n.props->>'isLevel0')::boolean, false) as is_level_0,
           mnt.name as node_type,
           1 - (n.ai <=> $1::vector) as similarity
          FROM public."Nodes" n

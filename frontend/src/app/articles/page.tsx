@@ -181,7 +181,7 @@ export default function ArticlesPage() {
                     <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
                       {article.title}
                     </CardTitle>
-                    {article.published_at ? (
+                    {article.publishedAt ? (
                       <Badge variant="default" className="shrink-0">
                         <Eye className="w-3 h-3 mr-1" />
                         Published
@@ -203,7 +203,7 @@ export default function ArticlesPage() {
                       <Calendar className="w-4 h-4" />
                       {format(new Date(article.created_at), 'MMM d, yyyy')}
                     </div>
-                    {article.published_at && (
+                    {article.publishedAt && (
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
                         Published

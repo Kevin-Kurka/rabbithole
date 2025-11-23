@@ -1,3 +1,20 @@
+/**
+ * ProcessValidationResolver - PARTIALLY FUNCTIONAL
+ *
+ * WARNING: Two queries reference dropped table public."Evidence" (lines 460, 894):
+ * - These queries will fail until Evidence is migrated to node-based storage
+ * - Other promotion/consensus features work fine
+ *
+ * WORKING FEATURES:
+ * - checkPromotionEligibility() - Works (uses graph queries)
+ * - promoteGraph() - Works  (uses graph queries)
+ * - getConsensusStatus() - Works (uses ConsensusVotes table)
+ * - Methodology progress tracking - Works
+ *
+ * BROKEN FEATURES:
+ * - Evidence count queries (lines 460, 894) - Will return 0 until fixed
+ */
+
 import { Resolver, Query, Mutation, Subscription, Arg, Ctx, Root, PubSub } from 'type-graphql';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';

@@ -241,7 +241,7 @@ export default function GraphListPanel({ activeGraphs, onToggleGraph }: GraphLis
                     >
                       {graph.name}
                     </span>
-                    {graph.level === 0 && (
+                    {graph.weight >= 0.90 && (
                       <span
                         style={{
                           fontSize: '8px',

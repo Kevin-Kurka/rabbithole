@@ -9,6 +9,7 @@ import { Node as FlowNode, Edge as FlowEdge } from '@xyflow/react';
 
 /**
  * Graph levels for veracity and edit permissions
+ * @deprecated Use weight-based checks instead (weight >= 0.90 for high credibility)
  */
 export enum GraphLevel {
   /** Level 0: Verified, read-only nodes/edges */
@@ -16,6 +17,28 @@ export enum GraphLevel {
   /** Level 1: Editable nodes/edges with veracity scores */
   LEVEL_1 = 1,
 }
+
+/**
+ * Check if a node/edge has high credibility (replaces Level 0 check)
+ */
+export const isHighCredibility = (weight: number): boolean => {
+  return weight >= 0.90;
+};
+
+/**
+ * Check if a node/edge should be locked (based on weight)
+ */
+export const shouldBeLocked = (weight: number): boolean => {
+  return isHighCredibility(weight);
+};
+
+/**
+ * Get GraphLevel enum value from weight (for backward compatibility)
+ * @deprecated Components should use weight directly, not level
+ */
+export const getLevelFromWeight = (weight: number): GraphLevel => {
+  return isHighCredibility(weight) ? GraphLevel.LEVEL_0 : GraphLevel.LEVEL_1;
+};
 
 /**
  * Backend node structure from GraphQL
@@ -193,7 +216,6 @@ export interface NodeInput {
   graphId: string;
   props: string;
   weight?: number;
-  level?: GraphLevel;
 }
 
 export interface EdgeInput {
@@ -202,5 +224,4 @@ export interface EdgeInput {
   to: string;
   props: string;
   weight?: number;
-  level?: GraphLevel;
 }

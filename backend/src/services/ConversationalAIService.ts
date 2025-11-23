@@ -222,13 +222,13 @@ export class ConversationalAIService {
             n.id,
             n.title,
             n.props,
-            n.meta,
-            n.weight,
+            n.ai,
+            COALESCE((n.props->>'weight')::numeric, 1.0) as weight,
             mnt.name as node_type,
             (1 - (n.ai <=> $1::vector)) as similarity
           FROM public."Nodes" n
           LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
-          WHERE n.graph_id = $2
+          WHERE n.props->>'graphId' = $2
             AND n.ai IS NOT NULL
             AND (1 - (n.ai <=> $1::vector)) >= $3
           ORDER BY n.ai <=> $1::vector
@@ -239,8 +239,8 @@ export class ConversationalAIService {
             n.id,
             n.title,
             n.props,
-            n.meta,
-            n.weight,
+            n.ai,
+            COALESCE((n.props->>'weight')::numeric, 1.0) as weight,
             mnt.name as node_type,
             (1 - (n.ai <=> $1::vector)) as similarity
           FROM public."Nodes" n
@@ -261,7 +261,7 @@ export class ConversationalAIService {
         id: row.id,
         title: row.title || 'Untitled Node',
         props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props,
-        meta: typeof row.meta === 'string' ? JSON.parse(row.meta) : row.meta,
+        ai: typeof row.ai === 'string' ? JSON.parse(row.ai) : row.ai,
         node_type: row.node_type,
         weight: row.weight,
         similarity: row.similarity,

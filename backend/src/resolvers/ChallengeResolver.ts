@@ -14,6 +14,7 @@ import {
   Publisher,
   Args
 } from 'type-graphql';
+import { GraphQLJSON } from 'graphql-type-json';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';
 
@@ -49,7 +50,7 @@ export class ChallengeResolver {
    * QUERIES
    */
 
-  @Query(() => [Object], { nullable: true })
+  @Query(() => [GraphQLJSON], { nullable: true })
   async challenges(
     @Arg('status', type => [String], { nullable: true }) status: string[],
     @Arg('limit', type => Int, { nullable: true, defaultValue: 20 }) limit: number,
@@ -91,7 +92,7 @@ export class ChallengeResolver {
     return result.rows;
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async activeChallenges(
     @Arg('limit', type => Int, { nullable: true, defaultValue: 10 }) limit: number,
     @Ctx() { pool }: { pool: Pool }
@@ -106,7 +107,7 @@ export class ChallengeResolver {
     return result.rows;
   }
 
-  @Query(() => Object, { nullable: true })
+  @Query(() => GraphQLJSON, { nullable: true })
   async myReputation(
     @Ctx() { pool, userId }: { pool: Pool; userId: string }
   ): Promise<any> {
@@ -142,7 +143,7 @@ export class ChallengeResolver {
     return result.rows[0];
   }
 
-  @Query(() => [Object])
+  @Query(() => [GraphQLJSON])
   async reputationLeaderboard(
     @Arg('limit', type => Int, { nullable: true, defaultValue: 20 }) limit: number,
     @Ctx() { pool }: { pool: Pool }
@@ -158,7 +159,7 @@ export class ChallengeResolver {
    * MUTATIONS
    */
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async createChallenge(
     @Arg('input') input: CreateChallengeInput,
     @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
@@ -175,23 +176,31 @@ export class ChallengeResolver {
       throw new Error('Cannot challenge both node and edge simultaneously');
     }
 
-    // Check if target is Level 0 (immutable)
+    // Check if target has high credibility (immutable)
     if (input.targetNodeId) {
       const nodeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Nodes" WHERE id = $1',
+        'SELECT props FROM public."Nodes" WHERE id = $1',
         [input.targetNodeId]
       );
-      if (nodeCheck.rows[0]?.is_level_0) {
-        throw new Error('Cannot challenge Level 0 (immutable) nodes');
+      const nodeProps = typeof nodeCheck.rows[0]?.props === 'string'
+        ? JSON.parse(nodeCheck.rows[0].props)
+        : nodeCheck.rows[0]?.props;
+      const weight = nodeProps?.weight || 0.5;
+      if (weight >= 0.90) {
+        throw new Error('Cannot challenge high credibility (weight >= 0.90) nodes');
       }
     }
     if (input.targetEdgeId) {
       const edgeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Edges" WHERE id = $1',
+        'SELECT props FROM public."Edges" WHERE id = $1',
         [input.targetEdgeId]
       );
-      if (edgeCheck.rows[0]?.is_level_0) {
-        throw new Error('Cannot challenge Level 0 (immutable) edges');
+      const edgeProps = typeof edgeCheck.rows[0]?.props === 'string'
+        ? JSON.parse(edgeCheck.rows[0].props)
+        : edgeCheck.rows[0]?.props;
+      const weight = edgeProps?.weight || 0.5;
+      if (weight >= 0.90) {
+        throw new Error('Cannot challenge high credibility (weight >= 0.90) edges');
       }
     }
 
@@ -287,7 +296,7 @@ export class ChallengeResolver {
     }
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async voteOnChallenge(
     @Arg('input') input: ChallengeVoteInput,
     @Ctx() { pool, userId, pubSub }: { pool: Pool; userId: string; pubSub: PubSubEngine }
@@ -353,7 +362,7 @@ export class ChallengeResolver {
     return vote;
   }
 
-  @Mutation(() => Object)
+  @Mutation(() => GraphQLJSON)
   async resolveChallenge(
     @Arg('challengeId') challengeId: string,
     @Arg('resolution') resolution: string,

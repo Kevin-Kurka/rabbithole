@@ -99,8 +99,8 @@ describe('FactCheckingService', () => {
             id: 'node-1',
             title: 'Test Node',
             node_type: 'evidence',
-            props: JSON.stringify({ content: 'Test content' }),
-            meta: JSON.stringify({ is_level_0: false }),
+            props: JSON.stringify({ content: 'Test content', weight: 0.8 }),
+            meta: JSON.stringify({}),
             veracity_score: 0.8,
             similarity: 0.95,
             created_at: new Date(),
@@ -139,12 +139,12 @@ describe('FactCheckingService', () => {
       expect(reliability).toBe(0.9);
     });
 
-    it('should boost reliability for Level 0 nodes', () => {
+    it('should boost reliability for high credibility nodes (weight >= 0.90)', () => {
       const node = {
         id: 'node-1',
         title: 'Test',
-        props: {},
-        meta: { is_level_0: true },
+        props: { weight: 0.95 },
+        meta: {},
         veracity_score: null,
         similarity: 0.8,
         created_at: new Date(),
@@ -367,8 +367,8 @@ describe('FactCheckingService', () => {
             id: 'node-1',
             title: 'Supporting Evidence',
             node_type: 'evidence',
-            props: JSON.stringify({ content: 'This supports the claim' }),
-            meta: JSON.stringify({ is_level_0: false }),
+            props: JSON.stringify({ content: 'This supports the claim', weight: 0.9 }),
+            meta: JSON.stringify({}),
             veracity_score: 0.9,
             similarity: 0.85,
             created_at: new Date(),

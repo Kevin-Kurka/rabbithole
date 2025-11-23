@@ -196,7 +196,7 @@ export class AIAssistantService {
       `SELECT n.*, mnt.name as node_type
        FROM public."Nodes" n
        LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
-       WHERE n.graph_id = $1`,
+       WHERE n.props->>'graphId' = $1`,
       [graphId]
     );
 
@@ -205,7 +205,7 @@ export class AIAssistantService {
       `SELECT e.*, met.name as edge_type
        FROM public."Edges" e
        LEFT JOIN public."MethodologyEdgeTypes" met ON e.edge_type_id = met.id
-       WHERE e.graph_id = $1`,
+       WHERE e.props->>'graphId' = $1`,
       [graphId]
     );
 
@@ -465,7 +465,7 @@ Methodology: ${analysis.methodology?.name || 'None'}`;
               g.methodology, m.name as methodology_name
        FROM public."Nodes" n
        LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
-       LEFT JOIN public."Graphs" g ON n.graph_id = g.id
+       LEFT JOIN public."Graphs" g ON n.props->>'graphId' = g.id::text
        LEFT JOIN public."Methodologies" m ON g.methodology = m.id
        WHERE n.id = $1`,
       [nodeId]

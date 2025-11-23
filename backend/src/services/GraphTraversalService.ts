@@ -47,13 +47,9 @@ export class GraphTraversalService {
       forward_search AS (
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           0 as depth,
@@ -68,39 +64,31 @@ export class GraphTraversalService {
 
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           fs.depth + 1,
           fs.path || n.id,
           e.id,
           fs.edge_path || e.id,
-          fs.accumulated_weight * e.weight
+          fs.accumulated_weight * COALESCE((e.props->>'weight')::numeric, 1.0)
         FROM forward_search fs
         JOIN public."Edges" e ON e.source_node_id = fs.id
         JOIN public."Nodes" n ON n.id = e.target_node_id
         WHERE fs.depth < $3
           AND NOT n.id = ANY(fs.path)  -- Prevent cycles
-          AND e.weight >= $4  -- Veracity threshold
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $4  -- Veracity threshold
           AND n.id != $2  -- Don't include target yet
       ),
       -- Backward search from target
       backward_search AS (
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           0 as depth,
@@ -115,26 +103,22 @@ export class GraphTraversalService {
 
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           bs.depth + 1,
           bs.path || n.id,
           e.id,
           bs.edge_path || e.id,
-          bs.accumulated_weight * e.weight
+          bs.accumulated_weight * COALESCE((e.props->>'weight')::numeric, 1.0)
         FROM backward_search bs
         JOIN public."Edges" e ON e.target_node_id = bs.id
         JOIN public."Nodes" n ON n.id = e.source_node_id
         WHERE bs.depth < $3
           AND NOT n.id = ANY(bs.path)
-          AND e.weight >= $4
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $4
           AND n.id != $1
       ),
       -- Find intersection point
@@ -245,13 +229,9 @@ export class GraphTraversalService {
         -- Anchor node
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           0 as depth,
@@ -266,31 +246,27 @@ export class GraphTraversalService {
         -- Recursive expansion
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           gt.depth + 1,
           gt.path || n.id,
           e.id,
-          gt.relevance_score * e.weight * 0.85  -- Decay factor for relevance
+          gt.relevance_score * COALESCE((e.props->>'weight')::numeric, 1.0) * 0.85  -- Decay factor for relevance
         FROM graph_traversal gt
         JOIN public."Edges" e ON ${traversalCondition}
         JOIN public."Nodes" n
         WHERE gt.depth < $2
           AND NOT n.id = ANY(gt.path)
-          AND e.weight >= $3
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $3
       ),
       -- Collect unique nodes with best relevance score
       unique_nodes AS (
         SELECT DISTINCT ON (id)
-          id, graph_id, node_type_id, props, meta, weight,
-          is_level_0, created_by, created_at, updated_at,
+          id, node_type_id, props, ai,
+          created_at, updated_at,
           depth, relevance_score
         FROM graph_traversal
         ORDER BY id, relevance_score DESC, depth ASC
@@ -302,7 +278,7 @@ export class GraphTraversalService {
         FROM public."Edges" e
         WHERE e.source_node_id IN (SELECT id FROM unique_nodes)
           AND e.target_node_id IN (SELECT id FROM unique_nodes)
-          AND e.weight >= $3
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $3
       )
       SELECT
         json_build_object(
@@ -356,13 +332,9 @@ export class GraphTraversalService {
         -- Start node
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           0 as depth,
@@ -377,19 +349,15 @@ export class GraphTraversalService {
         -- Follow edges of specified type
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
           rt.depth + 1,
           rt.node_path || n.id,
           rt.edge_path || e.id,
-          rt.path_weight * e.weight
+          rt.path_weight * COALESCE((e.props->>'weight')::numeric, 1.0)
         FROM related_traversal rt
         JOIN public."Edges" e ON (
           e.source_node_id = rt.id OR e.target_node_id = rt.id
@@ -403,7 +371,7 @@ export class GraphTraversalService {
         WHERE rt.depth < $3
           AND e.edge_type_id = $2
           AND NOT n.id = ANY(rt.node_path)
-          AND e.weight >= $4
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $4
       )
       SELECT
         json_build_object(
@@ -478,16 +446,11 @@ export class GraphTraversalService {
         -- Start with the node itself
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
-          n.primary_source_id,
           0 as depth,
           ARRAY[n.id] as path
         FROM public."Nodes" n
@@ -495,29 +458,25 @@ export class GraphTraversalService {
 
         UNION ALL
 
-        -- Recursively find parent via primary_source_id
+        -- Recursively find parent via primarySourceId from props
         SELECT
           n.id,
-          n.graph_id,
           n.node_type_id,
           n.props,
-          n.meta,
-          n.weight,
-          n.is_level_0,
-          n.created_by,
+          n.ai,
           n.created_at,
           n.updated_at,
-          n.primary_source_id,
           ac.depth + 1,
           ac.path || n.id
         FROM ancestor_chain ac
-        JOIN public."Nodes" n ON n.id = ac.primary_source_id
+        JOIN public."Nodes" n ON n.id = (ac.props->>'primarySourceId')::uuid
         WHERE ac.depth < $2
           AND NOT n.id = ANY(ac.path)  -- Prevent cycles
+          AND ac.props->>'primarySourceId' IS NOT NULL
       )
       SELECT
-        id, graph_id, node_type_id, props, meta, weight,
-        is_level_0, created_by, created_at, updated_at, depth
+        id, node_type_id, props, ai,
+        created_at, updated_at, depth
       FROM ancestor_chain
       ORDER BY depth DESC;  -- Root first
     `;
@@ -554,19 +513,19 @@ export class GraphTraversalService {
             WHEN e.source_node_id = $1 THEN e.target_node_id
             ELSE e.source_node_id
           END as related_node_id,
-          e.weight as edge_weight
+          COALESCE((e.props->>'weight')::numeric, 1.0) as edge_weight
         FROM public."Edges" e
         WHERE (e.source_node_id = $1 OR e.target_node_id = $1)
-          AND e.weight >= $3
+          AND COALESCE((e.props->>'weight')::numeric, 1.0) >= $3
       )
       SELECT
         n.*,
         dc.edge_weight,
-        (n.weight * dc.edge_weight) as combined_score
+        (COALESCE((n.props->>'weight')::numeric, 1.0) * dc.edge_weight) as combined_score
       FROM direct_connections dc
       JOIN public."Nodes" n ON n.id = dc.related_node_id
-      WHERE n.weight >= $3
-      ORDER BY combined_score DESC, n.weight DESC
+      WHERE COALESCE((n.props->>'weight')::numeric, 1.0) >= $3
+      ORDER BY combined_score DESC, COALESCE((n.props->>'weight')::numeric, 1.0) DESC
       LIMIT $2;
     `;
 
@@ -580,8 +539,8 @@ export class GraphTraversalService {
     if (ids.length === 0) return [];
 
     const query = `
-      SELECT id, graph_id, node_type_id, props, meta, weight,
-             is_level_0, created_by, created_at, updated_at
+      SELECT id, node_type_id, props, ai,
+             created_at, updated_at
       FROM public."Nodes"
       WHERE id = ANY($1);
     `;
@@ -594,8 +553,8 @@ export class GraphTraversalService {
     if (ids.length === 0) return [];
 
     const query = `
-      SELECT id, graph_id, edge_type_id, source_node_id, target_node_id,
-             props, meta, weight, is_level_0, created_by, created_at, updated_at
+      SELECT id, edge_type_id, source_node_id, target_node_id,
+             props, ai, created_at, updated_at
       FROM public."Edges"
       WHERE id = ANY($1);
     `;
@@ -611,30 +570,29 @@ export class GraphTraversalService {
   private mapToNode(row: any): Node {
     return {
       id: row.id,
-      title: row.title || '',
-      weight: row.weight,
-      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
-      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
-      is_level_0: row.is_level_0,
+      node_type_id: row.node_type_id,
+      props: typeof row.props === 'object' ? row.props : JSON.parse(row.props || '{}'),
+      ai: row.ai,
       created_at: row.created_at,
       updated_at: row.updated_at,
       edges: [],
       comments: []
-    };
+    } as Node;
   }
 
   private mapToEdges(rows: any[]): Edge[] {
     return rows.map(row => ({
       id: row.id,
-      from: { id: row.source_node_id } as Node,
-      to: { id: row.target_node_id } as Node,
-      weight: row.weight,
-      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
-      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
-      is_level_0: row.is_level_0,
+      source_node_id: row.source_node_id,
+      target_node_id: row.target_node_id,
+      edge_type_id: row.edge_type_id,
+      props: typeof row.props === 'object' ? row.props : JSON.parse(row.props || '{}'),
+      ai: row.ai,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      from: { id: row.source_node_id } as Node,
+      to: { id: row.target_node_id } as Node,
       comments: []
-    }));
+    } as Edge));
   }
 }

@@ -52,17 +52,15 @@ export class GraphVersionService {
               'id', n.id,
               'node_type_id', n.node_type_id,
               'props', n.props,
-              'meta', n.meta,
-              'weight', n.weight,
+              'ai', n.ai,
               'content_hash', n.content_hash,
               'primary_source_id', n.primary_source_id,
-              'is_level_0', n.is_level_0,
               'created_at', n.created_at,
               'updated_at', n.updated_at
             )
           ), '[]'::jsonb)
           FROM public."Nodes" n
-          WHERE n.graph_id = g.id
+          WHERE n.props->>'graphId' = g.id::text
         ),
         'edges', (
           SELECT COALESCE(jsonb_agg(
@@ -72,15 +70,12 @@ export class GraphVersionService {
               'source_node_id', e.source_node_id,
               'target_node_id', e.target_node_id,
               'props', e.props,
-              'meta', e.meta,
-              'weight', e.weight,
-              'is_level_0', e.is_level_0,
               'created_at', e.created_at,
               'updated_at', e.updated_at
             )
           ), '[]'::jsonb)
           FROM public."Edges" e
-          WHERE e.graph_id = g.id
+          WHERE e.props->>'graphId' = g.id::text
         )
       ) as snapshot
       FROM public."Graphs" g
@@ -181,10 +176,10 @@ export class GraphVersionService {
       await this.createSnapshot(graphId, userId);
 
       // Delete current nodes and edges (CASCADE will handle related data)
-      await client.query('DELETE FROM public."Nodes" WHERE graph_id = $1', [
+      await client.query('DELETE FROM public."Nodes" WHERE props->>\'graphId\' = $1', [
         graphId,
       ]);
-      await client.query('DELETE FROM public."Edges" WHERE graph_id = $1', [
+      await client.query('DELETE FROM public."Edges" WHERE props->>\'graphId\' = $1', [
         graphId,
       ]);
 
@@ -194,22 +189,18 @@ export class GraphVersionService {
         await client.query(
           `
           INSERT INTO public."Nodes" (
-            id, graph_id, node_type_id, props, meta, weight,
-            content_hash, primary_source_id, is_level_0,
-            created_by, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            id, graph_id, node_type_id, props, ai,
+            content_hash, primary_source_id, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           `,
           [
             node.id,
             graphId,
             node.node_type_id,
             node.props,
-            node.meta,
-            node.weight,
+            node.ai || null,
             node.content_hash,
             node.primary_source_id,
-            node.is_level_0,
-            node.created_by,
             node.created_at,
             node.updated_at,
           ]
@@ -223,9 +214,8 @@ export class GraphVersionService {
           `
           INSERT INTO public."Edges" (
             id, graph_id, edge_type_id, source_node_id, target_node_id,
-            props, meta, weight, is_level_0,
-            created_by, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            props, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `,
           [
             edge.id,
@@ -234,10 +224,6 @@ export class GraphVersionService {
             edge.source_node_id,
             edge.target_node_id,
             edge.props,
-            edge.meta,
-            edge.weight,
-            edge.is_level_0,
-            edge.created_by,
             edge.created_at,
             edge.updated_at,
           ]
@@ -336,7 +322,7 @@ export class GraphVersionService {
 
       // Copy all nodes
       const nodesResult = await client.query(
-        'SELECT * FROM public."Nodes" WHERE graph_id = $1',
+        'SELECT * FROM public."Nodes" WHERE props->>\'graphId\' = $1',
         [graphId]
       );
 
@@ -346,20 +332,16 @@ export class GraphVersionService {
         const newNodeResult = await client.query(
           `
           INSERT INTO public."Nodes" (
-            graph_id, node_type_id, props, meta, weight,
-            content_hash, is_level_0, created_by
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            graph_id, node_type_id, props, ai, content_hash
+          ) VALUES ($1, $2, $3, $4, $5)
           RETURNING id
           `,
           [
             newGraph.id,
             node.node_type_id,
             node.props,
-            node.meta,
-            node.weight,
+            node.ai || null,
             node.content_hash,
-            false, // Forked nodes are not Level 0
-            userId || node.created_by,
           ]
         );
 
@@ -368,7 +350,7 @@ export class GraphVersionService {
 
       // Copy all edges with updated node references
       const edgesResult = await client.query(
-        'SELECT * FROM public."Edges" WHERE graph_id = $1',
+        'SELECT * FROM public."Edges" WHERE props->>\'graphId\' = $1',
         [graphId]
       );
 
@@ -380,9 +362,8 @@ export class GraphVersionService {
           await client.query(
             `
             INSERT INTO public."Edges" (
-              graph_id, edge_type_id, source_node_id, target_node_id,
-              props, meta, weight, is_level_0, created_by
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              graph_id, edge_type_id, source_node_id, target_node_id, props
+            ) VALUES ($1, $2, $3, $4, $5)
             `,
             [
               newGraph.id,
@@ -390,10 +371,6 @@ export class GraphVersionService {
               newSourceId,
               newTargetId,
               edge.props,
-              edge.meta,
-              edge.weight,
-              false, // Forked edges are not Level 0
-              userId || edge.created_by,
             ]
           );
         }

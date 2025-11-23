@@ -2,25 +2,27 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
+import { videoFrameExtractionService, ExtractedFrame } from './VideoFrameExtractionService';
+import { objectDetectionService, DetectedObject } from './ObjectDetectionService';
 
 const execAsync = promisify(exec);
 
 /**
  * VideoAnalysisService
  *
- * Handles video file analysis and processing.
- * Currently a stub implementation that can be extended with:
- * - Frame extraction
- * - Scene detection
- * - Object detection
- * - OCR on video frames
- * - Audio extraction
+ * Comprehensive video file analysis and processing with:
+ * - Frame extraction (regular intervals or scene-based)
+ * - Scene change detection using histogram analysis
+ * - Object detection using TensorFlow.js COCO-SSD
+ * - Metadata extraction (duration, resolution, codec, bitrate)
+ * - Thumbnail generation
+ * - Audio track detection
  *
- * Future integrations:
- * - FFmpeg for video processing
- * - OpenCV for frame analysis
- * - TensorFlow/PyTorch for ML-based analysis
- * - Cloud Vision APIs (Google, AWS Rekognition)
+ * Integrations:
+ * - FFmpeg for video processing and frame extraction
+ * - TensorFlow.js for object detection
+ * - VideoFrameExtractionService for intelligent frame sampling
+ * - ObjectDetectionService for ML-based object recognition
  */
 
 export interface VideoAnalysisResult {
@@ -32,17 +34,11 @@ export interface VideoAnalysisResult {
   bitrate?: number;
   frames?: ExtractedFrame[];
   scenes?: SceneInfo[];
+  detectedObjects?: VideoObjectDetection;
   thumbnail?: string; // Path or base64
   audioTrack?: boolean;
   processingTime: number;
   error?: string;
-}
-
-export interface ExtractedFrame {
-  timestamp: number;
-  framePath: string;
-  width: number;
-  height: number;
 }
 
 export interface SceneInfo {
@@ -50,17 +46,33 @@ export interface SceneInfo {
   endTime: number;
   frameCount: number;
   keyFrame?: string;
+  detectedObjects?: DetectedObject[];
+}
+
+export interface VideoObjectDetection {
+  totalObjects: number;
+  totalFrames: number;
+  avgObjectsPerFrame: number;
+  allClasses: string[];
+  classFrequency: Map<string, number>;
+  frameResults: Map<number, DetectedObject[]>; // frame index -> objects
 }
 
 export class VideoAnalysisService {
   private ffmpegPath: string;
   private ffprobePath: string;
+  private enableObjectDetection: boolean;
+  private enableVideoAnalysis: boolean;
 
   constructor() {
     this.ffmpegPath = process.env.FFMPEG_PATH || 'ffmpeg';
     this.ffprobePath = process.env.FFPROBE_PATH || 'ffprobe';
+    this.enableObjectDetection = process.env.ENABLE_OBJECT_DETECTION === 'true';
+    this.enableVideoAnalysis = process.env.ENABLE_VIDEO_ANALYSIS !== 'false'; // Default true
 
     console.log('✓ VideoAnalysisService initialized');
+    console.log(`  Video analysis: ${this.enableVideoAnalysis ? 'enabled' : 'disabled'}`);
+    console.log(`  Object detection: ${this.enableObjectDetection ? 'enabled' : 'disabled'}`);
   }
 
   /**
@@ -74,8 +86,10 @@ export class VideoAnalysisService {
     filePath: string,
     options: {
       extractFrames?: boolean;
-      frameInterval?: number; // seconds
+      frameRate?: number; // Frames per second
+      maxFrames?: number; // Maximum frames to extract
       detectScenes?: boolean;
+      detectObjects?: boolean;
       generateThumbnail?: boolean;
       extractAudio?: boolean;
     } = {}
@@ -84,6 +98,14 @@ export class VideoAnalysisService {
 
     try {
       console.log(`Analyzing video: ${filePath}`);
+
+      if (!this.enableVideoAnalysis) {
+        return {
+          success: false,
+          error: 'Video analysis is disabled (set ENABLE_VIDEO_ANALYSIS=true)',
+          processingTime: Date.now() - startTime,
+        };
+      }
 
       // Get video metadata
       const metadata = await this.getVideoMetadata(filePath);
@@ -101,12 +123,27 @@ export class VideoAnalysisService {
         processingTime: 0,
       };
 
-      // Extract frames if requested
+      // Extract frames using VideoFrameExtractionService
       if (options.extractFrames) {
-        result.frames = await this.extractFrames(
-          filePath,
-          options.frameInterval || 10
-        );
+        const frameResult = await videoFrameExtractionService.extractFrames(filePath, {
+          frameRate: options.frameRate || 1,
+          maxFrames: options.maxFrames || 300,
+          sceneDetection: options.detectScenes || false,
+        });
+
+        if (frameResult.success) {
+          result.frames = frameResult.frames;
+          console.log(`✓ Extracted ${frameResult.frames.length} frames`);
+
+          // Perform object detection on extracted frames if enabled
+          if (options.detectObjects && this.enableObjectDetection) {
+            result.detectedObjects = await this.detectObjectsInFrames(frameResult.frames);
+          }
+
+          // Cleanup frames directory after analysis
+          // (comment out if you want to keep frames)
+          // await videoFrameExtractionService.cleanupFrames(frameResult.outputDirectory);
+        }
       }
 
       // Generate thumbnail if requested
@@ -114,8 +151,8 @@ export class VideoAnalysisService {
         result.thumbnail = await this.generateThumbnail(filePath);
       }
 
-      // Detect scenes if requested
-      if (options.detectScenes) {
+      // Detect scenes if requested (and frames weren't already extracted with scene detection)
+      if (options.detectScenes && !options.extractFrames) {
         result.scenes = await this.detectScenes(filePath);
       }
 
@@ -126,6 +163,11 @@ export class VideoAnalysisService {
         `✓ Video analyzed in ${processingTime}ms ` +
         `(duration: ${metadata.duration}s, frames: ${result.frames?.length || 0})`
       );
+
+      if (result.detectedObjects) {
+        console.log(`  Detected ${result.detectedObjects.totalObjects} objects across ${result.detectedObjects.totalFrames} frames`);
+        console.log(`  Classes: ${result.detectedObjects.allClasses.join(', ')}`);
+      }
 
       return result;
     } catch (error: any) {
@@ -138,6 +180,37 @@ export class VideoAnalysisService {
         processingTime,
       };
     }
+  }
+
+  /**
+   * Detect objects in extracted video frames
+   */
+  private async detectObjectsInFrames(frames: ExtractedFrame[]): Promise<VideoObjectDetection> {
+    console.log(`Running object detection on ${frames.length} frames...`);
+
+    const frameResults = new Map<number, DetectedObject[]>();
+    const allDetectionResults: any[] = [];
+
+    for (const frame of frames) {
+      const detection = await objectDetectionService.detectObjects(frame.path);
+
+      if (detection.success) {
+        frameResults.set(frame.index, detection.objects);
+        allDetectionResults.push(detection);
+      }
+    }
+
+    // Get summary statistics
+    const summary = objectDetectionService.getDetectionSummary(allDetectionResults);
+
+    return {
+      totalObjects: summary.totalObjects,
+      totalFrames: summary.totalFrames,
+      avgObjectsPerFrame: summary.avgObjectsPerFrame,
+      allClasses: summary.allClasses,
+      classFrequency: summary.classFrequency,
+      frameResults,
+    };
   }
 
   /**
@@ -217,10 +290,12 @@ export class VideoAnalysisService {
       const files = fs.readdirSync(outputDir).filter(f => f.startsWith('frame_'));
 
       const frames: ExtractedFrame[] = files.map((file, index) => ({
+        index,
         timestamp: index * intervalSeconds,
-        framePath: path.join(outputDir, file),
+        path: path.join(outputDir, file),
         width: 0, // Would need to read image to get dimensions
         height: 0,
+        fileSize: fs.statSync(path.join(outputDir, file)).size,
       }));
 
       console.log(`✓ Extracted ${frames.length} frames`);

@@ -211,7 +211,7 @@ export default function TimelineView({
                     {nodesInGroup.map((node, index) => {
                       const isSelected = selectedNode === node.id;
                       const isConnected = connectedNodes.has(node.id);
-                      const color = getVeracityColor(node.data.weight, node.data.level);
+                      const color = getVeracityColor(node.data.weight);
 
                       return (
                         <div
@@ -250,7 +250,7 @@ export default function TimelineView({
                             <div className="text-xs text-white/80 mt-1">
                               {(node.data.weight * 100).toFixed(0)}% veracity
                             </div>
-                            {node.data.level === 0 && (
+                            {isHighCredibility(node.data.weight) && (
                               <div className="text-xs font-bold text-white bg-black/20 px-2 py-0.5 rounded mt-1 inline-block">
                                 Level 0
                               </div>

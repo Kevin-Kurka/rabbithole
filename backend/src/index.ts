@@ -53,6 +53,14 @@ import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
 import { WhiteboardResolver } from './resolvers/WhiteboardResolver';
 import { StickyNoteResolver } from './resolvers/StickyNoteResolver';
 import { CollaborativePresenceResolver } from './resolvers/CollaborativePresenceResolver';
+import { ChallengeResolver } from './resolvers/ChallengeResolver';
+import {
+  CuratorRoleResolver,
+  UserCuratorResolver,
+  CuratorApplicationResolver,
+  CuratorAuditLogResolver
+} from './resolvers/CuratorResolver';
+import { MediaProcessingResolver } from './resolvers/MediaProcessingResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -129,10 +137,20 @@ async function main() {
       NodeAssociationResolver,
       WhiteboardResolver,
       StickyNoteResolver,
-      CollaborativePresenceResolver
+      CollaborativePresenceResolver,
+      // ChallengeResolver, // TODO: Fix input types - temporarily disabled
+      CuratorRoleResolver,
+      UserCuratorResolver,
+      CuratorApplicationResolver,
+      CuratorAuditLogResolver,
+      MediaProcessingResolver
     ],
     pubSub,
     validate: false,
+    authChecker: ({ context }) => {
+      // Simple auth checker - verifies user is authenticated
+      return !!context.userId;
+    },
   });
 
   const wsServer = new WebSocketServer({

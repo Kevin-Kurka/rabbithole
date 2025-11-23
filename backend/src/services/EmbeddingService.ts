@@ -321,12 +321,12 @@ export class EmbeddingService {
   }
 
   /**
-   * Extract text content from props and meta fields for embedding
+   * Extract text content from props and ai fields for embedding
    * This method combines relevant textual data from a node or edge
    */
   static extractTextForEmbedding(data: {
     props?: any;
-    meta?: any;
+    ai?: any;
     name?: string;
     description?: string;
   }): string {
@@ -347,14 +347,6 @@ export class EmbeddingService {
       const propsText = this.extractTextFromObject(data.props);
       if (propsText) {
         textParts.push(propsText);
-      }
-    }
-
-    // Extract text from meta
-    if (data.meta && typeof data.meta === 'object') {
-      const metaText = this.extractTextFromObject(data.meta);
-      if (metaText) {
-        textParts.push(metaText);
       }
     }
 

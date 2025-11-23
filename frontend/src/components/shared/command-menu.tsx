@@ -289,7 +289,7 @@ export default function CommandMenu({ isOpen, onClose, activeGraphs, onToggleGra
                       >
                         {graph.name}
                       </span>
-                      {graph.level === 0 && (
+                      {graph.weight >= 0.90 && (
                         <span
                           style={{
                             fontSize: '10px',

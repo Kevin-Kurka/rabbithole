@@ -195,7 +195,7 @@ function GraphCanvasInner({
   const primaryWritableGraphId = useMemo(() => {
     // Find the first Level 1 (writable) graph from loaded data
     for (const { graphId, result } of graphQueries) {
-      if (result.data?.graph && result.data.graph.level === 1) {
+      if (result.data?.graph && result.data.graph.weight < 0.90) {
         return graphId;
       }
     }

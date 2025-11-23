@@ -1,3 +1,21 @@
+/**
+ * AIAssistantResolver - PARTIALLY FUNCTIONAL
+ *
+ * WARNING: Evidence-related mutations are broken due to schema refactor:
+ * - uploadEvidence() - Queries dropped table public."EvidenceFiles"
+ * - processEvidenceWithClaims() - Queries dropped tables public."EvidenceFiles" and public."Evidence"
+ *
+ * These mutations will throw errors until EvidenceFileResolver is refactored.
+ *
+ * WORKING FEATURES:
+ * - chatWithAssistant() - Conversational AI (no database dependencies)
+ * - getConversationHistory() - Uses Conversations table
+ * - searchKnowledgeBase() - Uses Nodes/Edges
+ * - matchClaimsToNodes() - Graph queries work fine
+ * - verifyClaimAgainstGraph() - Graph queries work fine
+ * - generateRelatedInquiries() - Graph queries work fine
+ */
+
 import {
   Resolver,
   Query,

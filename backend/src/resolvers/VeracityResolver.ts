@@ -1,253 +1,270 @@
-import { Resolver, Query, Mutation, Arg, Ctx, FieldResolver, Root, ID, Int, Float } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, ID, Float, Int, FieldResolver, Root } from 'type-graphql';
 import { Pool } from 'pg';
-import { VeracityScore } from '../entities/VeracityScore';
-import { VeracityScoreHistory } from '../entities/VeracityScoreHistory';
-import { Evidence } from '../entities/Evidence';
-import { Source } from '../entities/Source';
-import { SourceCredibility } from '../entities/SourceCredibility';
 import { Node } from '../entities/Node';
 import { Edge } from '../entities/Edge';
 import { User } from '../entities/User';
 
-@Resolver(() => VeracityScore)
-export class VeracityScoreResolver {
+/**
+ * VeracityResolver - Refactored to use node-based evidence storage
+ *
+ * Evidence is now stored as edges with evidenceType in props
+ * Sources are stored as nodes with type "Reference" or "Document"
+ * Veracity scores are stored in node/edge props
+ */
+
+// ========================================================================
+// TYPE DEFINITIONS (Mapped to JSONB props)
+// ========================================================================
+
+class VeracityScore {
+  id: string;
+  targetNodeId?: string;
+  targetEdgeId?: string;
+  veracityScore: number;
+  confidence: number;
+  evidenceCount: number;
+  supportingCount: number;
+  refutingCount: number;
+  neutralCount: number;
+  clarifyingCount: number;
+  lastUpdated: Date;
+  calculationMethod?: string;
+
+  // Extracted from props
+  static fromNode(node: any): VeracityScore {
+    const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+    return {
+      id: node.id,
+      targetNodeId: node.id,
+      targetEdgeId: undefined,
+      veracityScore: props.veracityScore || 0.5,
+      confidence: props.confidence || 0.5,
+      evidenceCount: props.evidenceCount || 0,
+      supportingCount: props.supportingCount || 0,
+      refutingCount: props.refutingCount || 0,
+      neutralCount: props.neutralCount || 0,
+      clarifyingCount: props.clarifyingCount || 0,
+      lastUpdated: node.updated_at || node.created_at,
+      calculationMethod: props.calculationMethod || 'weighted_average'
+    };
+  }
+
+  static fromEdge(edge: any): VeracityScore {
+    const props = typeof edge.props === 'string' ? JSON.parse(edge.props) : edge.props;
+    return {
+      id: edge.id,
+      targetNodeId: undefined,
+      targetEdgeId: edge.id,
+      veracityScore: props.veracityScore || 0.5,
+      confidence: props.confidence || 0.5,
+      evidenceCount: props.evidenceCount || 0,
+      supportingCount: props.supportingCount || 0,
+      refutingCount: props.refutingCount || 0,
+      neutralCount: props.neutralCount || 0,
+      clarifyingCount: props.clarifyingCount || 0,
+      lastUpdated: edge.updated_at || edge.created_at,
+      calculationMethod: props.calculationMethod || 'weighted_average'
+    };
+  }
+}
+
+class Evidence {
+  id: string;
+  targetNodeId?: string;
+  targetEdgeId?: string;
+  sourceNodeId?: string;
+  evidenceType: string;
+  weight: number;
+  confidence: number;
+  content: string;
+  submittedBy: string;
+  createdAt: Date;
+
+  // Extracted from edge props
+  static fromEdge(edge: any): Evidence {
+    const props = typeof edge.props === 'string' ? JSON.parse(edge.props) : edge.props;
+    return {
+      id: edge.id,
+      targetNodeId: edge.target_node_id,
+      targetEdgeId: props.targetEdgeId,
+      sourceNodeId: edge.source_node_id,
+      evidenceType: props.evidenceType || 'neutral',
+      weight: props.weight || 1.0,
+      confidence: props.confidence || 0.5,
+      content: props.content || props.description || '',
+      submittedBy: props.createdBy || '',
+      createdAt: edge.created_at
+    };
+  }
+}
+
+class Source {
+  id: string;
+  sourceType: string;
+  title: string;
+  url?: string;
+  authors?: string[];
+  publicationDate?: Date;
+  publisher?: string;
+  abstract?: string;
+  credibilityScore?: number;
+  submittedBy?: string;
+  createdAt: Date;
+
+  // Extracted from node props
+  static fromNode(node: any): Source {
+    const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+    return {
+      id: node.id,
+      sourceType: props.sourceType || 'other',
+      title: props.title || '',
+      url: props.url,
+      authors: props.authors,
+      publicationDate: props.publicationDate ? new Date(props.publicationDate) : undefined,
+      publisher: props.publisher,
+      abstract: props.abstract || props.description,
+      credibilityScore: props.credibilityScore || 0.5,
+      submittedBy: props.createdBy,
+      createdAt: node.created_at
+    };
+  }
+}
+
+// ========================================================================
+// VERACITY RESOLVER
+// ========================================================================
+
+@Resolver(() => Node)
+export class VeracityResolver {
+
   // ========================================================================
   // QUERIES
   // ========================================================================
 
   /**
-   * Get the current veracity score for a node or edge
+   * Get veracity score for a node
    */
-  @Query(() => VeracityScore, { nullable: true })
-  async getVeracityScore(
+  @Query(() => Float)
+  async getNodeVeracityScore(
     @Ctx() { pool }: { pool: Pool },
-    @Arg('nodeId', () => ID, { nullable: true }) nodeId?: string,
-    @Arg('edgeId', () => ID, { nullable: true }) edgeId?: string
-  ): Promise<VeracityScore | null> {
-    if (!nodeId && !edgeId) {
-      throw new Error('Must provide either nodeId or edgeId');
-    }
+    @Arg('nodeId', () => ID) nodeId: string
+  ): Promise<number> {
+    const result = await pool.query(
+      'SELECT props FROM public."Nodes" WHERE id = $1',
+      [nodeId]
+    );
 
-    if (nodeId && edgeId) {
-      throw new Error('Cannot provide both nodeId and edgeId');
-    }
+    if (!result.rows[0]) return 0.5;
 
-    // Check if target is Level 0 - they have fixed veracity = 1.0
-    if (nodeId) {
-      const nodeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Nodes" WHERE id = $1',
-        [nodeId]
-      );
-      if (nodeCheck.rows[0]?.is_level_0) {
-        // Return a synthetic VeracityScore for Level 0 nodes
-        return {
-          id: nodeId,
-          target_node_id: nodeId,
-          target_edge_id: undefined,
-          veracity_score: 1.0,
-          evidence_weight_sum: 0,
-          evidence_count: 0,
-          supporting_evidence_weight: 0,
-          refuting_evidence_weight: 0,
-          consensus_score: 1.0,
-          source_count: 0,
-          source_agreement_ratio: 1.0,
-          challenge_count: 0,
-          open_challenge_count: 0,
-          challenge_impact: 0,
-          temporal_decay_factor: 1.0,
-          calculation_method: 'level_0_fixed',
-          calculated_at: new Date(),
-          calculated_by: 'system',
-          updated_at: new Date(),
-        };
-      }
+    const props = typeof result.rows[0].props === 'string'
+      ? JSON.parse(result.rows[0].props)
+      : result.rows[0].props;
 
-      const result = await pool.query(
-        'SELECT * FROM public."VeracityScores" WHERE target_node_id = $1',
-        [nodeId]
-      );
-      return result.rows[0] || null;
-    }
-
-    if (edgeId) {
-      const edgeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Edges" WHERE id = $1',
-        [edgeId]
-      );
-      if (edgeCheck.rows[0]?.is_level_0) {
-        // Return a synthetic VeracityScore for Level 0 edges
-        return {
-          id: edgeId,
-          target_node_id: undefined,
-          target_edge_id: edgeId,
-          veracity_score: 1.0,
-          evidence_weight_sum: 0,
-          evidence_count: 0,
-          supporting_evidence_weight: 0,
-          refuting_evidence_weight: 0,
-          consensus_score: 1.0,
-          source_count: 0,
-          source_agreement_ratio: 1.0,
-          challenge_count: 0,
-          open_challenge_count: 0,
-          challenge_impact: 0,
-          temporal_decay_factor: 1.0,
-          calculation_method: 'level_0_fixed',
-          calculated_at: new Date(),
-          calculated_by: 'system',
-          updated_at: new Date(),
-        };
-      }
-
-      const result = await pool.query(
-        'SELECT * FROM public."VeracityScores" WHERE target_edge_id = $1',
-        [edgeId]
-      );
-      return result.rows[0] || null;
-    }
-
-    return null;
+    return props.veracityScore || props.weight || 0.5;
   }
 
   /**
-   * Get veracity score history for a node or edge
+   * Get veracity score for an edge
    */
-  @Query(() => [VeracityScoreHistory])
-  async getVeracityHistory(
+  @Query(() => Float)
+  async getEdgeVeracityScore(
     @Ctx() { pool }: { pool: Pool },
-    @Arg('nodeId', () => ID, { nullable: true }) nodeId?: string,
-    @Arg('edgeId', () => ID, { nullable: true }) edgeId?: string,
-    @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number = 50
-  ): Promise<VeracityScoreHistory[]> {
-    if (!nodeId && !edgeId) {
-      throw new Error('Must provide either nodeId or edgeId');
-    }
+    @Arg('edgeId', () => ID) edgeId: string
+  ): Promise<number> {
+    const result = await pool.query(
+      'SELECT props FROM public."Edges" WHERE id = $1',
+      [edgeId]
+    );
 
-    if (nodeId && edgeId) {
-      throw new Error('Cannot provide both nodeId and edgeId');
-    }
+    if (!result.rows[0]) return 0.5;
 
-    let query: string;
-    let params: any[];
+    const props = typeof result.rows[0].props === 'string'
+      ? JSON.parse(result.rows[0].props)
+      : result.rows[0].props;
 
-    if (nodeId) {
-      query = `
-        SELECT h.*
-        FROM public."VeracityScoreHistory" h
-        JOIN public."VeracityScores" vs ON h.veracity_score_id = vs.id
-        WHERE vs.target_node_id = $1
-        ORDER BY h.changed_at DESC
-        LIMIT $2
-      `;
-      params = [nodeId, limit];
-    } else {
-      query = `
-        SELECT h.*
-        FROM public."VeracityScoreHistory" h
-        JOIN public."VeracityScores" vs ON h.veracity_score_id = vs.id
-        WHERE vs.target_edge_id = $1
-        ORDER BY h.changed_at DESC
-        LIMIT $2
-      `;
-      params = [edgeId, limit];
-    }
-
-    const result = await pool.query(query, params);
-    return result.rows;
+    return props.veracityScore || props.weight || 0.5;
   }
 
   /**
-   * Get all evidence for a specific node
+   * Get evidence edges for a node (edges pointing TO the node with evidenceType in props)
    */
-  @Query(() => [Evidence])
+  @Query(() => [Edge])
   async getEvidenceForNode(
     @Ctx() { pool }: { pool: Pool },
     @Arg('nodeId', () => ID) nodeId: string
-  ): Promise<Evidence[]> {
+  ): Promise<Edge[]> {
     const result = await pool.query(
-      `SELECT e.* FROM public."Evidence" e WHERE e.target_node_id = $1 ORDER BY e.created_at DESC`,
+      `SELECT e.* FROM public."Edges" e
+       WHERE e.target_node_id = $1
+       AND e.props ? 'evidenceType'
+       ORDER BY e.created_at DESC`,
       [nodeId]
     );
     return result.rows;
   }
 
   /**
-   * Get all evidence for a specific edge
+   * Get evidence for an edge (edges pointing to edges not supported, return empty)
    */
-  @Query(() => [Evidence])
+  @Query(() => [Edge])
   async getEvidenceForEdge(
     @Ctx() { pool }: { pool: Pool },
     @Arg('edgeId', () => ID) edgeId: string
-  ): Promise<Evidence[]> {
-    const result = await pool.query(
-      `SELECT e.* FROM public."Evidence" e WHERE e.target_edge_id = $1 ORDER BY e.created_at DESC`,
-      [edgeId]
-    );
-    return result.rows;
+  ): Promise<Edge[]> {
+    // Edges pointing to edges would require storing targetEdgeId in props
+    // For now, return empty array
+    return [];
   }
 
   /**
-   * Get all sources with their credibility scores
+   * Get all source nodes (Reference/Document types)
    */
-  @Query(() => [Source])
+  @Query(() => [Node])
   async getSources(
     @Ctx() { pool }: { pool: Pool },
-    @Arg('limit', () => Int, { nullable: true, defaultValue: 100 }) limit: number = 100
-  ): Promise<Source[]> {
+    @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number = 50
+  ): Promise<Node[]> {
     const result = await pool.query(
-      `SELECT s.* FROM public."Sources" s ORDER BY s.created_at DESC LIMIT $1`,
+      `SELECT n.* FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE nt.name IN ('Reference', 'Document', 'Citation')
+       ORDER BY n.created_at DESC
+       LIMIT $1`,
       [limit]
     );
     return result.rows;
   }
 
   /**
-   * Get a single source by ID
+   * Get a specific source node
    */
-  @Query(() => Source, { nullable: true })
+  @Query(() => Node, { nullable: true })
   async getSource(
     @Ctx() { pool }: { pool: Pool },
-    @Arg('id', () => ID) id: string
-  ): Promise<Source | null> {
-    const result = await pool.query(
-      `SELECT * FROM public."Sources" WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
-  }
-
-  /**
-   * Get source credibility for a specific source
-   */
-  @Query(() => SourceCredibility, { nullable: true })
-  async getSourceCredibility(
-    @Ctx() { pool }: { pool: Pool },
     @Arg('sourceId', () => ID) sourceId: string
-  ): Promise<SourceCredibility | null> {
+  ): Promise<Node | null> {
     const result = await pool.query(
-      `SELECT * FROM public."SourceCredibility" WHERE source_id = $1`,
+      'SELECT * FROM public."Nodes" WHERE id = $1',
       [sourceId]
     );
     return result.rows[0] || null;
   }
 
   /**
-   * Get all veracity scores with low confidence (disputed claims)
+   * Get nodes with low veracity scores
    */
-  @Query(() => [VeracityScore])
-  async getDisputedClaims(
+  @Query(() => [Node])
+  async getLowVeracityNodes(
     @Ctx() { pool }: { pool: Pool },
     @Arg('threshold', () => Float, { nullable: true, defaultValue: 0.5 }) threshold: number = 0.5,
     @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number = 50
-  ): Promise<VeracityScore[]> {
+  ): Promise<Node[]> {
     const result = await pool.query(
-      `
-      SELECT * FROM public."VeracityScores"
-      WHERE veracity_score < $1 AND evidence_count >= 3
-      ORDER BY veracity_score ASC
-      LIMIT $2
-      `,
+      `SELECT n.* FROM public."Nodes" n
+       WHERE (n.props->>'veracityScore')::float < $1
+       OR ((n.props->>'weight')::float < $1 AND n.props->>'veracityScore' IS NULL)
+       ORDER BY COALESCE((n.props->>'veracityScore')::float, (n.props->>'weight')::float, 0.5) ASC
+       LIMIT $2`,
       [threshold, limit]
     );
     return result.rows;
@@ -259,16 +276,16 @@ export class VeracityScoreResolver {
 
   /**
    * Calculate or recalculate veracity score for a node or edge
-   * Uses the database function refresh_veracity_score
+   * Uses evidence edges to compute weighted average
    */
-  @Mutation(() => VeracityScore, { nullable: true })
+  @Mutation(() => Float)
   async calculateVeracityScore(
     @Ctx() { pool }: { pool: Pool },
     @Arg('nodeId', () => ID, { nullable: true }) nodeId?: string,
     @Arg('edgeId', () => ID, { nullable: true }) edgeId?: string,
     @Arg('changeReason', { nullable: true, defaultValue: 'manual_recalculation' })
     changeReason: string = 'manual_recalculation'
-  ): Promise<VeracityScore | null> {
+  ): Promise<number> {
     if (!nodeId && !edgeId) {
       throw new Error('Must provide either nodeId or edgeId');
     }
@@ -277,30 +294,77 @@ export class VeracityScoreResolver {
       throw new Error('Cannot provide both nodeId and edgeId');
     }
 
-    const targetType = nodeId ? 'node' : 'edge';
     const targetId = nodeId || edgeId;
+    const targetTable = nodeId ? 'Nodes' : 'Edges';
 
     try {
-      // Call the database function to refresh the score
-      await pool.query(
-        `SELECT refresh_veracity_score($1, $2, $3)`,
-        [targetType, targetId, changeReason]
+      // Get all evidence edges for this target
+      const evidenceResult = await pool.query(
+        `SELECT e.props FROM public."Edges" e
+         WHERE e.target_node_id = $1
+         AND e.props ? 'evidenceType'`,
+        [targetId]
       );
 
-      // Retrieve the updated score
-      if (nodeId) {
-        const result = await pool.query(
-          'SELECT * FROM public."VeracityScores" WHERE target_node_id = $1',
-          [nodeId]
-        );
-        return result.rows[0] || null;
-      } else {
-        const result = await pool.query(
-          'SELECT * FROM public."VeracityScores" WHERE target_edge_id = $1',
-          [edgeId]
-        );
-        return result.rows[0] || null;
+      // Calculate weighted average based on evidence
+      let supportingWeight = 0;
+      let refutingWeight = 0;
+      let totalWeight = 0;
+      let counts = { supporting: 0, refuting: 0, neutral: 0, clarifying: 0 };
+
+      for (const row of evidenceResult.rows) {
+        const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+        const evidenceType = props.evidenceType || 'neutral';
+        const weight = props.weight || 1.0;
+        const confidence = props.confidence || 0.5;
+        const effectiveWeight = weight * confidence;
+
+        counts[evidenceType as keyof typeof counts] = (counts[evidenceType as keyof typeof counts] || 0) + 1;
+
+        if (evidenceType === 'supporting') {
+          supportingWeight += effectiveWeight;
+          totalWeight += effectiveWeight;
+        } else if (evidenceType === 'refuting') {
+          refutingWeight += effectiveWeight;
+          totalWeight += effectiveWeight;
+        }
       }
+
+      // Calculate veracity score (0 = false, 1 = true)
+      let veracityScore = 0.5; // Default neutral
+      let calculatedConfidence = 0.3; // Low confidence by default
+
+      if (totalWeight > 0) {
+        veracityScore = supportingWeight / totalWeight;
+        calculatedConfidence = Math.min(0.9, totalWeight / 10); // Cap at 0.9
+      }
+
+      const evidenceCount = evidenceResult.rows.length;
+
+      // Update the target with new veracity score
+      const updateResult = await pool.query(
+        `UPDATE public."${targetTable}"
+         SET props = props || $1::jsonb,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING props`,
+        [
+          JSON.stringify({
+            veracityScore,
+            confidence: calculatedConfidence,
+            evidenceCount,
+            supportingCount: counts.supporting,
+            refutingCount: counts.refuting,
+            neutralCount: counts.neutral,
+            clarifyingCount: counts.clarifying,
+            lastVeracityUpdate: new Date().toISOString(),
+            calculationMethod: 'weighted_evidence'
+          }),
+          targetId
+        ]
+      );
+
+      return veracityScore;
     } catch (error) {
       console.error('Error calculating veracity score:', error);
       throw new Error(`Failed to calculate veracity score: ${error}`);
@@ -309,19 +373,20 @@ export class VeracityScoreResolver {
 
   /**
    * Submit new evidence for a node or edge
+   * Creates an edge with evidenceType in props
    */
-  @Mutation(() => Evidence)
+  @Mutation(() => Edge)
   async submitEvidence(
     @Ctx() { pool }: { pool: Pool },
     @Arg('nodeId', () => ID, { nullable: true }) nodeId?: string,
     @Arg('edgeId', () => ID, { nullable: true }) edgeId?: string,
-    @Arg('sourceId', () => ID) sourceId?: string,
+    @Arg('sourceNodeId', () => ID) sourceNodeId?: string,
     @Arg('evidenceType', () => String) evidenceType?: string,
     @Arg('content', () => String) content?: string,
     @Arg('weight', () => Float, { nullable: true, defaultValue: 1.0 }) weight: number = 1.0,
     @Arg('confidence', () => Float, { nullable: true, defaultValue: 0.5 }) confidence: number = 0.5,
     @Arg('submittedBy', () => ID) submittedBy?: string
-  ): Promise<Evidence> {
+  ): Promise<Edge> {
     if (!nodeId && !edgeId) {
       throw new Error('Must provide either nodeId or edgeId');
     }
@@ -330,8 +395,8 @@ export class VeracityScoreResolver {
       throw new Error('Cannot provide both nodeId and edgeId');
     }
 
-    if (!sourceId || !evidenceType || !content || !submittedBy) {
-      throw new Error('sourceId, evidenceType, content, and submittedBy are required');
+    if (!sourceNodeId || !evidenceType || !content || !submittedBy) {
+      throw new Error('sourceNodeId, evidenceType, content, and submittedBy are required');
     }
 
     // Validate evidence type
@@ -340,54 +405,97 @@ export class VeracityScoreResolver {
       throw new Error(`Invalid evidence type. Must be one of: ${validTypes.join(', ')}`);
     }
 
-    // Check if target is Level 0 (not allowed)
+    // Check if target has high credibility (weight >= 0.90 = immutable)
     if (nodeId) {
       const nodeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Nodes" WHERE id = $1',
+        'SELECT props FROM public."Nodes" WHERE id = $1',
         [nodeId]
       );
-      if (nodeCheck.rows[0]?.is_level_0) {
-        throw new Error('Cannot submit evidence for Level 0 (immutable) nodes');
+      const nodeProps = typeof nodeCheck.rows[0]?.props === 'string'
+        ? JSON.parse(nodeCheck.rows[0].props)
+        : nodeCheck.rows[0]?.props;
+      const nodeWeight = nodeProps?.weight || 0.5;
+      if (nodeWeight >= 0.90) {
+        throw new Error('Cannot submit evidence for high credibility (weight >= 0.90) nodes');
       }
     }
 
     if (edgeId) {
       const edgeCheck = await pool.query(
-        'SELECT is_level_0 FROM public."Edges" WHERE id = $1',
+        'SELECT props FROM public."Edges" WHERE id = $1',
         [edgeId]
       );
-      if (edgeCheck.rows[0]?.is_level_0) {
-        throw new Error('Cannot submit evidence for Level 0 (immutable) edges');
+      const edgeProps = typeof edgeCheck.rows[0]?.props === 'string'
+        ? JSON.parse(edgeCheck.rows[0].props)
+        : edgeCheck.rows[0]?.props;
+      const edgeWeight = edgeProps?.weight || 0.5;
+      if (edgeWeight >= 0.90) {
+        throw new Error('Cannot submit evidence for high credibility (weight >= 0.90) edges');
       }
     }
 
-    // Insert evidence
-    const result = await pool.query(
-      `
-      INSERT INTO public."Evidence" (
-        target_node_id,
-        target_edge_id,
-        source_id,
-        evidence_type,
-        weight,
-        confidence,
-        content,
-        submitted_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-      `,
-      [nodeId, edgeId, sourceId, evidenceType, weight, confidence, content, submittedBy]
+    // Get the "references" edge type
+    const edgeTypeResult = await pool.query(
+      'SELECT id FROM public."EdgeTypes" WHERE name = $1',
+      ['references']
     );
+
+    if (!edgeTypeResult.rows[0]) {
+      throw new Error('Edge type "references" not found');
+    }
+
+    const edgeTypeId = edgeTypeResult.rows[0].id;
+
+    // Get graphId from source node
+    const sourceResult = await pool.query(
+      'SELECT props FROM public."Nodes" WHERE id = $1',
+      [sourceNodeId]
+    );
+    const sourceProps = typeof sourceResult.rows[0]?.props === 'string'
+      ? JSON.parse(sourceResult.rows[0].props)
+      : sourceResult.rows[0]?.props;
+    const graphId = sourceProps?.graphId;
+
+    // Insert evidence as an edge
+    const result = await pool.query(
+      `INSERT INTO public."Edges" (
+        edge_type_id,
+        source_node_id,
+        target_node_id,
+        props,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, NOW(), NOW())
+      RETURNING *`,
+      [
+        edgeTypeId,
+        sourceNodeId,
+        nodeId,
+        JSON.stringify({
+          graphId,
+          evidenceType,
+          weight,
+          confidence,
+          content,
+          createdBy: submittedBy,
+          targetEdgeId: edgeId // Store if evidence is for an edge
+        })
+      ]
+    );
+
+    // Recalculate veracity score
+    await this.calculateVeracityScore({ pool }, nodeId, edgeId, 'new_evidence_submitted');
 
     return result.rows[0];
   }
 
   /**
-   * Create a new source
+   * Create a new source node
    */
-  @Mutation(() => Source)
+  @Mutation(() => Node)
   async createSource(
     @Ctx() { pool }: { pool: Pool },
+    @Arg('graphId', () => ID) graphId: string,
     @Arg('sourceType', () => String) sourceType: string,
     @Arg('title', () => String) title: string,
     @Arg('url', () => String, { nullable: true }) url?: string,
@@ -396,7 +504,7 @@ export class VeracityScoreResolver {
     @Arg('publisher', () => String, { nullable: true }) publisher?: string,
     @Arg('abstract', () => String, { nullable: true }) abstract?: string,
     @Arg('submittedBy', () => ID, { nullable: true }) submittedBy?: string
-  ): Promise<Source> {
+  ): Promise<Node> {
     // Validate source type
     const validTypes = [
       'academic_paper',
@@ -415,146 +523,71 @@ export class VeracityScoreResolver {
       throw new Error(`Invalid source type. Must be one of: ${validTypes.join(', ')}`);
     }
 
+    // Get the "Reference" node type
+    const nodeTypeResult = await pool.query(
+      'SELECT id FROM public."NodeTypes" WHERE name = $1',
+      ['Reference']
+    );
+
+    if (!nodeTypeResult.rows[0]) {
+      throw new Error('Node type "Reference" not found');
+    }
+
+    const nodeTypeId = nodeTypeResult.rows[0].id;
+
     const result = await pool.query(
-      `
-      INSERT INTO public."Sources" (
-        source_type,
-        title,
-        url,
-        authors,
-        publication_date,
-        publisher,
-        abstract,
-        submitted_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-      `,
-      [sourceType, title, url, authors, publicationDate, publisher, abstract, submittedBy]
+      `INSERT INTO public."Nodes" (
+        node_type_id,
+        props,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, NOW(), NOW())
+      RETURNING *`,
+      [
+        nodeTypeId,
+        JSON.stringify({
+          graphId,
+          title,
+          sourceType,
+          url,
+          authors,
+          publicationDate: publicationDate?.toISOString(),
+          publisher,
+          abstract,
+          credibilityScore: 0.5, // Default credibility
+          weight: 0.5,
+          createdBy: submittedBy
+        })
+      ]
     );
 
     return result.rows[0];
   }
 
   /**
-   * Update source credibility (triggers recalculation)
+   * Update source credibility score
    */
-  @Mutation(() => SourceCredibility, { nullable: true })
+  @Mutation(() => Float)
   async updateSourceCredibility(
     @Ctx() { pool }: { pool: Pool },
-    @Arg('sourceId', () => ID) sourceId: string
-  ): Promise<SourceCredibility | null> {
-    try {
-      // Call the database function to update source credibility
-      await pool.query(`SELECT update_source_credibility($1)`, [sourceId]);
-
-      // Retrieve the updated credibility
-      const result = await pool.query(
-        `SELECT * FROM public."SourceCredibility" WHERE source_id = $1`,
-        [sourceId]
-      );
-
-      return result.rows[0] || null;
-    } catch (error) {
-      console.error('Error updating source credibility:', error);
-      throw new Error(`Failed to update source credibility: ${error}`);
+    @Arg('sourceId', () => ID) sourceId: string,
+    @Arg('credibilityScore', () => Float) credibilityScore: number
+  ): Promise<number> {
+    if (credibilityScore < 0 || credibilityScore > 1) {
+      throw new Error('Credibility score must be between 0 and 1');
     }
-  }
 
-  // ========================================================================
-  // FIELD RESOLVERS
-  // ========================================================================
+    await pool.query(
+      `UPDATE public."Nodes"
+       SET props = props || $1::jsonb,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [
+        JSON.stringify({ credibilityScore }),
+        sourceId
+      ]
+    );
 
-  @FieldResolver(() => Node, { nullable: true })
-  async node(@Root() veracityScore: VeracityScore, @Ctx() { pool }: { pool: Pool }): Promise<Node | null> {
-    if (!veracityScore.target_node_id) return null;
-
-    const result = await pool.query('SELECT * FROM public."Nodes" WHERE id = $1', [
-      veracityScore.target_node_id,
-    ]);
-    return result.rows[0] || null;
-  }
-
-  @FieldResolver(() => Edge, { nullable: true })
-  async edge(@Root() veracityScore: VeracityScore, @Ctx() { pool }: { pool: Pool }): Promise<Edge | null> {
-    if (!veracityScore.target_edge_id) return null;
-
-    const result = await pool.query('SELECT * FROM public."Edges" WHERE id = $1', [
-      veracityScore.target_edge_id,
-    ]);
-    return result.rows[0] || null;
-  }
-}
-
-// ========================================================================
-// EVIDENCE RESOLVER
-// ========================================================================
-
-@Resolver(() => Evidence)
-export class EvidenceResolver {
-  @FieldResolver(() => Node, { nullable: true })
-  async node(@Root() evidence: Evidence, @Ctx() { pool }: { pool: Pool }): Promise<Node | null> {
-    if (!evidence.target_node_id) return null;
-
-    const result = await pool.query('SELECT * FROM public."Nodes" WHERE id = $1', [evidence.target_node_id]);
-    return result.rows[0] || null;
-  }
-
-  @FieldResolver(() => Edge, { nullable: true })
-  async edge(@Root() evidence: Evidence, @Ctx() { pool }: { pool: Pool }): Promise<Edge | null> {
-    if (!evidence.target_edge_id) return null;
-
-    const result = await pool.query('SELECT * FROM public."Edges" WHERE id = $1', [evidence.target_edge_id]);
-    return result.rows[0] || null;
-  }
-
-  @FieldResolver(() => Source)
-  async source(@Root() evidence: Evidence, @Ctx() { pool }: { pool: Pool }): Promise<Source> {
-    const result = await pool.query('SELECT * FROM public."Sources" WHERE id = $1', [evidence.source_id]);
-    return result.rows[0];
-  }
-
-  @FieldResolver(() => User)
-  async submitter(@Root() evidence: Evidence, @Ctx() { pool }: { pool: Pool }): Promise<User> {
-    const result = await pool.query('SELECT * FROM public."Users" WHERE id = $1', [evidence.submitted_by]);
-    return result.rows[0];
-  }
-}
-
-// ========================================================================
-// SOURCE RESOLVER
-// ========================================================================
-
-@Resolver(() => Source)
-export class SourceResolver {
-  @FieldResolver(() => User, { nullable: true })
-  async submitter(@Root() source: Source, @Ctx() { pool }: { pool: Pool }): Promise<User | null> {
-    if (!source.submitted_by) return null;
-
-    const result = await pool.query('SELECT * FROM public."Users" WHERE id = $1', [source.submitted_by]);
-    return result.rows[0] || null;
-  }
-
-  @FieldResolver(() => SourceCredibility, { nullable: true })
-  async credibility(@Root() source: Source, @Ctx() { pool }: { pool: Pool }): Promise<SourceCredibility | null> {
-    const result = await pool.query('SELECT * FROM public."SourceCredibility" WHERE source_id = $1', [source.id]);
-    return result.rows[0] || null;
-  }
-}
-
-// ========================================================================
-// VERACITY SCORE HISTORY RESOLVER
-// ========================================================================
-
-@Resolver(() => VeracityScoreHistory)
-export class VeracityScoreHistoryResolver {
-  @FieldResolver(() => VeracityScore, { nullable: true })
-  async veracity_score(
-    @Root() history: VeracityScoreHistory,
-    @Ctx() { pool }: { pool: Pool }
-  ): Promise<VeracityScore | null> {
-    const result = await pool.query('SELECT * FROM public."VeracityScores" WHERE id = $1', [
-      history.veracity_score_id,
-    ]);
-    return result.rows[0] || null;
+    return credibilityScore;
   }
 }

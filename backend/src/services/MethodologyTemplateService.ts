@@ -135,24 +135,24 @@ export class MethodologyTemplateService {
       // Create nodes
       for (const templateNode of template.initialNodes) {
         const props = {
+          graphId: graphId,
           label: templateNode.data.label,
           description: templateNode.data.description,
           nodeType: templateNode.data.nodeType,
           x: templateNode.position.x,
           y: templateNode.position.y,
+          weight: templateNode.data.weight,
+          level: templateNode.data.level,
           metadata: templateNode.data.metadata || {}
         };
 
         const result = await client.query(
           `INSERT INTO public."Nodes"
-           (graph_id, props, weight, level, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, NOW(), NOW())
+           (props, created_at, updated_at)
+           VALUES ($1, NOW(), NOW())
            RETURNING id`,
           [
-            graphId,
-            JSON.stringify(props),
-            templateNode.data.weight,
-            templateNode.data.level
+            JSON.stringify(props)
           ]
         );
 
@@ -226,7 +226,7 @@ export class MethodologyTemplateService {
    */
   async graphHasNodes(graphId: string): Promise<boolean> {
     const result = await this.pool.query(
-      'SELECT COUNT(*) as count FROM public."Nodes" WHERE graph_id = $1',
+      `SELECT COUNT(*) as count FROM public."Nodes" WHERE props->>'graphId' = $1`,
       [graphId]
     );
     return parseInt(result.rows[0].count) > 0;

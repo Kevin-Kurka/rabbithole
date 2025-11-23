@@ -200,7 +200,7 @@ export class ContentAnalysisService {
    */
   async findAllDuplicatesInGraph(graphId: string): Promise<Map<string, DuplicateDetectionResult>> {
     const nodesResult = await this.pool.query(
-      `SELECT id FROM public."Nodes" WHERE graph_id = $1 AND deleted_at IS NULL`,
+      `SELECT id FROM public."Nodes" WHERE props->>'graphId' = $1 AND deleted_at IS NULL`,
       [graphId]
     );
 

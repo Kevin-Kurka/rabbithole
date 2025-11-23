@@ -34,7 +34,6 @@ export const GET_GRAPH = gql`
         id
         props
         weight
-        is_level_0
         created_at
         updated_at
       }
@@ -48,7 +47,6 @@ export const GET_GRAPH = gql`
         }
         props
         weight
-        is_level_0
         created_at
         updated_at
       }

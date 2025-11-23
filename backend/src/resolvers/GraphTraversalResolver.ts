@@ -265,7 +265,7 @@ export class GraphTraversalResolver {
    *     nodeId: "abc-123"
    *     maxDepth: 10
    *   ) {
-   *     nodes { id props weight is_level_0 }
+   *     nodes { id props }
    *     chain {
    *       node { id props }
    *       depth
@@ -361,8 +361,8 @@ export class GraphTraversalResolver {
           $1::uuid as node_id,
           COUNT(CASE WHEN e.source_node_id = $1 THEN 1 END) as outgoing,
           COUNT(CASE WHEN e.target_node_id = $1 THEN 1 END) as incoming,
-          AVG(e.weight) as avg_weight,
-          COUNT(DISTINCT e.graph_id) as graph_count
+          AVG((e.props->>'weight')::float) as avg_weight,
+          COUNT(DISTINCT e.props->>'graphId') as graph_count
         FROM public."Edges" e
         WHERE e.source_node_id = $1 OR e.target_node_id = $1
       )

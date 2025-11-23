@@ -362,7 +362,7 @@ Only return valid JSON, no additional text.`;
         // Check if node with same title already exists
         const existingNode = await this.pool.query(
           `SELECT id FROM public."Nodes"
-           WHERE graph_id = $1
+           WHERE props->>'graphId' = $1
            AND title = $2
            AND deleted_at IS NULL`,
           [graphId, entity.value]
@@ -376,25 +376,25 @@ Only return valid JSON, no additional text.`;
         // Create node
         const nodeResult = await this.pool.query(
           `INSERT INTO public."Nodes" (
-            graph_id, node_type_id, title, props, meta, weight
-          ) VALUES ($1, $2, $3, $4, $5, $6)
+            node_type_id, title, props, meta
+          ) VALUES ($1, $2, $3, $4)
           RETURNING id`,
           [
-            graphId,
             nodeTypeId,
             entity.value,
             JSON.stringify({
+              graphId: graphId,
               source: 'document_processing',
               file_id: sourceFileId,
               entity_type: entity.type,
               confidence: entity.confidence,
               context: entity.context,
+              weight: entity.confidence,
             }),
             JSON.stringify({
               auto_generated: true,
               extracted_at: new Date().toISOString(),
             }),
-            entity.confidence,
           ]
         );
 
