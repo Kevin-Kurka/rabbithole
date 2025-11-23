@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/base/card';
-import { Badge } from '@/components/base/badge';
-import { Button } from '@/components/base/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/base/tabs';
-import { ScrollArea } from '@/components/base/scroll-area';
-import { Progress } from '@/components/base/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import {
   Clock,
   Image as ImageIcon,

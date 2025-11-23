@@ -3,9 +3,9 @@
 import { use, useEffect, useState } from 'react';
 import { useQuery, useSubscription, gql } from '@apollo/client';
 import { VideoAnalysisViewer, VideoAnalysisResult } from '@/components/media/video-analysis-viewer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/base/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { Progress } from '@/components/base/progress';
+import { Progress } from '@/components/ui/progress';
 
 const GET_JOB_STATUS = gql`
   query GetMediaProcessingJob($jobId: String!) {

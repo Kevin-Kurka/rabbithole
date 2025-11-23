@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useMutation, gql } from '@apollo/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/base/card';
-import { Button } from '@/components/base/button';
-import { Input } from '@/components/base/input';
-import { Label } from '@/components/base/label';
-import { Switch } from '@/components/base/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/base/tabs';
-import { Alert, AlertDescription } from '@/components/base/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileDropZone } from '@/components/media/file-drop-zone';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
