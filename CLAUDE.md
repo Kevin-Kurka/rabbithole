@@ -28,6 +28,148 @@ Any feature (Evidence, Challenges, Users, VeracityScores, ActivityPosts, etc.) m
 
 See [SCHEMA_COMPLIANCE_REPORT.md](SCHEMA_COMPLIANCE_REPORT.md) for complete schema documentation.
 
+## ⚠️ MANDATORY MIGRATION CHECKLIST - READ BEFORE CREATING MIGRATIONS
+
+**Before creating ANY database migration, YOU MUST:**
+
+### ✅ Step 1: Verify Feature Can Be Modeled as Nodes/Edges
+- [ ] Check if feature requires new table → **STOP! Use node/edge types instead**
+- [ ] Identify what data needs to be stored → Plan for `props` JSONB field
+- [ ] Determine relationships → Plan edge types with direction semantics
+
+### ✅ Step 2: Review Reference Implementation
+- [ ] **Read [backend/src/resolvers/VeracityResolver.ts](backend/src/resolvers/VeracityResolver.ts)** - Shows CORRECT node/edge pattern
+- [ ] Study evidence-as-edges pattern: `SUPPORTS`, `REFUTES`, `NEUTRAL_EVIDENCE` edge types
+- [ ] Study source-as-nodes pattern: Reference nodes with citation data in `props`
+- [ ] Note JSONB props structure and parsing: `typeof row.props === 'string' ? JSON.parse(row.props) : row.props`
+
+### ✅ Step 3: Review Schema Constraints
+- [ ] **Read [backend/migrations/001_create_node_types.up.sql](backend/migrations/001_create_node_types.up.sql)** - NodeTypes table structure
+- [ ] **Read [backend/migrations/002_create_edge_types.up.sql](backend/migrations/002_create_edge_types.up.sql)** - EdgeTypes table structure
+- [ ] **Read [backend/migrations/003_create_nodes.up.sql](backend/migrations/003_create_nodes.up.sql)** - Nodes table (only 6 columns!)
+- [ ] **Read [backend/migrations/004_create_edges.up.sql](backend/migrations/004_create_edges.up.sql)** - Edges table (only 8 columns!)
+- [ ] Confirm: **NO NEW TABLES** - Only node types and edge types
+
+### ✅ Step 4: Plan Node Types with Hierarchy
+- [ ] Define parent node type category (System, Content, Social, Curation, Media, Gamification, AI, Notifications, Consensus)
+- [ ] Define child node types with `parent_node_type_id`
+- [ ] Document all fields as JSONB props structure (not database columns!)
+- [ ] Create `NNN_description.up.sql` and `NNN_description.down.sql` files
+
+### ✅ Step 5: Plan Edge Types with Semantics
+- [ ] Define edge type names (VERB or RELATIONSHIP in CAPS)
+- [ ] Document direction semantics (source_node_id → target_node_id)
+- [ ] Document relationship meaning (what does this edge represent?)
+- [ ] Document all edge data as JSONB props structure
+
+### ❌ NEVER DO THIS:
+```sql
+-- ❌ WRONG - Creating a new table
+CREATE TABLE public."Challenges" (
+  id UUID PRIMARY KEY,
+  target_id UUID NOT NULL,
+  description TEXT NOT NULL
+);
+```
+
+### ✅ ALWAYS DO THIS:
+```sql
+-- ✅ CORRECT - Create node type with props
+INSERT INTO public."NodeTypes" (name, description, parent_node_type_id, created_at, updated_at)
+SELECT
+  'Challenge',
+  'Challenge to a node or edge claiming inaccuracy',
+  id,
+  NOW(),
+  NOW()
+FROM public."NodeTypes" WHERE name = 'Content';
+
+-- Props structure documentation:
+-- {
+--   "targetType": "node" | "edge",
+--   "targetId": "uuid",
+--   "description": "text",
+--   "status": "open" | "resolved"
+-- }
+
+-- ✅ CORRECT - Create edge type for relationships
+INSERT INTO public."EdgeTypes" (name, description, created_at, updated_at)
+VALUES
+  ('CHALLENGES', 'Challenge node challenges a target node or edge', NOW(), NOW());
+
+-- Direction: Challenge → Node/Edge being challenged
+-- Props: { "severity": "minor" | "major", "status": "open" }
+```
+
+### Query Pattern Examples:
+
+**Creating a Challenge Node:**
+```typescript
+// Create challenge node
+const result = await pool.query(
+  `INSERT INTO public."Nodes" (node_type_id, props, created_at, updated_at)
+   VALUES ($1, $2, NOW(), NOW())
+   RETURNING *`,
+  [
+    challengeNodeTypeId,
+    JSON.stringify({
+      targetType: 'node',
+      targetId: 'uuid-here',
+      description: 'Challenge description',
+      status: 'open',
+      createdBy: userId
+    })
+  ]
+);
+
+// Create edge linking challenge to target
+await pool.query(
+  `INSERT INTO public."Edges" (edge_type_id, source_node_id, target_node_id, props, created_at, updated_at)
+   VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+  [
+    challengesEdgeTypeId,
+    challengeNodeId,
+    targetNodeId,
+    JSON.stringify({ severity: 'major' })
+  ]
+);
+```
+
+**Querying Challenges:**
+```typescript
+// Get all challenges for a node
+const result = await pool.query(
+  `SELECT n.id, n.props, e.props as edge_props
+   FROM public."Nodes" n
+   JOIN public."Edges" e ON n.id = e.source_node_id
+   JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+   WHERE nt.name = 'Challenge'
+   AND e.target_node_id = $1`,
+  [targetNodeId]
+);
+
+// Parse props safely
+const challenges = result.rows.map(row => {
+  const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+  const edgeProps = typeof row.edge_props === 'string' ? JSON.parse(row.edge_props) : row.edge_props;
+  return { ...props, ...edgeProps };
+});
+```
+
+### References:
+- **Correct Implementation**: [backend/src/resolvers/VeracityResolver.ts](backend/src/resolvers/VeracityResolver.ts) - Evidence as edges, sources as nodes
+- **System Node Types**: [backend/migrations/020_system_node_types.up.sql](backend/migrations/020_system_node_types.up.sql) - 23 node types with hierarchy
+- **System Edge Types**: [backend/migrations/021_system_edge_types.up.sql](backend/migrations/021_system_edge_types.up.sql) - 31 edge types with semantics
+- **Schema Documentation**: [SCHEMA_COMPLIANCE_REPORT.md](SCHEMA_COMPLIANCE_REPORT.md)
+
+### Why This Matters:
+- **Cost**: Creating invalid migrations wastes time and money
+- **Architecture**: Violating the 4-table schema breaks the entire system design
+- **Maintainability**: Props-only storage enables flexible schema evolution
+- **Performance**: JSONB indexing and querying are optimized for this pattern
+
+**IF YOU'RE UNSURE**: Ask for clarification before creating migrations. Better to ask than to waste hours reverting incorrect work.
+
 ## Development Commands
 
 ### Quick Start
