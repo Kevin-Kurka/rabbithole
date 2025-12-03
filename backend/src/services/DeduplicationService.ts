@@ -421,23 +421,30 @@ export class DeduplicationService {
   /**
    * Check if claim/challenge already exists (prevent duplicate debates)
    */
-  async checkDuplicateChallenge(
-    targetNodeId: string,
-    claim: string
-  ): Promise<{ exists: boolean; challengeId?: string }> {
-    // Check for similar challenge claims
+  /**
+   * Check if inquiry already exists (prevent duplicate debates)
+   */
+  async checkDuplicateInquiry(
+    title: string
+  ): Promise<{ exists: boolean; inquiryId?: string }> {
+    // Check for similar inquiry titles
+    // Note: This requires pg_trgm extension for similarity() function, 
+    // or we can use the vector search in findBySemanticSimilarity.
+    // For now, simple exact match or ILIKE.
+
     const result = await this.pool.query(
-      `SELECT id, rebuttal_claim
-       FROM public."Challenges"
-       WHERE target_node_id = $1
-         AND status IN ('open', 'under_review')
-         AND similarity(rebuttal_claim, $2) > 0.7
+      `SELECT id, props
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE nt.name = 'Inquiry'
+         AND (n.props->>'status')::text IN ('active', 'open')
+         AND (n.props->>'title')::text ILIKE $1
        LIMIT 1`,
-      [targetNodeId, claim]
+      [title]
     );
 
     if (result.rows.length > 0) {
-      return { exists: true, challengeId: result.rows[0].id };
+      return { exists: true, inquiryId: result.rows[0].id };
     }
 
     return { exists: false };

@@ -27,7 +27,6 @@ export enum AgentType {
   SOURCE_CREDIBILITY = 'source_credibility',
   GRAPH_RAG = 'graph_rag',
   INCONSISTENCY_DETECTOR = 'inconsistency_detector',
-  PROMOTION_EVALUATOR = 'promotion_evaluator',
   FALLACY_DETECTOR = 'fallacy_detector',
 }
 
@@ -148,14 +147,6 @@ export class AIOrchestrator {
       systemPrompt: INCONSISTENCY_DETECTOR_PROMPT,
       temperature: 0.2,
       maxTokens: 2000,
-    });
-
-    // Promotion Evaluator
-    registry.set(AgentType.PROMOTION_EVALUATOR, {
-      name: 'Level 0 Promotion Evaluator',
-      systemPrompt: PROMOTION_EVALUATOR_PROMPT,
-      temperature: 0.2,
-      maxTokens: 2500,
     });
 
     // Fallacy Detector
@@ -341,35 +332,7 @@ export class AIOrchestrator {
     return result.data.credibilityScore || 0.5;
   }
 
-  /**
-   * Evaluate node for Level 0 promotion
-   */
-  async evaluatePromotion(
-    nodeId: string,
-    methodologyCompletion: number,
-    communityConsensus: number,
-    evidenceQuality: number,
-    openChallenges: number
-  ): Promise<any> {
-    const task: AgentTask = {
-      id: `promote_${nodeId}_${Date.now()}`,
-      type: AgentType.PROMOTION_EVALUATOR,
-      input: {
-        nodeId,
-        criteria: {
-          methodologyCompletion,
-          communityConsensus,
-          evidenceQuality,
-          openChallenges,
-        },
-        threshold: 0.99, // 99% requirement
-      },
-      priority: 1,
-      createdAt: new Date(),
-    };
 
-    return await this.executeTask(task);
-  }
 
   /**
    * Detect logical fallacies in argument
@@ -538,27 +501,7 @@ Respond in JSON:
   "confidence": 0-1
 }`;
 
-const PROMOTION_EVALUATOR_PROMPT = `You are a Level 0 Promotion Evaluator. Determine if a claim is ready for verified truth status.
 
-Criteria (must meet 99% threshold):
-1. Methodology Completion: 100%
-2. Community Consensus: 99%+
-3. Evidence Quality: 95%+
-4. Challenge Resolution: 0 open challenges
-
-Respond in JSON:
-{
-  "readyForPromotion": boolean,
-  "criteriaBreakdown": {
-    "methodology": { "score": 0-1, "passed": boolean },
-    "consensus": { "score": 0-1, "passed": boolean },
-    "evidenceQuality": { "score": 0-1, "passed": boolean },
-    "challenges": { "count": number, "passed": boolean }
-  },
-  "overallScore": 0-1,
-  "recommendation": string,
-  "reasoning": string
-}`;
 
 const FALLACY_DETECTOR_PROMPT = `You are a Logical Fallacy Detector. Identify common fallacies:
 

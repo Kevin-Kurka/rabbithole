@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -93,7 +94,7 @@ export function EnrichedContent({
   // Build enriched content with badges
   const renderEnrichedContent = () => {
     if (enrichments.length === 0) {
-      return <div dangerouslySetInnerHTML={{ __html: content }} />;
+      return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />;
     }
 
     const elements: React.ReactNode[] = [];
@@ -104,7 +105,7 @@ export function EnrichedContent({
       if (enrichment.start > lastIndex) {
         const beforeText = content.slice(lastIndex, enrichment.start);
         elements.push(
-          <span key={`text-${index}`} dangerouslySetInnerHTML={{ __html: beforeText }} />
+          <span key={`text-${index}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(beforeText) }} />
         );
       }
 
@@ -115,7 +116,7 @@ export function EnrichedContent({
         const citation = enrichment.data as Citation;
         elements.push(
           <span key={`citation-${citation.id}`} className="inline-flex items-baseline gap-0.5">
-            <span dangerouslySetInnerHTML={{ __html: enrichedText }} />
+            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(enrichedText) }} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Badge
@@ -165,7 +166,7 @@ export function EnrichedContent({
         const NodeIcon = getNodeIcon(nodeLink.nodeType);
         elements.push(
           <span key={`node-${nodeLink.id}`} className="inline-flex items-baseline gap-0.5">
-            <span dangerouslySetInnerHTML={{ __html: enrichedText }} />
+            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(enrichedText) }} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Badge
@@ -200,7 +201,7 @@ export function EnrichedContent({
     if (lastIndex < content.length) {
       const afterText = content.slice(lastIndex);
       elements.push(
-        <span key="text-end" dangerouslySetInnerHTML={{ __html: afterText }} />
+        <span key="text-end" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(afterText) }} />
       );
     }
 

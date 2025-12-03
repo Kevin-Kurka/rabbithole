@@ -159,6 +159,11 @@ fi
 # ============================================================================
 log_info "Step 5: Applying pending migrations..."
 
+# ============================================================================
+# Step 5: Define and Apply Migrations
+# ============================================================================
+log_info "Step 5: Applying pending migrations..."
+
 # Function to check if migration was applied
 is_migration_applied() {
     local version="$1"
@@ -206,111 +211,20 @@ apply_migration() {
     fi
 }
 
-# Migration 001: Initial Schema
-if ! is_migration_applied "001"; then
-    apply_migration "001" "$MIGRATIONS_DIR/001_initial_schema.sql" "Initial schema - base tables" || exit 1
-else
-    log_info "Migration 001 already applied"
-fi
-
-# Migration 002: Level 0/1 System
-# This migration updates the existing schema to ensure Level 0/1 distinction
-# Note: Since init.sql already has is_level_0 columns, this is mostly a verification
-if ! is_migration_applied "002"; then
-    log_info "Creating migration 002: Level 0/1 system verification"
-
-    cat > "$MIGRATIONS_DIR/002_level0_system.sql" << 'EOF'
--- Migration 002: Level 0/1 System Verification
--- This ensures the Level 0/1 distinction is properly set up
-
--- Verify is_level_0 column exists in Nodes
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public'
-        AND table_name = 'Nodes'
-        AND column_name = 'is_level_0'
-    ) THEN
-        ALTER TABLE public."Nodes" ADD COLUMN is_level_0 BOOLEAN NOT NULL DEFAULT false;
-    END IF;
-END $$;
-
--- Verify is_level_0 column exists in Edges
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public'
-        AND table_name = 'Edges'
-        AND column_name = 'is_level_0'
-    ) THEN
-        ALTER TABLE public."Edges" ADD COLUMN is_level_0 BOOLEAN NOT NULL DEFAULT false;
-    END IF;
-END $$;
-
--- Add index on is_level_0 for Nodes if not exists
-CREATE INDEX IF NOT EXISTS idx_nodes_is_level_0 ON public."Nodes" (is_level_0);
-
--- Add index on is_level_0 for Edges if not exists
-CREATE INDEX IF NOT EXISTS idx_edges_is_level_0 ON public."Edges" (is_level_0);
-
--- Create view for Level 0 nodes
-CREATE OR REPLACE VIEW public."Level0Nodes" AS
-SELECT * FROM public."Nodes" WHERE is_level_0 = true;
-
--- Create view for Level 1 nodes
-CREATE OR REPLACE VIEW public."Level1Nodes" AS
-SELECT * FROM public."Nodes" WHERE is_level_0 = false;
-
--- Migration complete
-EOF
-
-    apply_migration "002" "$MIGRATIONS_DIR/002_level0_system.sql" "Level 0/1 system verification" || exit 1
-else
-    log_info "Migration 002 already applied"
-fi
-
-# Migration 003: Veracity System
-if ! is_migration_applied "003"; then
-    apply_migration "003" "$MIGRATIONS_DIR/003_veracity_system.sql" "Veracity scoring system" || exit 1
-
-    # Run test suite if exists
-    if [ -f "$MIGRATIONS_DIR/003_veracity_system_test.sql" ]; then
-        log_info "Running test suite for migration 003..."
-        if execute_sql_file "$MIGRATIONS_DIR/003_veracity_system_test.sql" >> "$REPORT_FILE" 2>&1; then
-            log_success "Migration 003 tests passed"
-        else
-            log_warning "Migration 003 tests had issues (non-fatal)"
-        fi
+# Iterate over all .up.sql files in the migrations directory
+for file in "$MIGRATIONS_DIR"/*.up.sql; do
+    [ -e "$file" ] || continue
+    
+    filename=$(basename "$file")
+    version=$(echo "$filename" | cut -d'_' -f1)
+    description=$(echo "$filename" | sed -E 's/^[0-9]+_(.*)\.up\.sql$/\1/' | tr '_' ' ')
+    
+    if ! is_migration_applied "$version"; then
+        apply_migration "$version" "$file" "$description" || exit 1
+    else
+        log_info "Migration $version already applied"
     fi
-else
-    log_info "Migration 003 already applied"
-fi
-
-# Migration 004: Challenge System
-if ! is_migration_applied "004"; then
-    apply_migration "004" "$MIGRATIONS_DIR/004_challenge_system.sql" "Challenge system" || exit 1
-else
-    log_info "Migration 004 already applied"
-fi
-
-# Migration 005: Evidence Management
-if ! is_migration_applied "005"; then
-    apply_migration "005" "$MIGRATIONS_DIR/005_evidence_management.sql" "Evidence management system" || exit 1
-
-    # Run test suite if exists
-    if [ -f "$MIGRATIONS_DIR/005_evidence_management_test.sql" ]; then
-        log_info "Running test suite for migration 005..."
-        if execute_sql_file "$MIGRATIONS_DIR/005_evidence_management_test.sql" >> "$REPORT_FILE" 2>&1; then
-            log_success "Migration 005 tests passed"
-        else
-            log_warning "Migration 005 tests had issues (non-fatal)"
-        fi
-    fi
-else
-    log_info "Migration 005 already applied"
-fi
+done
 
 # ============================================================================
 # Step 6: Verify Data Integrity

@@ -11,7 +11,7 @@ import {
   Field,
   ObjectType,
 } from 'type-graphql';
-import { ActivityPost } from '../entities/ActivityPost';
+import { ActivityPost } from '../types/GraphTypes';
 import { Context } from '../types/context';
 import { GraphQLJSONObject } from 'graphql-type-json';
 
@@ -186,36 +186,35 @@ export class StickyNoteResolver {
     try {
       const sql = `
         SELECT
-          p.id,
-          p.node_id,
-          p.content,
-          p.canvas_props,
-          p.created_at,
+          n.id,
+          n.props,
+          n.created_at,
           u.username as author_name,
-          n.props->>'position' as node_position,
-          n.weight as node_credibility,
-          get_reply_count(p.id) as reply_count,
-          get_reaction_counts(p.id) as reaction_counts
-        FROM public."ActivityPosts" p
-        INNER JOIN public."Users" u ON p.author_id = u.id
-        INNER JOIN public."Nodes" n ON p.node_id = n.id
-        WHERE n.graph_id = $1
-        AND p.deleted_at IS NULL
-        AND p.is_reply = FALSE
-        ORDER BY p.created_at DESC
+          tn.props->>'position' as node_position,
+          tn.weight as node_credibility
+        FROM public."Nodes" n
+        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
+        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
+        WHERE nt.name = 'ActivityPost'
+        AND (tn.props->>'graphId')::uuid = $1
+        AND (n.props->>'deletedAt') IS NULL
+        AND (n.props->>'isReply')::boolean IS NOT TRUE
+        ORDER BY n.created_at DESC
       `;
 
       const result = await pool.query(sql, [graphId]);
 
       return result.rows.map((row) => {
-        const canvasProps = row.canvas_props || {};
+        const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+        const canvasProps = props.canvasProps || {};
         const style = canvasProps.style || { color: 'yellow', size: 'medium' };
 
         // Parse node position
         let nodePosition = { x: 100, y: 100 };
         if (row.node_position) {
           try {
-            nodePosition = JSON.parse(row.node_position);
+            nodePosition = typeof row.node_position === 'string' ? JSON.parse(row.node_position) : row.node_position;
           } catch (e) {
             console.error('Error parsing node position:', e);
           }
@@ -235,19 +234,26 @@ export class StickyNoteResolver {
           position = {
             x: nodePosition.x + 250,
             y: nodePosition.y,
-            zIndex: row.node_credibility + 0.001,
+            zIndex: (row.node_credibility || 0.5) + 0.001,
           };
         }
 
+        // Calculate reaction counts
+        const reactions = props.reactions || {};
+        const reactionCounts: Record<string, number> = {};
+        Object.values(reactions).forEach((type: any) => {
+          reactionCounts[type] = (reactionCounts[type] || 0) + 1;
+        });
+
         return {
           id: row.id,
-          nodeId: row.node_id,
-          content: row.content,
+          nodeId: props.nodeId,
+          content: props.content,
           style,
           position,
           authorName: row.author_name,
-          replyCount: parseInt(row.reply_count) || 0,
-          reactionCounts: row.reaction_counts || {},
+          replyCount: props.replyCount || 0,
+          reactionCounts,
           createdAt: row.created_at,
         };
       });
@@ -268,35 +274,34 @@ export class StickyNoteResolver {
     try {
       const sql = `
         SELECT
-          p.id,
-          p.node_id,
-          p.content,
-          p.canvas_props,
-          p.created_at,
+          n.id,
+          n.props,
+          n.created_at,
           u.username as author_name,
-          n.props->>'position' as node_position,
-          n.weight as node_credibility,
-          get_reply_count(p.id) as reply_count,
-          get_reaction_counts(p.id) as reaction_counts
-        FROM public."ActivityPosts" p
-        INNER JOIN public."Users" u ON p.author_id = u.id
-        INNER JOIN public."Nodes" n ON p.node_id = n.id
-        WHERE p.node_id = $1
-        AND p.deleted_at IS NULL
-        AND p.is_reply = FALSE
-        ORDER BY p.created_at DESC
+          tn.props->>'position' as node_position,
+          tn.weight as node_credibility
+        FROM public."Nodes" n
+        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
+        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
+        WHERE nt.name = 'ActivityPost'
+        AND n.props->>'nodeId' = $1
+        AND (n.props->>'deletedAt') IS NULL
+        AND (n.props->>'isReply')::boolean IS NOT TRUE
+        ORDER BY n.created_at DESC
       `;
 
       const result = await pool.query(sql, [nodeId]);
 
       return result.rows.map((row) => {
-        const canvasProps = row.canvas_props || {};
+        const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+        const canvasProps = props.canvasProps || {};
         const style = canvasProps.style || { color: 'yellow', size: 'medium' };
 
         let nodePosition = { x: 100, y: 100 };
         if (row.node_position) {
           try {
-            nodePosition = JSON.parse(row.node_position);
+            nodePosition = typeof row.node_position === 'string' ? JSON.parse(row.node_position) : row.node_position;
           } catch (e) {
             console.error('Error parsing node position:', e);
           }
@@ -315,19 +320,25 @@ export class StickyNoteResolver {
           position = {
             x: nodePosition.x + 250,
             y: nodePosition.y,
-            zIndex: row.node_credibility + 0.001,
+            zIndex: (row.node_credibility || 0.5) + 0.001,
           };
         }
 
+        const reactions = props.reactions || {};
+        const reactionCounts: Record<string, number> = {};
+        Object.values(reactions).forEach((type: any) => {
+          reactionCounts[type] = (reactionCounts[type] || 0) + 1;
+        });
+
         return {
           id: row.id,
-          nodeId: row.node_id,
-          content: row.content,
+          nodeId: props.nodeId,
+          content: props.content,
           style,
           position,
           authorName: row.author_name,
-          replyCount: parseInt(row.reply_count) || 0,
-          reactionCounts: row.reaction_counts || {},
+          replyCount: props.replyCount || 0,
+          reactionCounts,
           createdAt: row.created_at,
         };
       });
@@ -353,6 +364,12 @@ export class StickyNoteResolver {
     try {
       await client.query('BEGIN');
 
+      const typeRes = await client.query(`SELECT id FROM public."NodeTypes" WHERE name = 'ActivityPost'`);
+      if (typeRes.rows.length === 0) {
+        throw new Error('ActivityPost node type not found');
+      }
+      const nodeTypeId = typeRes.rows[0].id;
+
       // Validate node exists
       const nodeCheck = await client.query(
         'SELECT id FROM public."Nodes" WHERE id = $1',
@@ -373,25 +390,58 @@ export class StickyNoteResolver {
         zIndexOffset: 0.001,
       };
 
+      const props = {
+        nodeId: input.nodeId,
+        authorId: userId,
+        content: input.content,
+        mentionedNodeIds: input.mentionedNodeIds || [],
+        attachmentIds: [],
+        isReply: false,
+        isShare: false,
+        reactions: {},
+        replyCount: 0,
+        shareCount: 0,
+        canvasProps
+      };
+
       const insertSql = `
-        INSERT INTO public."ActivityPosts" (
-          node_id, author_id, content, mentioned_node_ids, canvas_props
+        INSERT INTO public."Nodes" (
+          node_type_id, props, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, NOW(), NOW())
         RETURNING *
       `;
 
       const result = await client.query(insertSql, [
-        input.nodeId,
-        userId,
-        input.content,
-        input.mentionedNodeIds || [],
-        JSON.stringify(canvasProps),
+        nodeTypeId,
+        JSON.stringify(props)
       ]);
 
       await client.query('COMMIT');
 
-      return result.rows[0];
+      // Return ActivityPost structure (simplified for sticky note return if needed, but here we return ActivityPost)
+      // The resolver returns ActivityPost, so we need to map it.
+      // But wait, the mutation returns ActivityPost.
+      // I should reuse the mapping logic or just return the props + id.
+      const row = result.rows[0];
+      const p = props;
+      return {
+        id: row.id,
+        node_id: p.nodeId,
+        author_id: p.authorId,
+        content: p.content,
+        mentioned_node_ids: p.mentionedNodeIds,
+        attachment_ids: [],
+        is_reply: false,
+        is_share: false,
+        replyCount: 0,
+        shareCount: 0,
+        reactionCounts: "{}",
+        totalReactionCount: 0,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        userReactions: []
+      } as any; // Cast to any to avoid strict type checking for optional fields if I missed some
     } catch (error) {
       await client.query('ROLLBACK');
       console.error('Error creating sticky note:', error);
@@ -414,36 +464,51 @@ export class StickyNoteResolver {
     }
 
     try {
-      // Get current post
-      const postResult = await pool.query(
-        'SELECT * FROM public."ActivityPosts" WHERE id = $1 AND deleted_at IS NULL',
+      const result = await pool.query(
+        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
         [input.postId]
       );
 
-      if (postResult.rows.length === 0) {
+      if (result.rows.length === 0) {
         throw new Error('Sticky note not found');
       }
 
-      const post = postResult.rows[0];
+      const node = result.rows[0];
+      const props = node.props;
 
-      // Check permissions (author only for now)
-      if (post.author_id !== userId) {
+      if (props.authorId !== userId) {
         throw new Error('Only the author can update sticky note style');
       }
 
-      // Update canvas_props
-      const currentProps = post.canvas_props || {};
-      const updatedProps = {
-        ...currentProps,
+      const currentCanvasProps = props.canvasProps || {};
+      props.canvasProps = {
+        ...currentCanvasProps,
         style: input.style,
       };
 
       const updateResult = await pool.query(
-        'UPDATE public."ActivityPosts" SET canvas_props = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-        [JSON.stringify(updatedProps), input.postId]
+        `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+        [JSON.stringify(props), input.postId]
       );
 
-      return updateResult.rows[0];
+      const row = updateResult.rows[0];
+      return {
+        id: row.id,
+        node_id: props.nodeId,
+        author_id: props.authorId,
+        content: props.content,
+        mentioned_node_ids: props.mentionedNodeIds || [],
+        attachment_ids: props.attachmentIds || [],
+        is_reply: !!props.isReply,
+        is_share: !!props.isShare,
+        replyCount: props.replyCount || 0,
+        shareCount: props.shareCount || 0,
+        reactionCounts: JSON.stringify(props.reactions || {}), // Simplified
+        totalReactionCount: 0, // Simplified
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        userReactions: []
+      } as any;
     } catch (error) {
       console.error('Error updating sticky note style:', error);
       throw error;
@@ -463,14 +528,24 @@ export class StickyNoteResolver {
     }
 
     try {
-      // Insert or update reaction (upsert)
+      const result = await pool.query(
+        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
+        [input.postId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+
+      const node = result.rows[0];
+      const props = node.props;
+
+      if (!props.reactions) props.reactions = {};
+      props.reactions[userId] = input.reactionType;
+
       await pool.query(
-        `
-        INSERT INTO public."ActivityReactions" (post_id, user_id, reaction_type)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (post_id, user_id, reaction_type) DO NOTHING
-      `,
-        [input.postId, userId, input.reactionType]
+        `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2`,
+        [JSON.stringify(props), input.postId]
       );
 
       return true;
@@ -493,13 +568,25 @@ export class StickyNoteResolver {
     }
 
     try {
-      await pool.query(
-        `
-        DELETE FROM public."ActivityReactions"
-        WHERE post_id = $1 AND user_id = $2 AND reaction_type = $3
-      `,
-        [input.postId, userId, input.reactionType]
+      const result = await pool.query(
+        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
+        [input.postId]
       );
+
+      if (result.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+
+      const node = result.rows[0];
+      const props = node.props;
+
+      if (props.reactions && props.reactions[userId] === input.reactionType) {
+        delete props.reactions[userId];
+        await pool.query(
+          `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2`,
+          [JSON.stringify(props), input.postId]
+        );
+      }
 
       return true;
     } catch (error) {

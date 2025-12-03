@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -107,7 +108,12 @@ export function MarkdownEditor({
           <div
             className="p-6 prose prose-sm dark:prose-invert max-w-none overflow-auto"
             style={{ minHeight }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(value) }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(renderMarkdown(value), {
+                ALLOWED_TAGS: ['p', 'strong', 'em', 'code', 'pre', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br'],
+                ALLOWED_ATTR: ['href', 'target', 'rel']
+              })
+            }}
           />
         </TabsContent>
       </Tabs>

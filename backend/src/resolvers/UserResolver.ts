@@ -1,10 +1,11 @@
-import { Resolver, Query, Mutation, Arg, Ctx, PubSub, Subscription, Root, Field, ObjectType } from 'type-graphql';
-import { User } from '../entities/User';
+import { Resolver, Query, Mutation, Arg, Ctx, PubSub, Subscription, Root, Field, ObjectType, ID } from 'type-graphql';
 import { UserInput } from './UserInput';
 import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { PubSubEngine } from 'graphql-subscriptions';
 import { generateAccessToken, generateRefreshToken } from '../middleware/auth';
+
+import { User } from '../types/GraphTypes';
 
 @ObjectType()
 class AuthResponse {
@@ -26,8 +27,10 @@ export class UserResolver {
       return null;
     }
 
-    const result = await pool.query('SELECT * FROM public."Users" WHERE id = $1', [userId]);
-    return result.rows[0] || null;
+    const result = await pool.query('SELECT * FROM public."Nodes" WHERE id = $1', [userId]);
+    if (result.rows.length === 0) return null;
+
+    return User.fromNode(result.rows[0]);
   }
 
   @Mutation(() => AuthResponse)
@@ -35,24 +38,46 @@ export class UserResolver {
     @Arg("input") { username, email, password }: UserInput,
     @Ctx() { pool, pubSub }: { pool: Pool, pubSub: PubSubEngine }
   ): Promise<AuthResponse> {
-    // Check if user already exists
+    // 1. Get User node type ID
+    const typeResult = await pool.query('SELECT id FROM public."NodeTypes" WHERE name = $1', ['User']);
+    if (typeResult.rows.length === 0) {
+      throw new Error('User node type not found in schema');
+    }
+    const userTypeId = typeResult.rows[0].id;
+
+    // 2. Check if user already exists
     const existing = await pool.query(
-      'SELECT id FROM public."Users" WHERE email = $1 OR username = $2',
-      [email, username]
+      `SELECT id FROM public."Nodes" 
+       WHERE node_type_id = $1 
+       AND (props->>'email' = $2 OR props->>'username' = $3)`,
+      [userTypeId, email, username]
     );
 
     if (existing.rows.length > 0) {
       throw new Error('User with that email or username already exists');
     }
 
+    // 3. Create new User node
     const hashedPassword = await bcrypt.hash(password, 12);
     const result = await pool.query(
-      'INSERT INTO public."Users" (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *',
-      [username, email, hashedPassword]
+      `INSERT INTO public."Nodes" (node_type_id, props) 
+       VALUES ($1, $2) 
+       RETURNING *`,
+      [
+        userTypeId,
+        JSON.stringify({
+          username,
+          email,
+          password_hash: hashedPassword,
+          role: 'user'
+        })
+      ]
     );
-    const newUser = result.rows[0];
 
-    // Generate JWT tokens
+    const newUserNode = result.rows[0];
+    const newUser = User.fromNode(newUserNode);
+
+    // 4. Generate JWT tokens
     const accessToken = generateAccessToken(newUser.id, newUser.username, newUser.email);
     const refreshToken = generateRefreshToken(newUser.id);
 
@@ -70,19 +95,38 @@ export class UserResolver {
     @Arg("input") { email, password }: UserInput,
     @Ctx() { pool }: { pool: Pool }
   ): Promise<AuthResponse | null> {
-    const result = await pool.query('SELECT * FROM public."Users" WHERE email = $1', [email]);
-    const user = result.rows[0];
+    // 1. Get User node type ID
+    const typeResult = await pool.query('SELECT id FROM public."NodeTypes" WHERE name = $1', ['User']);
+    if (typeResult.rows.length === 0) {
+      throw new Error('User node type not found in schema');
+    }
+    const userTypeId = typeResult.rows[0].id;
 
-    if (!user) {
+    // 2. Find user by email
+    const result = await pool.query(
+      `SELECT * FROM public."Nodes" 
+       WHERE node_type_id = $1 
+       AND props->>'email' = $2`,
+      [userTypeId, email]
+    );
+
+    const userNode = result.rows[0];
+
+    if (!userNode) {
       throw new Error('Invalid email or password');
     }
 
-    const isValid = await bcrypt.compare(password, user.password_hash);
+    // 3. Verify password
+    const props = typeof userNode.props === 'string' ? JSON.parse(userNode.props) : userNode.props;
+    const isValid = await bcrypt.compare(password, props.password_hash);
+
     if (!isValid) {
       throw new Error('Invalid email or password');
     }
 
-    // Generate JWT tokens
+    const user = User.fromNode(userNode);
+
+    // 4. Generate JWT tokens
     const accessToken = generateAccessToken(user.id, user.username, user.email);
     const refreshToken = generateRefreshToken(user.id);
 

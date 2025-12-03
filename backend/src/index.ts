@@ -21,7 +21,7 @@ import { MethodologyNodeTypeResolver } from './resolvers/MethodologyNodeTypeReso
 import { MethodologyEdgeTypeResolver } from './resolvers/MethodologyEdgeTypeResolver';
 import { MethodologyWorkflowResolver } from './resolvers/MethodologyWorkflowResolver';
 import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from './resolvers/UserMethodologyResolver';
-import { VeracityScoreResolver, EvidenceResolver, SourceResolver, VeracityScoreHistoryResolver } from './resolvers/VeracityResolver';
+import { VeracityResolver } from './resolvers/VeracityResolver';
 import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
 import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
 import { SearchResolver } from './resolvers/SearchResolver';
@@ -29,13 +29,7 @@ import { InquiryResolver } from './resolvers/InquiryResolver';
 import { FormalInquiryResolver } from './resolvers/FormalInquiryResolver';
 import { ArticleResolver } from './resolvers/ArticleResolver';
 import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
-import {
-  CollaborationResolver,
-  GraphShareResolver,
-  PresenceResolver,
-  ActivityResolver,
-  ChatMessageResolver
-} from './resolvers/CollaborationResolver';
+import { CollaborationResolver } from './resolvers/CollaborationResolver';
 import { GamificationResolver } from './resolvers/GamificationResolver';
 import { GraphVersionResolver } from './resolvers/GraphVersionResolver';
 import { ContentAnalysisResolver } from './resolvers/ContentAnalysisResolver';
@@ -53,7 +47,7 @@ import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
 import { WhiteboardResolver } from './resolvers/WhiteboardResolver';
 import { StickyNoteResolver } from './resolvers/StickyNoteResolver';
 import { CollaborativePresenceResolver } from './resolvers/CollaborativePresenceResolver';
-import { ChallengeResolver } from './resolvers/ChallengeResolver';
+
 import {
   CuratorRoleResolver,
   UserCuratorResolver,
@@ -107,10 +101,7 @@ async function main() {
       MethodologyWorkflowResolver,
       UserMethodologyProgressResolver,
       MethodologyPermissionResolver,
-      VeracityScoreResolver,
-      EvidenceResolver,
-      SourceResolver,
-      VeracityScoreHistoryResolver,
+      VeracityResolver,
       ProcessValidationResolver,
       AIAssistantResolver,
       SearchResolver,
@@ -119,10 +110,6 @@ async function main() {
       ArticleResolver,
       EvidenceFileResolver,
       CollaborationResolver,
-      GraphShareResolver,
-      PresenceResolver,
-      ActivityResolver,
-      ChatMessageResolver,
       GamificationResolver,
       GraphVersionResolver,
       ContentAnalysisResolver,
@@ -138,7 +125,7 @@ async function main() {
       WhiteboardResolver,
       StickyNoteResolver,
       CollaborativePresenceResolver,
-      // ChallengeResolver, // TODO: Fix input types - temporarily disabled
+
       CuratorRoleResolver,
       UserCuratorResolver,
       CuratorApplicationResolver,

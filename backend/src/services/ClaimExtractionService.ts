@@ -42,9 +42,9 @@ export interface NodeMatch {
   nodeId: string;
   title: string;
   similarity: number; // 0.0-1.0: Cosine similarity score
-  nodeType?: string;
+  nodeType: string;
   props: any;
-  isLevel0: boolean;
+  credibilityScore: number;
   matchReason: 'semantic' | 'keyword' | 'exact';
 }
 
@@ -746,12 +746,12 @@ ${chunk}`;
           n.title,
           n.node_type_id,
           n.props,
-          COALESCE((n.props->>'isLevel0')::boolean, false) as is_level_0,
-          mnt.name as node_type,
+          COALESCE((n.props->>'credibilityScore')::numeric, 0.5) as credibility_score,
+          nt.name as node_type,
           1 - (n.ai <=> $1::vector) as similarity
-         FROM public."Nodes" n
-         LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
-         WHERE n.ai IS NOT NULL ${graphFilter}
+         FROM nodes n
+         LEFT JOIN node_types nt ON n.node_type_id = nt.id
+         WHERE n.ai IS NOT NULL AND n.archived_at IS NULL ${graphFilter}
          ORDER BY n.ai <=> $1::vector
          LIMIT 10`,
         params
@@ -763,7 +763,7 @@ ${chunk}`;
         similarity: parseFloat(row.similarity),
         nodeType: row.node_type,
         props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props,
-        isLevel0: row.is_level_0,
+        credibilityScore: parseFloat(row.credibility_score),
         matchReason: 'semantic',
       }));
     } catch (error: any) {

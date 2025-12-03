@@ -1,10 +1,12 @@
 import { Pool } from 'pg';
 import Redis from 'ioredis';
-import { Achievement } from '../entities/Achievement';
-import { UserAchievement } from '../entities/UserAchievement';
-import { GamificationReputation } from '../entities/GamificationReputation';
-import { LeaderboardEntry } from '../entities/LeaderboardEntry';
-import { UserStats } from '../entities/UserStats';
+import {
+  Achievement,
+  UserAchievement,
+  GamificationReputation,
+  LeaderboardEntry,
+  UserStats
+} from '../types/Gamification';
 import { ACHIEVEMENTS, getAchievementByKey } from '../config/achievements';
 
 export class AchievementService {
@@ -340,7 +342,7 @@ export class AchievementService {
        AND (props->>'weight')::numeric >= 0.90`,
       [userId]
     );
-    metrics.level0_contributions = parseInt(highCredibilityResult.rows[0]?.count || '0');
+    metrics.high_credibility_contributions = parseInt(highCredibilityResult.rows[0]?.count || '0');
 
     // Methodologies completed
     const methodologyResult = await this.pool.query(
@@ -365,21 +367,27 @@ export class AchievementService {
     );
     metrics.process_validations = parseInt(validationsResult.rows[0]?.count || '0');
 
-    // Challenges submitted
-    const challengesResult = await this.pool.query(
-      `SELECT COUNT(*) as count FROM public."Challenges" WHERE created_by = $1`,
+    // Inquiries submitted
+    const inquiriesResult = await this.pool.query(
+      `SELECT COUNT(*) as count 
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE nt.name = 'Inquiry' AND (n.props->>'createdBy')::text = $1`,
       [userId]
     );
-    metrics.challenges_submitted = parseInt(challengesResult.rows[0]?.count || '0');
+    metrics.inquiries_submitted = parseInt(inquiriesResult.rows[0]?.count || '0');
 
-    // Challenges resolved
+    // Inquiries resolved
     const resolvedResult = await this.pool.query(
       `SELECT COUNT(*) as count
-       FROM public."ChallengeResolutions"
-       WHERE resolved_by = $1 AND status = 'resolved'`,
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE nt.name = 'Inquiry'
+       AND (n.props->>'status')::text = 'resolved'
+       AND (n.props->>'resolvedBy')::text = $1`,
       [userId]
     );
-    metrics.challenges_resolved = parseInt(resolvedResult.rows[0]?.count || '0');
+    metrics.inquiries_resolved = parseInt(resolvedResult.rows[0]?.count || '0');
 
     // Chat messages sent
     const chatResult = await this.pool.query(

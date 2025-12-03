@@ -104,34 +104,36 @@ describe('MessageQueueService', () => {
       );
     });
 
-    it('should subscribe to jobs and process them', async (done) => {
-      try {
-        await service.connect();
+    it('should subscribe to jobs and process them', (done) => {
+      (async () => {
+        try {
+          await service.connect();
 
-        let jobsProcessed = 0;
-        const expectedJobs = 2;
+          let jobsProcessed = 0;
+          const expectedJobs = 2;
 
-        // Subscribe to jobs
-        await service.subscribeToVectorizationJobs(async (job: VectorizationJob) => {
-          expect(job).toHaveProperty('entityType');
-          expect(job).toHaveProperty('entityId');
-          expect(job).toHaveProperty('content');
-          expect(job).toHaveProperty('timestamp');
+          // Subscribe to jobs
+          await service.subscribeToVectorizationJobs(async (job: VectorizationJob) => {
+            expect(job).toHaveProperty('entityType');
+            expect(job).toHaveProperty('entityId');
+            expect(job).toHaveProperty('content');
+            expect(job).toHaveProperty('timestamp');
 
           jobsProcessed++;
 
           if (jobsProcessed === expectedJobs) {
-            done();
-          }
-        });
+              done();
+            }
+          });
 
-        // Publish test jobs
-        await service.publishVectorizationJob('node', 'sub-test-1', 'Content 1');
-        await service.publishVectorizationJob('edge', 'sub-test-2', 'Content 2');
-      } catch (error) {
-        console.log('Skipping test - RabbitMQ not available');
-        done();
-      }
+          // Publish test jobs
+          await service.publishVectorizationJob('node', 'sub-test-1', 'Content 1');
+          await service.publishVectorizationJob('edge', 'sub-test-2', 'Content 2');
+        } catch (error) {
+          console.log('Skipping test - RabbitMQ not available');
+          done();
+        }
+      })();
     }, 20000);
   });
 

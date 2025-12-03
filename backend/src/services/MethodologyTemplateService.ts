@@ -7,8 +7,6 @@
  */
 
 import { Pool } from 'pg';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 
 interface TemplateNode {
   id: string;
@@ -16,12 +14,12 @@ interface TemplateNode {
   position: { x: number; y: number };
   data: {
     label: string;
-    description: string;
-    nodeType: string;
-    weight: number;
-    level: number;
-    isLocked: boolean;
-    metadata?: Record<string, any>;
+    description?: string;
+    nodeType?: string;
+    weight?: number;
+    level?: number;
+    isLocked?: boolean;
+    [key: string]: any;
   };
 }
 
@@ -29,74 +27,27 @@ interface TemplateEdge {
   id: string;
   source: string;
   target: string;
-  type: string;
-  data: {
-    label: string;
-    weight: number;
-    level: number;
-    isLocked: boolean;
+  type?: string;
+  data?: {
+    label?: string;
+    weight?: number;
+    level?: number;
+    isLocked?: boolean;
+    [key: string]: any;
   };
 }
 
-interface MethodologyTemplate {
-  methodologyId: string;
-  name: string;
-  initialNodes: TemplateNode[];
-  initialEdges: TemplateEdge[];
-}
-
-interface TemplateConfig {
-  templates: MethodologyTemplate[];
+interface CanvasState {
+  nodes: TemplateNode[];
+  edges: TemplateEdge[];
 }
 
 export class MethodologyTemplateService {
-  private templates: Map<string, MethodologyTemplate> = new Map();
-  private loaded: boolean = false;
-
-  constructor(private pool: Pool) {}
-
-  /**
-   * Load templates from JSON configuration file
-   */
-  async loadTemplates(): Promise<void> {
-    if (this.loaded) return;
-
-    try {
-      const configPath = join(__dirname, '../config/methodology-templates.json');
-      const configData = await readFile(configPath, 'utf-8');
-      const config: TemplateConfig = JSON.parse(configData);
-
-      for (const template of config.templates) {
-        this.templates.set(template.methodologyId, template);
-      }
-
-      this.loaded = true;
-      console.log(`Loaded ${this.templates.size} methodology templates`);
-    } catch (error) {
-      console.error('Failed to load methodology templates:', error);
-      throw new Error('Failed to load methodology templates');
-    }
-  }
-
-  /**
-   * Get a template by methodology ID
-   */
-  async getTemplate(methodologyId: string): Promise<MethodologyTemplate | null> {
-    await this.loadTemplates();
-    return this.templates.get(methodologyId) || null;
-  }
-
-  /**
-   * Get all available templates
-   */
-  async getAllTemplates(): Promise<MethodologyTemplate[]> {
-    await this.loadTemplates();
-    return Array.from(this.templates.values());
-  }
+  constructor(private pool: Pool) { }
 
   /**
    * Apply a methodology template to a graph
-   * Creates initial nodes and edges in the database
+   * Creates initial nodes and edges in the database based on the methodology's workflow initial state
    *
    * @param graphId - Target graph ID
    * @param methodologyId - Methodology template to apply
@@ -106,15 +57,45 @@ export class MethodologyTemplateService {
     graphId: string,
     methodologyId: string
   ): Promise<{ nodes: string[]; edges: string[] }> {
-    const template = await this.getTemplate(methodologyId);
+    // Fetch methodology node
+    const methResult = await this.pool.query(
+      `SELECT n.* 
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE n.id = $1 AND nt.name = 'Methodology'`,
+      [methodologyId]
+    );
 
-    if (!template) {
-      throw new Error(`Template not found for methodology: ${methodologyId}`);
+    if (methResult.rows.length === 0) {
+      throw new Error(`Methodology not found: ${methodologyId}`);
+    }
+
+    const methodologyNode = methResult.rows[0];
+    const methProps = typeof methodologyNode.props === 'string' ? JSON.parse(methodologyNode.props) : methodologyNode.props;
+
+    // Check if workflow and initial_canvas_state exist
+    if (!methProps.workflow || !methProps.workflow.initial_canvas_state) {
+      // No template to apply
+      return { nodes: [], edges: [] };
+    }
+
+    let canvasState: CanvasState;
+    try {
+      canvasState = typeof methProps.workflow.initial_canvas_state === 'string'
+        ? JSON.parse(methProps.workflow.initial_canvas_state)
+        : methProps.workflow.initial_canvas_state;
+    } catch (e) {
+      console.error('Failed to parse initial_canvas_state:', e);
+      return { nodes: [], edges: [] };
+    }
+
+    if (!canvasState.nodes || !Array.isArray(canvasState.nodes)) {
+      return { nodes: [], edges: [] };
     }
 
     // Check if graph exists
     const graphCheck = await this.pool.query(
-      'SELECT id FROM public."Graphs" WHERE id = $1',
+      'SELECT id FROM public."Nodes" WHERE id = $1',
       [graphId]
     );
 
@@ -132,26 +113,38 @@ export class MethodologyTemplateService {
       // Create a mapping from template node IDs to database node IDs
       const nodeIdMap = new Map<string, string>();
 
+      // Get Node Type ID for 'Claim' or generic node type
+      // We should probably use the node type specified in the template data, or default to 'Claim'
+      // For now, let's try to find the ID for the type specified in data.nodeType, or default to 'Claim'
+
+      const nodeTypesResult = await client.query('SELECT id, name FROM public."NodeTypes"');
+      const nodeTypes = new Map(nodeTypesResult.rows.map((row: any) => [row.name, row.id]));
+      const defaultNodeTypeId = nodeTypes.get('Claim') || nodeTypes.get('Note') || nodeTypes.values().next().value;
+
       // Create nodes
-      for (const templateNode of template.initialNodes) {
+      for (const templateNode of canvasState.nodes) {
+        const nodeTypeName = templateNode.data.nodeType || 'Claim';
+        const nodeTypeId = nodeTypes.get(nodeTypeName) || defaultNodeTypeId;
+
         const props = {
           graphId: graphId,
           label: templateNode.data.label,
           description: templateNode.data.description,
-          nodeType: templateNode.data.nodeType,
           x: templateNode.position.x,
           y: templateNode.position.y,
           weight: templateNode.data.weight,
           level: templateNode.data.level,
-          metadata: templateNode.data.metadata || {}
+          isLocked: templateNode.data.isLocked,
+          ...templateNode.data.metadata
         };
 
         const result = await client.query(
           `INSERT INTO public."Nodes"
-           (props, created_at, updated_at)
-           VALUES ($1, NOW(), NOW())
+           (node_type_id, props, created_at, updated_at)
+           VALUES ($1, $2, NOW(), NOW())
            RETURNING id`,
           [
+            nodeTypeId,
             JSON.stringify(props)
           ]
         );
@@ -161,50 +154,77 @@ export class MethodologyTemplateService {
         createdNodeIds.push(newNodeId);
       }
 
+      // Get Edge Type ID
+      const edgeTypesResult = await client.query('SELECT id, name FROM public."EdgeTypes"');
+      const edgeTypes = new Map(edgeTypesResult.rows.map((row: any) => [row.name, row.id]));
+      const defaultEdgeTypeId = edgeTypes.get('Supports') || edgeTypes.values().next().value;
+
       // Create edges using the mapped node IDs
-      for (const templateEdge of template.initialEdges) {
-        const sourceNodeId = nodeIdMap.get(templateEdge.source);
-        const targetNodeId = nodeIdMap.get(templateEdge.target);
+      if (canvasState.edges && Array.isArray(canvasState.edges)) {
+        for (const templateEdge of canvasState.edges) {
+          const sourceNodeId = nodeIdMap.get(templateEdge.source);
+          const targetNodeId = nodeIdMap.get(templateEdge.target);
 
-        if (!sourceNodeId || !targetNodeId) {
-          throw new Error(
-            `Invalid edge reference: ${templateEdge.source} -> ${templateEdge.target}`
+          if (!sourceNodeId || !targetNodeId) {
+            console.warn(`Skipping edge with invalid reference: ${templateEdge.source} -> ${templateEdge.target}`);
+            continue;
+          }
+
+          const edgeTypeName = templateEdge.type || 'Supports'; // Default edge type
+          // In React Flow, 'type' is often 'default', 'smoothstep', etc. 
+          // We might need to look at data.type or just default to a standard edge type.
+          // If the template specifies a semantic type in data, use it.
+          const semanticType = templateEdge.data?.type || 'Supports';
+          const edgeTypeId = edgeTypes.get(semanticType) || defaultEdgeTypeId;
+
+          const props = {
+            label: templateEdge.data?.label,
+            weight: templateEdge.data?.weight,
+            level: templateEdge.data?.level,
+            isLocked: templateEdge.data?.isLocked
+          };
+
+          const result = await client.query(
+            `INSERT INTO public."Edges"
+             (edge_type_id, source_node_id, target_node_id, props, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, NOW(), NOW())
+             RETURNING id`,
+            [
+              edgeTypeId,
+              sourceNodeId,
+              targetNodeId,
+              JSON.stringify(props)
+            ]
           );
+
+          createdEdgeIds.push(result.rows[0].id);
         }
-
-        const props = {
-          label: templateEdge.data.label
-        };
-
-        const result = await client.query(
-          `INSERT INTO public."Edges"
-           (from_node_id, to_node_id, props, weight, level, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-           RETURNING id`,
-          [
-            sourceNodeId,
-            targetNodeId,
-            JSON.stringify(props),
-            templateEdge.data.weight,
-            templateEdge.data.level
-          ]
-        );
-
-        createdEdgeIds.push(result.rows[0].id);
       }
 
       // Update graph's methodology_id if not already set
-      await client.query(
-        `UPDATE public."Graphs"
-         SET methodology_id = $1, updated_at = NOW()
-         WHERE id = $2 AND methodology_id IS NULL`,
-        [methodologyId, graphId]
+      // Graph is a Node, so we update its props
+      const graphNodeResult = await client.query(
+        'SELECT props FROM public."Nodes" WHERE id = $1',
+        [graphId]
       );
+
+      if (graphNodeResult.rows.length > 0) {
+        const graphProps = graphNodeResult.rows[0].props;
+        const propsObj = typeof graphProps === 'string' ? JSON.parse(graphProps) : graphProps;
+
+        if (!propsObj.methodologyId) {
+          propsObj.methodologyId = methodologyId;
+          await client.query(
+            'UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2',
+            [JSON.stringify(propsObj), graphId]
+          );
+        }
+      }
 
       await client.query('COMMIT');
 
       console.log(
-        `Applied template "${template.name}" to graph ${graphId}: ` +
+        `Applied template "${methProps.name}" to graph ${graphId}: ` +
         `${createdNodeIds.length} nodes, ${createdEdgeIds.length} edges`
       );
 
@@ -230,29 +250,6 @@ export class MethodologyTemplateService {
       [graphId]
     );
     return parseInt(result.rows[0].count) > 0;
-  }
-
-  /**
-   * Get template metadata without full node/edge data
-   */
-  async getTemplateMetadata(methodologyId: string): Promise<{
-    methodologyId: string;
-    name: string;
-    nodeCount: number;
-    edgeCount: number;
-  } | null> {
-    const template = await this.getTemplate(methodologyId);
-
-    if (!template) {
-      return null;
-    }
-
-    return {
-      methodologyId: template.methodologyId,
-      name: template.name,
-      nodeCount: template.initialNodes.length,
-      edgeCount: template.initialEdges.length
-    };
   }
 }
 

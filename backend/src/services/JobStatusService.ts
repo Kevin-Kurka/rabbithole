@@ -74,6 +74,7 @@ export class JobStatusService {
     } = {}
   ): Promise<void> {
     try {
+      // Note: Column names are hardcoded (not user-controlled) - safe for dynamic UPDATE construction
       const updates: string[] = ['status = $2', 'updated_at = NOW()'];
       const values: any[] = [jobId, status];
       let paramIndex = 3;

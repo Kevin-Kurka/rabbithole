@@ -10,9 +10,10 @@ interface Context {
  * Permission types available in the curator system
  */
 export enum CuratorPermissionType {
-  LEVEL_0_CONTENT = 'level_0_content',
-  LEVEL_0_NODES = 'level_0_nodes',
-  LEVEL_0_EDGES = 'level_0_edges',
+  // Content Management
+  HIGH_CREDIBILITY_CONTENT = 'high_credibility_content',
+  MANAGE_NODES = 'manage_nodes',
+  MANAGE_EDGES = 'manage_edges',
   VERACITY_APPROVAL = 'veracity_approval',
   METHODOLOGY_VALIDATION = 'methodology_validation',
   SOURCE_VALIDATION = 'source_validation',
@@ -53,11 +54,11 @@ export enum PermissionAction {
  * Usage:
  * @Mutation(() => Node)
  * @UseMiddleware(RequireCuratorPermission(
- *   CuratorPermissionType.LEVEL_0_NODES,
+ *   CuratorPermissionType.MANAGE_NODES,
  *   ResourceType.NODE,
  *   PermissionAction.CREATE
  * ))
- * async createLevel0Node(...) { ... }
+ * async createNode(...) { ... }
  */
 export function RequireCuratorPermission(
   permissionType: CuratorPermissionType,
@@ -260,11 +261,11 @@ export async function getCuratorMetrics(pool: Pool, userId: string): Promise<{
 }
 
 /**
- * Decorator to check Level 0 content creation permissions
- * This is the most critical permission for maintaining Level 0 integrity
+ * Decorator to check high credibility content creation permissions
+ * This is the most critical permission for maintaining content integrity
  */
-export const RequireLevel0ContentPermission = RequireCuratorPermission(
-  CuratorPermissionType.LEVEL_0_CONTENT,
+export const RequireHighCredibilityContentPermission = RequireCuratorPermission(
+  CuratorPermissionType.HIGH_CREDIBILITY_CONTENT,
   ResourceType.ALL,
   PermissionAction.CREATE
 );
@@ -459,7 +460,7 @@ export default {
   RequireActiveCurator,
   RequireCuratorRole,
   RequireCuratorTier,
-  RequireLevel0ContentPermission,
+  RequireHighCredibilityContentPermission,
   RequireVeracityApprovalPermission,
   RequireSourceValidationPermission,
   RequireMethodologyValidationPermission,

@@ -315,12 +315,14 @@ export class ChatService {
    */
   async archiveOldMessages(daysToKeep: number = 30): Promise<number> {
     try {
+      // Fixed: Use parameterized query with INTERVAL multiplication
       const result = await this.pool.query(
         `UPDATE public."ChatMessages"
          SET archived_at = NOW()
-         WHERE created_at < NOW() - INTERVAL '${daysToKeep} days'
+         WHERE created_at < NOW() - INTERVAL '1 day' * $1
          AND archived_at IS NULL
-         RETURNING id`
+         RETURNING id`,
+        [daysToKeep]
       );
 
       return result.rows.length;

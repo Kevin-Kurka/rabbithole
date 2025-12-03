@@ -1,8 +1,6 @@
 import { Resolver, Query, Mutation, Arg, Ctx, ID, Float, Int, FieldResolver, Root } from 'type-graphql';
 import { Pool } from 'pg';
-import { Node } from '../entities/Node';
-import { Edge } from '../entities/Edge';
-import { User } from '../entities/User';
+import { Node, Edge, User } from '../types/GraphTypes';
 
 /**
  * VeracityResolver - Refactored to use node-based evidence storage
@@ -188,19 +186,33 @@ export class VeracityResolver {
   /**
    * Get evidence edges for a node (edges pointing TO the node with evidenceType in props)
    */
+  /**
+   * Get evidence edges for a node (edges pointing TO the node with evidenceType in props)
+   */
   @Query(() => [Edge])
   async getEvidenceForNode(
     @Ctx() { pool }: { pool: Pool },
     @Arg('nodeId', () => ID) nodeId: string
   ): Promise<Edge[]> {
     const result = await pool.query(
-      `SELECT e.* FROM public."Edges" e
+      `SELECT e.*, et.name as type_name
+       FROM public."Edges" e
+       JOIN public."EdgeTypes" et ON e.edge_type_id = et.id
        WHERE e.target_node_id = $1
        AND e.props ? 'evidenceType'
        ORDER BY e.created_at DESC`,
       [nodeId]
     );
-    return result.rows;
+    return result.rows.map(row => ({
+      id: row.id,
+      type: row.type_name,
+      source_node_id: row.source_node_id,
+      target_node_id: row.target_node_id,
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
   }
 
   /**
@@ -225,14 +237,22 @@ export class VeracityResolver {
     @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number = 50
   ): Promise<Node[]> {
     const result = await pool.query(
-      `SELECT n.* FROM public."Nodes" n
+      `SELECT n.*, nt.name as type_name
+       FROM public."Nodes" n
        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
        WHERE nt.name IN ('Reference', 'Document', 'Citation')
        ORDER BY n.created_at DESC
        LIMIT $1`,
       [limit]
     );
-    return result.rows;
+    return result.rows.map(row => ({
+      id: row.id,
+      type: row.type_name,
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
   }
 
   /**
@@ -244,10 +264,22 @@ export class VeracityResolver {
     @Arg('sourceId', () => ID) sourceId: string
   ): Promise<Node | null> {
     const result = await pool.query(
-      'SELECT * FROM public."Nodes" WHERE id = $1',
+      `SELECT n.*, nt.name as type_name
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+       WHERE n.id = $1`,
       [sourceId]
     );
-    return result.rows[0] || null;
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      type: row.type_name,
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   }
 
   /**
@@ -260,14 +292,23 @@ export class VeracityResolver {
     @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number = 50
   ): Promise<Node[]> {
     const result = await pool.query(
-      `SELECT n.* FROM public."Nodes" n
+      `SELECT n.*, nt.name as type_name
+       FROM public."Nodes" n
+       JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
        WHERE (n.props->>'veracityScore')::float < $1
        OR ((n.props->>'weight')::float < $1 AND n.props->>'veracityScore' IS NULL)
        ORDER BY COALESCE((n.props->>'veracityScore')::float, (n.props->>'weight')::float, 0.5) ASC
        LIMIT $2`,
       [threshold, limit]
     );
-    return result.rows;
+    return result.rows.map(row => ({
+      id: row.id,
+      type: row.type_name,
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
   }
 
   // ========================================================================
@@ -295,7 +336,6 @@ export class VeracityResolver {
     }
 
     const targetId = nodeId || edgeId;
-    const targetTable = nodeId ? 'Nodes' : 'Edges';
 
     try {
       // Get all evidence edges for this target
@@ -342,27 +382,49 @@ export class VeracityResolver {
       const evidenceCount = evidenceResult.rows.length;
 
       // Update the target with new veracity score
-      const updateResult = await pool.query(
-        `UPDATE public."${targetTable}"
-         SET props = props || $1::jsonb,
-             updated_at = NOW()
-         WHERE id = $2
-         RETURNING props`,
-        [
-          JSON.stringify({
-            veracityScore,
-            confidence: calculatedConfidence,
-            evidenceCount,
-            supportingCount: counts.supporting,
-            refutingCount: counts.refuting,
-            neutralCount: counts.neutral,
-            clarifyingCount: counts.clarifying,
-            lastVeracityUpdate: new Date().toISOString(),
-            calculationMethod: 'weighted_evidence'
-          }),
-          targetId
-        ]
-      );
+      if (nodeId) {
+        await pool.query(
+          `UPDATE public."Nodes"
+             SET props = props || $1::jsonb,
+                 updated_at = NOW()
+             WHERE id = $2`,
+          [
+            JSON.stringify({
+              veracityScore,
+              confidence: calculatedConfidence,
+              evidenceCount,
+              supportingCount: counts.supporting,
+              refutingCount: counts.refuting,
+              neutralCount: counts.neutral,
+              clarifyingCount: counts.clarifying,
+              lastVeracityUpdate: new Date().toISOString(),
+              calculationMethod: 'weighted_evidence'
+            }),
+            targetId
+          ]
+        );
+      } else {
+        await pool.query(
+          `UPDATE public."Edges"
+             SET props = props || $1::jsonb,
+                 updated_at = NOW()
+             WHERE id = $2`,
+          [
+            JSON.stringify({
+              veracityScore,
+              confidence: calculatedConfidence,
+              evidenceCount,
+              supportingCount: counts.supporting,
+              refutingCount: counts.refuting,
+              neutralCount: counts.neutral,
+              clarifyingCount: counts.clarifying,
+              lastVeracityUpdate: new Date().toISOString(),
+              calculationMethod: 'weighted_evidence'
+            }),
+            targetId
+          ]
+        );
+      }
 
       return veracityScore;
     } catch (error) {
@@ -440,11 +502,14 @@ export class VeracityResolver {
       ['references']
     );
 
+    let edgeTypeId;
     if (!edgeTypeResult.rows[0]) {
-      throw new Error('Edge type "references" not found');
+      // Fallback or create
+      const newType = await pool.query(`INSERT INTO public."EdgeTypes" (name) VALUES ('references') RETURNING id`);
+      edgeTypeId = newType.rows[0].id;
+    } else {
+      edgeTypeId = edgeTypeResult.rows[0].id;
     }
-
-    const edgeTypeId = edgeTypeResult.rows[0].id;
 
     // Get graphId from source node
     const sourceResult = await pool.query(
@@ -486,7 +551,21 @@ export class VeracityResolver {
     // Recalculate veracity score
     await this.calculateVeracityScore({ pool }, nodeId, edgeId, 'new_evidence_submitted');
 
-    return result.rows[0];
+    const row = result.rows[0];
+    // Need to fetch type name
+    const typeRes = await pool.query('SELECT name FROM public."EdgeTypes" WHERE id = $1', [row.edge_type_id]);
+    const typeName = typeRes.rows[0]?.name || 'Unknown';
+
+    return {
+      id: row.id,
+      type: typeName,
+      source_node_id: row.source_node_id,
+      target_node_id: row.target_node_id,
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   }
 
   /**
@@ -529,11 +608,13 @@ export class VeracityResolver {
       ['Reference']
     );
 
+    let nodeTypeId;
     if (!nodeTypeResult.rows[0]) {
-      throw new Error('Node type "Reference" not found');
+      const newType = await pool.query(`INSERT INTO public."NodeTypes" (name) VALUES ('Reference') RETURNING id`);
+      nodeTypeId = newType.rows[0].id;
+    } else {
+      nodeTypeId = nodeTypeResult.rows[0].id;
     }
-
-    const nodeTypeId = nodeTypeResult.rows[0].id;
 
     const result = await pool.query(
       `INSERT INTO public."Nodes" (
@@ -561,7 +642,15 @@ export class VeracityResolver {
       ]
     );
 
-    return result.rows[0];
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      type: 'Reference',
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   }
 
   /**

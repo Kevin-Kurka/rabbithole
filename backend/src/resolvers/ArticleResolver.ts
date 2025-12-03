@@ -1,6 +1,7 @@
 import { Resolver, Query, Mutation, Arg, Ctx, InputType, Field, ID } from 'type-graphql';
-import { Node } from '../entities/Node';
+import { Node } from '../types/GraphTypes';
 import { Context } from '../types/context';
+import { Pool } from 'pg';
 
 @InputType()
 class CreateArticleInput {
@@ -44,7 +45,7 @@ export class ArticleResolver {
   async getArticles(
     @Arg('graphId', () => ID, { nullable: true }) graphId: string | undefined,
     @Arg('published', { nullable: true }) published: boolean | undefined,
-    @Ctx() { pool }: Context
+    @Ctx() { pool }: { pool: Pool }
   ): Promise<Node[]> {
     try {
       let sql = `
@@ -84,7 +85,7 @@ export class ArticleResolver {
   @Query(() => Node, { nullable: true })
   async getArticle(
     @Arg('articleId', () => ID) articleId: string,
-    @Ctx() { pool }: Context
+    @Ctx() { pool }: { pool: Pool }
   ): Promise<Node | null> {
     try {
       const sql = `
@@ -112,7 +113,7 @@ export class ArticleResolver {
   @Mutation(() => Node)
   async createArticle(
     @Arg('input') input: CreateArticleInput,
-    @Ctx() { pool, userId }: Context
+    @Ctx() { pool, userId }: { pool: Pool, userId: string }
   ): Promise<Node> {
     if (!userId) {
       throw new Error('Authentication required to create article');
@@ -124,11 +125,14 @@ export class ArticleResolver {
         `SELECT id FROM public."NodeTypes" WHERE name = 'Article'`
       );
 
+      let articleNodeTypeId;
       if (nodeTypeResult.rows.length === 0) {
-        throw new Error('Article node type not found');
+        // Create Article type if missing
+        const newType = await pool.query(`INSERT INTO public."NodeTypes" (name) VALUES ('Article') RETURNING id`);
+        articleNodeTypeId = newType.rows[0].id;
+      } else {
+        articleNodeTypeId = nodeTypeResult.rows[0].id;
       }
-
-      const articleNodeTypeId = nodeTypeResult.rows[0].id;
 
       // Create the article node using props-only schema
       const props = {
@@ -155,7 +159,7 @@ export class ArticleResolver {
         JSON.stringify(props)
       ]);
 
-      const articleNode = this.mapRowToNode(result.rows[0]);
+      const articleNode = this.mapRowToNode({ ...result.rows[0], node_type_name: 'Article' });
 
       // Create edges to referenced nodes if provided
       if (input.referencedNodeIds && input.referencedNodeIds.length > 0) {
@@ -178,7 +182,7 @@ export class ArticleResolver {
   @Mutation(() => Node)
   async updateArticle(
     @Arg('input') input: UpdateArticleInput,
-    @Ctx() { pool, userId }: Context
+    @Ctx() { pool, userId }: { pool: Pool, userId: string }
   ): Promise<Node> {
     if (!userId) {
       throw new Error('Authentication required to update article');
@@ -251,7 +255,7 @@ export class ArticleResolver {
         );
       }
 
-      return this.mapRowToNode(result.rows[0]);
+      return this.mapRowToNode({ ...result.rows[0], node_type_name: 'Article' });
     } catch (error) {
       console.error('Error updating article:', error);
       throw new Error('Failed to update article');
@@ -261,7 +265,7 @@ export class ArticleResolver {
   @Mutation(() => Node)
   async publishArticle(
     @Arg('input') input: PublishArticleInput,
-    @Ctx() { pool, userId }: Context
+    @Ctx() { pool, userId }: { pool: Pool, userId: string }
   ): Promise<Node> {
     if (!userId) {
       throw new Error('Authentication required to publish article');
@@ -285,7 +289,7 @@ export class ArticleResolver {
         throw new Error('Article not found or you do not have permission to publish');
       }
 
-      return this.mapRowToNode(result.rows[0]);
+      return this.mapRowToNode({ ...result.rows[0], node_type_name: 'Article' });
     } catch (error) {
       console.error('Error publishing article:', error);
       throw new Error('Failed to publish article');
@@ -295,7 +299,7 @@ export class ArticleResolver {
   @Mutation(() => Boolean)
   async deleteArticle(
     @Arg('articleId', () => ID) articleId: string,
-    @Ctx() { pool, userId }: Context
+    @Ctx() { pool, userId }: { pool: Pool, userId: string }
   ): Promise<boolean> {
     if (!userId) {
       throw new Error('Authentication required to delete article');
@@ -367,11 +371,11 @@ export class ArticleResolver {
   private mapRowToNode(row: any): Node {
     return {
       id: row.id,
-      node_type_id: row.node_type_id,
-      props: row.props || {},
-      ai: row.ai,
+      type: row.node_type_name || 'Article',
+      props: typeof row.props === 'string' ? row.props : JSON.stringify(row.props || {}),
+      meta: typeof row.meta === 'string' ? row.meta : JSON.stringify(row.meta || {}),
       created_at: row.created_at,
       updated_at: row.updated_at,
-    } as Node;
+    };
   }
 }

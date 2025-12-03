@@ -1,6 +1,5 @@
 import { InputType, Field, ID, Int, Float } from 'type-graphql';
-import { MethodologyCategory, MethodologyStatus } from '../entities/Methodology';
-import { EdgeLineStyle, EdgeArrowStyle } from '../entities/MethodologyEdgeType';
+import { MethodologyCategory, MethodologyStatus, EdgeLineStyle, EdgeArrowStyle } from '../types/GraphTypes';
 
 @InputType()
 export class CreateMethodologyInput {

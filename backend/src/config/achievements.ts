@@ -61,13 +61,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     key: 'early_adopter',
     name: 'Early Adopter',
-    description: 'Create Level 0 seed data',
+    description: 'Create high-credibility verified data',
     icon: '🌱',
     category: 'evidence',
     points: 1000,
     criteria: {
       type: 'count',
-      metric: 'level0_contributions',
+      metric: 'high_credibility_contributions',
       threshold: 1,
       operator: 'gte'
     }
@@ -119,15 +119,15 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     }
   },
   {
-    key: 'challenge_accepted',
-    name: 'Challenge Accepted',
-    description: 'Submit 10 challenges',
+    key: 'inquiry_accepted',
+    name: 'Inquiry Accepted',
+    description: 'Submit 10 formal inquiries',
     icon: '⚔️',
     category: 'consensus',
     points: 300,
     criteria: {
       type: 'count',
-      metric: 'challenges_submitted',
+      metric: 'inquiries_submitted',
       threshold: 10,
       operator: 'gte'
     }
@@ -135,13 +135,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     key: 'resolution_pro',
     name: 'Resolution Pro',
-    description: 'Successfully resolve 5 challenges',
+    description: 'Successfully resolve 5 formal inquiries',
     icon: '✅',
     category: 'consensus',
     points: 500,
     criteria: {
       type: 'count',
-      metric: 'challenges_resolved',
+      metric: 'inquiries_resolved',
       threshold: 5,
       operator: 'gte'
     }

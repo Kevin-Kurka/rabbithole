@@ -1,6 +1,5 @@
 import { Redis } from 'ioredis';
-import { Graph } from '../entities/Graph';
-import { VeracityScore } from '../entities/VeracityScore';
+import { Graph, VeracityScore } from '../types/GraphTypes';
 
 /**
  * Cache configuration for different data types
@@ -332,14 +331,17 @@ export class CacheService {
 
     // Warm up leaderboard
     try {
+      // Refactored to use Nodes table with type 'User'
       const leaderboardResult = await pool.query(`
         SELECT
-          u.id as user_id,
-          u.username,
-          u.total_points as points,
-          ROW_NUMBER() OVER (ORDER BY u.total_points DESC) as rank
-        FROM "Users" u
-        ORDER BY u.total_points DESC
+          n.id as user_id,
+          n.props->>'username' as username,
+          COALESCE((n.props->>'totalPoints')::int, 0) as points,
+          ROW_NUMBER() OVER (ORDER BY COALESCE((n.props->>'totalPoints')::int, 0) DESC) as rank
+        FROM public."Nodes" n
+        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+        WHERE nt.name = 'User'
+        ORDER BY points DESC
         LIMIT 100
       `);
 
@@ -351,13 +353,31 @@ export class CacheService {
 
     // Warm up recent graphs
     try {
+      // Refactored to use Nodes table with type 'Graph'
       const graphsResult = await pool.query(`
-        SELECT * FROM "Graphs"
-        ORDER BY updated_at DESC
+        SELECT 
+          n.id,
+          n.props->>'name' as name,
+          n.props->>'description' as description,
+          n.created_at,
+          n.updated_at
+        FROM public."Nodes" n
+        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
+        WHERE nt.name = 'Graph'
+        ORDER BY n.updated_at DESC
         LIMIT 10
       `);
 
-      for (const graph of graphsResult.rows) {
+      for (const row of graphsResult.rows) {
+        const graph: Graph = {
+          id: row.id,
+          name: row.name || 'Untitled Graph',
+          description: row.description,
+          nodes: [],
+          edges: [],
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
         await this.cacheGraph(graph.id, graph);
       }
       console.log(`Cached ${graphsResult.rows.length} recent graphs`);

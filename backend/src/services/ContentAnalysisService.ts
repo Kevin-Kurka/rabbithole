@@ -297,11 +297,24 @@ export class ContentAnalysisService {
         const videoStream = metadata.streams.find((s) => s.codec_type === 'video');
         if (!videoStream) return reject(new Error('No video stream found'));
 
+        // Fixed: Safe frame rate parsing without eval()
+        let fps = 0;
+        if (videoStream.r_frame_rate) {
+          const parts = videoStream.r_frame_rate.split('/');
+          if (parts.length === 2) {
+            const numerator = Number(parts[0]);
+            const denominator = Number(parts[1]);
+            if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+              fps = numerator / denominator;
+            }
+          }
+        }
+
         resolve({
           duration: metadata.format.duration || 0,
           width: videoStream.width,
           height: videoStream.height,
-          fps: eval(videoStream.r_frame_rate || '0'), // e.g., "30/1" -> 30
+          fps,
           codec: videoStream.codec_name,
         });
       });

@@ -42,7 +42,7 @@ export interface EvaluationResult {
  * Provides type-specific AI evaluation for each of the 12 inquiry types.
  * Each inquiry type has custom evaluation criteria tailored to its domain.
  *
- * Challenge Types (7):
+ * Inquiry Types (formerly Challenges) (7):
  * - factual_accuracy: Verify claims against primary sources
  * - logical_fallacy: Detect reasoning errors
  * - missing_context: Identify omitted information
@@ -62,7 +62,7 @@ export class AIEvaluationService {
   constructor(
     private pool: Pool,
     private aiService: ConversationalAIService
-  ) {}
+  ) { }
 
   /**
    * Main evaluation entry point - routes to type-specific evaluator

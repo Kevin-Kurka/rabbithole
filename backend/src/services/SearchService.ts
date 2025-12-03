@@ -190,7 +190,9 @@ export class SearchService {
       LIMIT $2
     `;
 
-    const result = await pool.query(sql, [`%${query}%`, limit]);
+    // Fixed: Escape special LIKE characters (%, _, \) to prevent pattern injection
+    const escapedQuery = query.replace(/[%_\\]/g, '\\$&');
+    const result = await pool.query(sql, [`%${escapedQuery}%`, limit]);
     return result.rows.map(row => row.title);
   }
 

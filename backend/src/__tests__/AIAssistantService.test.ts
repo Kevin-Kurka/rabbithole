@@ -677,7 +677,7 @@ describe('AIAssistantService', () => {
 
   describe('error handling', () => {
     it('should handle Ollama timeout gracefully', async () => {
-      mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+      (mockedAxios.isAxiosError as any) = jest.fn().mockReturnValue(true);
       mockedAxios.post.mockRejectedValue({
         code: 'ECONNABORTED',
         message: 'Request timeout',
@@ -689,7 +689,7 @@ describe('AIAssistantService', () => {
     });
 
     it('should handle non-axios errors', async () => {
-      mockedAxios.isAxiosError = jest.fn().mockReturnValue(false);
+      (mockedAxios.isAxiosError as any) = jest.fn().mockReturnValue(false);
       mockedAxios.post.mockRejectedValue(new Error('Generic error'));
 
       await expect(
