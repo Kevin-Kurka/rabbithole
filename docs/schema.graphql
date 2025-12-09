@@ -1,0 +1,1042 @@
+type Query {
+  me: User
+  graphs: [Graph!]!
+  graph(id: String!): Graph
+  nodeTypes: [NodeType!]!
+  nodeType(id: ID!): NodeType
+  nodeTypeByName(name: String!): NodeType
+  edgeTypes: [EdgeType!]!
+  edgeType(id: ID!): EdgeType
+  edgeTypeByName(name: String!): EdgeType
+  edgeTypesByNodeTypes(targetNodeTypeId: ID, sourceNodeTypeId: ID): [EdgeType!]!
+  getComments(targetId: ID!): [Comment!]!
+  getNotifications(unreadOnly: Boolean! = false, offset: Int! = 0, limit: Int! = 50): [Notification!]!
+  getUnreadNotificationCount: Int!
+  search(input: SearchInput!): SearchResults!
+  autocomplete(limit: Int = 5, query: String!): [String!]!
+  getFormalInquiries(status: String, edgeId: ID, nodeId: ID): [JSON!]!
+  getFormalInquiry(inquiryId: ID!): JSON
+  getUserVote(inquiryId: ID!): JSON
+  getArticles(published: Boolean, graphId: ID): [LegacyNode!]!
+  getArticle(articleId: ID!): LegacyNode
+  graphVersionHistory(graphId: ID!): [GraphVersionHistory!]!
+  graphForks(graphId: ID!): [GraphFork!]!
+  graphAncestry(graphId: ID!): [GraphAncestor!]!
+  graphVersion(versionNumber: Int!, graphId: ID!): GraphVersion
+  getContentAnalysisStatus(nodeId: ID!): ContentAnalysisStatusOutput!
+  getNodesByContentHash(contentHash: String!): [NodeContentHashOutput!]!
+  getDuplicateGroups(graphId: ID!): [DuplicateGroupOutput!]!
+  findPath(minVeracity: Float = 0.5, maxDepth: Int = 6, targetNodeId: ID!, sourceNodeId: ID!): PathResult!
+  getSubgraph(maxNodes: Int = 500, minVeracity: Float = 0.5, direction: String = "both", depth: Int = 2, nodeId: ID!): SubgraphResult!
+  findRelatedNodes(minVeracity: Float = 0.5, depth: Int = 3, edgeTypeId: ID!, nodeId: ID!): RelatedNodesResult!
+  getNodeAncestors(maxDepth: Int = 10, nodeId: ID!): AncestorChainResult!
+  getHighVeracityRelatedNodes(minVeracity: Float = 0.7, limit: Int = 20, nodeId: ID!): [Node!]!
+  getNodeStatistics(nodeId: ID!): NodeStatistics!
+  getConfiguration(key: String!): MaskedConfiguration
+  getAllConfigurations(category: ConfigurationCategory): [MaskedConfiguration!]!
+  getConfigurationCategories: [String!]!
+  getConfigurationAuditLog(limit: Float! = 50, configKey: String): [ConfigurationAuditLog!]!
+  validateConfiguration(dataType: ConfigurationDataType!, value: String!, key: String!): ConfigurationValidationResult!
+  conversation(id: ID!): Conversation
+  myConversations(offset: Int = 0, limit: Int = 20, graphId: ID): [Conversation!]!
+  conversationMessages(offset: Int = 0, limit: Int = 50, conversationId: ID!): [ConversationMessage!]!
+  searchNodesSemantic(graphId: ID, query: String!): [SearchableNode!]!
+  getNodeActivity(offset: Int = 0, limit: Int = 20, nodeId: ID!): [ActivityPost!]!
+  getPost(postId: ID!): ActivityPost
+  getPostReplies(limit: Int = 50, postId: ID!): [ActivityPost!]!
+  getUserFeed(offset: Int = 0, limit: Int = 20, userId: ID): [ActivityPost!]!
+  getNodeAssociations(nodeId: ID!): [NodeAssociation!]!
+  getNodeReferences(type: String, nodeId: ID!): [Reference!]!
+  getCanvasNodes(graphId: ID!): [CanvasNode!]!
+  getTextBoxNodes(graphId: ID!): [Node!]!
+  getStickyNotesForGraph(graphId: ID!): [StickyNoteData!]!
+  getStickyNotesForNode(nodeId: ID!): [StickyNoteData!]!
+  getActiveUsers(graphId: ID!): [UserPresence!]!
+  getActiveEditLocks(graphId: ID!): [EditLock!]!
+  mediaProcessingJob(jobId: String!): MediaProcessingJob!
+  mediaProcessingJobsForFile(fileId: String!): [MediaProcessingJob!]!
+}
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
+"""
+scalar DateTimeISO
+
+type Graph {
+  id: ID!
+  name: String!
+  description: String
+  nodes: [LegacyNode!]!
+  edges: [LegacyEdge!]!
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  level: Int
+  privacy: String
+  methodology: String
+}
+
+type LegacyNode {
+  id: ID!
+  type: String!
+  props: String
+  meta: String
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  edges: [LegacyEdge!]!
+  comments: [Comment!]!
+}
+
+type LegacyEdge {
+  id: ID!
+  type: String!
+  source_node_id: ID!
+  target_node_id: ID!
+  props: String
+  meta: String
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  from: LegacyNode!
+  to: LegacyNode!
+}
+
+type Comment {
+  id: ID!
+  text: String!
+  created_at: DateTimeISO!
+  createdBy: String!
+  author: User!
+  parentCommentId: ID
+  replies: [Comment!]!
+}
+
+type NodeType {
+  id: ID!
+  name: String!
+  description: String
+  props: String
+  meta: String
+  parent_node_type_id: ID
+  parentNodeType: NodeType
+}
+
+type EdgeType {
+  id: ID!
+  name: String!
+  props: String
+  meta: String
+  source_node_type_id: ID
+  target_node_type_id: ID
+  sourceNodeType: NodeType
+  targetNodeType: NodeType
+}
+
+type Notification {
+  id: ID!
+  userId: String!
+  type: String!
+  message: String!
+  read: Boolean!
+  created_at: DateTimeISO!
+}
+
+type SearchResults {
+  articles: [SearchResult!]!
+  nodes: [SearchResult!]!
+}
+
+type SearchResult {
+  id: String!
+  title: String!
+  type: String!
+  narrative: String
+  relevance: Float!
+  graphId: String!
+  graph_name: String
+  veracityScore: VeracityScoreInfo
+}
+
+type VeracityScoreInfo {
+  veracityScore: Float!
+  evidenceCount: Int
+  challengeCount: Int
+}
+
+input SearchInput {
+  query: String!
+  types: [String!]
+  graphId: String
+  limit: Float = 20
+  offset: Float = 0
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type GraphVersionHistory {
+  id: ID!
+  versionNumber: Int!
+  commitMessage: String
+  createdBy: ID!
+  createdAt: DateTimeISO!
+}
+
+type GraphFork {
+  id: ID!
+  originalGraphId: ID!
+  forkedGraphId: ID!
+  forkedGraphName: String!
+  forkedBy: ID!
+  forkReason: String
+  forkedAt: DateTimeISO!
+}
+
+type GraphAncestor {
+  graphId: ID!
+  graphName: String!
+  depth: Int!
+  forkedAt: DateTimeISO
+}
+
+type GraphVersion {
+  id: ID!
+  graphId: ID!
+  versionNumber: Int!
+  data: JSON!
+  commitMessage: String
+  createdBy: ID!
+  createdAt: DateTimeISO!
+}
+
+type ContentAnalysisStatusOutput {
+  hasFingerprint: Boolean!
+  contentHash: String
+  primarySourceId: String
+  isDuplicate: Boolean!
+}
+
+type NodeContentHashOutput {
+  id: ID!
+  createdAt: DateTimeISO!
+  primarySourceId: String
+}
+
+type DuplicateGroupOutput {
+  contentHash: String!
+  nodeCount: Int!
+  nodeIds: [ID!]!
+  primarySourceId: ID!
+}
+
+type PathResult {
+  nodes: [Node!]!
+  edges: [Edge!]!
+  pathLength: Int!
+  totalWeight: Float!
+  found: Boolean!
+}
+
+type Node {
+  id: ID!
+  node_type_id: ID!
+  props: JSON!
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  credibility_score: Float
+  consensus_score: Float
+  title: String
+  narrative: String
+  weight: Float
+  graphId: ID
+  authorId: ID
+  createdBy: ID
+  publishedAt: DateTimeISO
+  permissions: [String!]
+  hierarchyLevel: Float
+  verified: Boolean
+  status: String
+  edges: [Edge!]
+  comments: [Comment!]
+  author: User
+  creator: User
+}
+
+type Edge {
+  id: ID!
+  source_node_id: ID!
+  target_node_id: ID!
+  edge_type_id: ID!
+  props: JSON!
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  credibility_score: Float
+  consensus_score: Float
+  weight: Float
+  graphId: ID
+  createdBy: ID
+  relationship: String
+  citationType: String
+  hierarchyLevel: Float
+  from: Node!
+  to: Node!
+  comments: [Comment!]
+  creator: User
+}
+
+type SubgraphResult {
+  nodes: [Node!]!
+  edges: [Edge!]!
+  centerNode: Node
+}
+
+type RelatedNodesResult {
+  nodes: [Node!]!
+  edges: [Edge!]!
+  paths: [TraversalPath!]!
+}
+
+type TraversalPath {
+  nodes: [ID!]!
+  edges: [ID!]!
+  weight: Float!
+}
+
+type AncestorChainResult {
+  nodes: [Node!]!
+  chain: [AncestorChainItem!]!
+}
+
+type AncestorChainItem {
+  node: Node!
+  depth: Int!
+}
+
+type NodeStatistics {
+  nodeId: ID!
+  outgoingEdges: Int!
+  incomingEdges: Int!
+  totalDegree: Int!
+  averageEdgeWeight: Float!
+  connectedComponents: Int!
+}
+
+type MaskedConfiguration {
+  id: ID!
+  key: String!
+  value: String!
+  category: ConfigurationCategory!
+  description: String!
+  data_type: ConfigurationDataType!
+  is_secret: Boolean!
+  is_system: Boolean!
+  updated_by: String
+  updated_at: DateTimeISO!
+}
+
+"""Category of the configuration setting"""
+enum ConfigurationCategory {
+  SYSTEM
+  DATABASE
+  REDIS
+  AI
+  DOCUMENT
+  STORAGE
+  SECURITY
+  OTHER
+}
+
+"""Data type of the configuration value"""
+enum ConfigurationDataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  URL
+  SECRET
+}
+
+type ConfigurationAuditLog {
+  id: ID!
+  config_key: String!
+  old_value: String
+  new_value: String
+  changed_by: String!
+  changed_at: DateTimeISO!
+  change_reason: String
+}
+
+type ConfigurationValidationResult {
+  is_valid: Boolean!
+  errors: [String!]!
+  warnings: [String!]!
+}
+
+type Conversation {
+  id: ID!
+  graphId: ID!
+  userId: ID!
+  messages(limit: Int = 50): [Message!]!
+  lastUpdated: DateTimeISO!
+  messageCount: Int!
+  user: User
+  graph: Graph
+}
+
+type Message {
+  role: MessageRole!
+  content: String!
+  timestamp: DateTimeISO!
+}
+
+"""Role of the message sender"""
+enum MessageRole {
+  SYSTEM
+  USER
+  ASSISTANT
+}
+
+type ConversationMessage {
+  role: MessageRole!
+  content: String!
+  timestamp: DateTimeISO!
+  userId: ID!
+  conversationId: ID!
+  user: User
+  conversation: Conversation
+}
+
+type SearchableNode {
+  id: ID!
+  title: String!
+  type: String!
+  content: String!
+  similarity: Float!
+}
+
+type ActivityPost {
+  id: ID!
+  node_id: ID!
+  node: LegacyNode
+  author_id: ID!
+  author: User
+  content: String!
+  mentioned_node_ids: [ID!]!
+  attachment_ids: [ID!]!
+  is_reply: Boolean!
+  parent_post_id: String
+  is_share: Boolean!
+  shared_post_id: String
+  replyCount: Int!
+  shareCount: Int!
+  reactionCounts: String!
+  totalReactionCount: Int!
+  created_at: DateTimeISO!
+  updated_at: DateTimeISO!
+  deleted_at: DateTimeISO
+  userReactions: [String!]!
+}
+
+type NodeAssociation {
+  id: ID!
+  sourceNodeId: ID!
+  targetNodeId: ID!
+  confidence: Float!
+  relationshipType: String
+  createdAt: DateTimeISO!
+  targetNode: Node!
+}
+
+type Reference {
+  id: ID!
+  nodeId: ID!
+  url: String!
+  title: String!
+  description: String
+  type: String!
+  confidence: Float
+  createdAt: DateTimeISO!
+  processedNodeId: String
+}
+
+type CanvasNode {
+  id: ID!
+  graphId: ID!
+  nodeType: String!
+  title: String!
+  position: JSONObject
+  dimensions: JSONObject
+  zIndex: Float
+  props: JSONObject
+  meta: JSONObject
+  weight: Float
+  isLevel0: Boolean!
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+type StickyNoteData {
+  id: ID!
+  nodeId: ID!
+  content: String!
+  style: JSONObject!
+  position: StickyNotePosition!
+  authorName: String!
+  replyCount: Int!
+  reactionCounts: JSONObject!
+  createdAt: DateTimeISO!
+}
+
+type StickyNotePosition {
+  x: Float!
+  y: Float!
+  zIndex: Float!
+}
+
+type UserPresence {
+  userId: ID!
+  userName: String!
+  userAvatar: String
+  graphId: ID!
+  status: PresenceStatus!
+  selectedNodeIds: [ID!]
+  lastActive: DateTimeISO!
+}
+
+"""Status of the user presence"""
+enum PresenceStatus {
+  ONLINE
+  IDLE
+  OFFLINE
+}
+
+type EditLock {
+  lockId: ID!
+  userId: ID!
+  userName: String!
+  entityId: ID!
+  entityType: String!
+  acquiredAt: DateTimeISO!
+  expiresAt: DateTimeISO!
+}
+
+type MediaProcessingJob {
+  jobId: String!
+  fileId: String!
+  status: String!
+  progress: Float
+  error: String
+  result: String
+}
+
+type Mutation {
+  register(input: UserInput!): AuthResponse!
+  login(input: UserInput!): AuthResponse
+  createGraph(input: GraphInput!): Graph!
+  createNodeType(input: NodeTypeInput!): NodeType!
+  updateNodeType(input: UpdateNodeTypeInput!, id: ID!): NodeType!
+  deleteNodeType(id: ID!): Boolean!
+  createEdgeType(input: EdgeTypeInput!): EdgeType!
+  updateEdgeType(input: UpdateEdgeTypeInput!, id: ID!): EdgeType!
+  deleteEdgeType(id: ID!): Boolean!
+  createComment(input: CommentInput!): Comment!
+  markNotificationAsRead(notificationId: ID!): Notification!
+  markAllNotificationsAsRead: Int!
+  createFormalInquiry(input: CreateFormalInquiryInput!): JSON!
+  castVote(input: CastVoteInput!): JSON!
+  removeVote(inquiryId: ID!): Boolean!
+  updateConfidenceScore(input: UpdateConfidenceScoreInput!): JSON!
+  createArticle(input: CreateArticleInput!): LegacyNode!
+  updateArticle(input: UpdateArticleInput!): LegacyNode!
+  publishArticle(input: PublishArticleInput!): LegacyNode!
+  deleteArticle(articleId: ID!): Boolean!
+  createGraphSnapshot(userId: ID, graphId: ID!): GraphVersion!
+  forkGraph(forkReason: String, userId: ID, newName: String!, graphId: ID!): Graph!
+  revertGraph(userId: ID, versionNumber: Int!, graphId: ID!): Boolean!
+  deleteGraphVersion(versionNumber: Int!, graphId: ID!): Boolean!
+  analyzeContent(nodeId: ID!): ContentAnalysisOutput!
+  findDuplicates(threshold: Float, nodeId: ID!): DuplicateDetectionOutput!
+  batchAnalyzeContent(nodeIds: [ID!]!): [ContentAnalysisOutput!]!
+  findAllDuplicatesInGraph(graphId: ID!): [ContentAnalysisOutput!]!
+  createConfiguration(input: CreateConfigurationInput!): ConfigurationOperationResponse!
+  updateConfiguration(input: UpdateConfigurationInput!): ConfigurationOperationResponse!
+  resetConfiguration(key: String!): ConfigurationOperationResponse!
+  deleteConfiguration(key: String!): ConfigurationOperationResponse!
+  sendAIMessage(graphId: ID, conversationId: ID, message: String!): ConversationalAIResponse!
+  updateConversationTitle(title: String!, id: ID!): Conversation!
+  deleteConversation(id: ID!): Boolean!
+  createPost(input: CreatePostInput!): ActivityPost!
+  replyToPost(input: ReplyToPostInput!): ActivityPost!
+  sharePost(input: SharePostInput!): ActivityPost!
+  reactToPost(reactionType: String!, postId: ID!): Boolean!
+  removeReaction(input: AddReactionInput!): Boolean!
+  deletePost(postId: ID!): Boolean!
+  processReference(input: ProcessReferenceInput!): ProcessedReference!
+  addNodeAssociation(input: AddNodeAssociationInput!): NodeAssociation!
+  addReference(input: AddReferenceInput!): Reference!
+  createTextBoxNode(input: CreateTextBoxNodeInput!): Node!
+  updateNodePosition(input: UpdateNodePositionInput!): Node!
+  bulkUpdateNodePositions(input: BulkUpdatePositionsInput!): BulkUpdateResult!
+  updateNodePermissions(input: UpdateNodePermissionsInput!): Node!
+  createEdgeWithDetails(input: CreateEdgeWithDetailsInput!): Edge!
+  deleteNode(nodeId: ID!): Boolean!
+  createStickyNote(input: CreateStickyNoteInput!): ActivityPost!
+  updateStickyNoteStyle(input: UpdateStickyNoteStyleInput!): ActivityPost!
+  addReaction(input: AddReactionInput!): Boolean!
+  updateCursor(input: UpdateCursorInput!): Boolean!
+  updatePresence(input: UpdatePresenceInput!): Boolean!
+  broadcastSelection(nodeIds: [ID!]!, graphId: ID!): Boolean!
+  setTypingIndicator(isTyping: Boolean!, nodeId: ID!): Boolean!
+  acquireEditLock(input: AcquireEditLockInput!): EditLock
+  releaseEditLock(lockId: ID!): Boolean!
+  uploadAndTranscribeAudio(options: AudioTranscriptionOptions, file: Upload!): MediaProcessingJob!
+  uploadAndAnalyzeVideo(options: VideoAnalysisOptions, file: Upload!): MediaProcessingJob!
+  transcribeAudio(options: AudioTranscriptionOptions, filePath: String!): AudioTranscriptionResult!
+  analyzeVideo(options: VideoAnalysisOptions, filePath: String!): VideoAnalysisResult!
+}
+
+type AuthResponse {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+}
+
+input UserInput {
+  username: String!
+  email: String!
+  password: String!
+}
+
+input GraphInput {
+  name: String!
+  description: String
+  level: Int = 1
+  methodology: String
+  privacy: String = "private"
+}
+
+input NodeTypeInput {
+  name: String!
+  description: String
+  props: String
+  meta: String
+  parent_node_type_id: ID
+}
+
+input UpdateNodeTypeInput {
+  name: String
+  description: String
+  props: String
+  meta: String
+  parent_node_type_id: ID
+}
+
+input EdgeTypeInput {
+  name: String!
+  props: String
+  meta: String
+  source_node_type_id: ID
+  target_node_type_id: ID
+}
+
+input UpdateEdgeTypeInput {
+  name: String
+  props: String
+  meta: String
+  source_node_type_id: ID
+  target_node_type_id: ID
+}
+
+input CommentInput {
+  targetId: ID!
+  text: String!
+  parentCommentId: ID
+}
+
+input CreateFormalInquiryInput {
+  targetNodeId: ID
+  targetEdgeId: ID
+  title: String!
+  description: String
+  content: String!
+  relatedNodeIds: [ID!]
+}
+
+input CastVoteInput {
+  inquiryId: ID!
+  voteType: String!
+}
+
+input UpdateConfidenceScoreInput {
+  inquiryId: ID!
+  confidenceScore: Float!
+  aiDetermination: String!
+  aiRationale: String!
+}
+
+input CreateArticleInput {
+  graphId: String!
+  title: String!
+  narrative: String!
+  referencedNodeIds: [String!]
+}
+
+input UpdateArticleInput {
+  articleId: ID!
+  title: String
+  narrative: String
+  referencedNodeIds: [String!]
+}
+
+input PublishArticleInput {
+  articleId: ID!
+}
+
+type ContentAnalysisOutput {
+  nodeId: String!
+  contentHash: String!
+  fingerprint: ContentFingerprintOutput!
+  duplicateDetection: DuplicateDetectionOutput!
+  processedAt: DateTimeISO!
+}
+
+type ContentFingerprintOutput {
+  contentType: String!
+  fingerprintType: String!
+  hash: String!
+  metadata: String
+}
+
+type DuplicateDetectionOutput {
+  isDuplicate: Boolean!
+  matches: [DuplicateMatchOutput!]!
+  primarySourceId: String
+}
+
+type DuplicateMatchOutput {
+  nodeId: String!
+  similarity: Float!
+  hammingDistance: Int
+  fingerprintType: String!
+  contentHash: String!
+}
+
+type ConfigurationOperationResponse {
+  success: Boolean!
+  message: String
+  configuration: MaskedConfiguration
+}
+
+input CreateConfigurationInput {
+  key: String!
+  value: String!
+  category: ConfigurationCategory!
+  description: String
+  data_type: ConfigurationDataType! = STRING
+  is_secret: Boolean! = false
+}
+
+input UpdateConfigurationInput {
+  key: String!
+  value: String!
+  change_reason: String
+}
+
+type ConversationalAIResponse {
+  conversationId: ID!
+  answer: String!
+  sources: [SearchableNode!]!
+  suggestedFollowUp: [String!]!
+  conversation: Conversation
+}
+
+input CreatePostInput {
+  nodeId: ID!
+  content: String!
+  mentionedNodeIds: [ID!]
+  attachmentIds: [ID!]
+}
+
+input ReplyToPostInput {
+  parentPostId: ID!
+  content: String!
+  mentionedNodeIds: [ID!]
+  attachmentIds: [ID!]
+}
+
+input SharePostInput {
+  postId: ID!
+  comment: String
+}
+
+input AddReactionInput {
+  postId: ID!
+  reactionType: String!
+}
+
+type ProcessedReference {
+  nodeId: ID!
+  title: String!
+  confidence: Float!
+  content: String!
+  metadata: ReferenceMetadata!
+}
+
+type ReferenceMetadata {
+  sourceUrl: String!
+  scrapedAt: DateTimeISO!
+  wordCount: Float!
+  author: String
+  publishDate: DateTimeISO
+  domain: String
+}
+
+input ProcessReferenceInput {
+  url: String!
+  parentNodeId: ID!
+  additionalContext: String
+  type: String! = "reference"
+}
+
+input AddNodeAssociationInput {
+  sourceNodeId: ID!
+  targetNodeId: ID!
+  confidence: Float
+  relationshipType: String
+  description: String
+}
+
+input AddReferenceInput {
+  nodeId: ID!
+  url: String!
+  title: String!
+  description: String
+  type: String! = "reference"
+}
+
+input CreateTextBoxNodeInput {
+  graphId: ID!
+  type: String!
+  title: String!
+  content: String!
+  position: PositionInput!
+  dimensions: DimensionsInput
+  additionalProps: JSONObject
+}
+
+input PositionInput {
+  x: Float!
+  y: Float!
+}
+
+input DimensionsInput {
+  width: Float!
+  height: Float!
+}
+
+input UpdateNodePositionInput {
+  nodeId: ID!
+  position: PositionInput!
+  dimensions: DimensionsInput
+}
+
+type BulkUpdateResult {
+  success: Boolean!
+  updatedCount: Float!
+  errors: [String!]
+}
+
+input BulkUpdatePositionsInput {
+  updates: [UpdateNodePositionInput!]!
+}
+
+input UpdateNodePermissionsInput {
+  nodeId: ID!
+  permissions: [NodePermissionInput!]!
+}
+
+input NodePermissionInput {
+  userId: ID!
+  role: String!
+  expiresAt: DateTimeISO
+}
+
+input CreateEdgeWithDetailsInput {
+  graphId: ID!
+  sourceNodeId: ID!
+  targetNodeId: ID!
+  relationshipType: String!
+  description: String
+  properties: JSONObject
+}
+
+input CreateStickyNoteInput {
+  nodeId: ID!
+  content: String!
+  style: StickyNoteStyleInput
+  position: StickyNotePositionInput
+  mentionedNodeIds: [ID!]
+}
+
+input StickyNoteStyleInput {
+  color: String!
+  size: String!
+}
+
+input StickyNotePositionInput {
+  anchorNodeId: ID!
+  offsetX: Float
+  offsetY: Float
+  preferredSide: String
+}
+
+input UpdateStickyNoteStyleInput {
+  postId: ID!
+  style: StickyNoteStyleInput!
+}
+
+input UpdateCursorInput {
+  graphId: ID!
+  x: Float!
+  y: Float!
+}
+
+input UpdatePresenceInput {
+  graphId: ID!
+  status: String!
+  selectedNodeIds: [ID!]
+}
+
+input AcquireEditLockInput {
+  entityId: ID!
+  entityType: String!
+}
+
+input AudioTranscriptionOptions {
+  language: String
+  speakerDiarization: Boolean
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+input VideoAnalysisOptions {
+  extractFrames: Boolean
+  frameRate: Float
+  maxFrames: Float
+  detectScenes: Boolean
+  detectObjects: Boolean
+  generateThumbnail: Boolean
+}
+
+type AudioTranscriptionResult {
+  success: Boolean!
+  fullText: String!
+  segments: [TranscriptionSegment!]!
+  speakers: [Speaker!]
+  language: String
+  duration: Float
+  processingTime: Float!
+  error: String
+}
+
+type TranscriptionSegment {
+  text: String!
+  timestamp: Float!
+  duration: Float!
+  speaker: String
+  confidence: Float
+}
+
+type Speaker {
+  id: String!
+  label: String!
+  segments: [Int!]!
+}
+
+type VideoAnalysisResult {
+  success: Boolean!
+  duration: Float
+  frameRate: Float
+  width: Float
+  height: Float
+  codec: String
+  bitrate: Float
+  frames: [ExtractedFrame!]
+  detectedObjects: VideoObjectDetectionSummary
+  thumbnail: String
+  audioTrack: Boolean
+  processingTime: Float!
+  error: String
+}
+
+type ExtractedFrame {
+  index: Float!
+  timestamp: Float!
+  path: String!
+  width: Float!
+  height: Float!
+  fileSize: Float!
+  isKeyframe: Boolean
+  sceneScore: Float
+}
+
+type VideoObjectDetectionSummary {
+  totalObjects: Float!
+  totalFrames: Float!
+  avgObjectsPerFrame: Float!
+  allClasses: [String!]!
+}
+
+type Subscription {
+  newUser: User!
+  newComment: Comment!
+  notificationCreated: Notification!
+  inquiryCreated: JSON!
+  inquiryVoteCast(inquiryId: ID!): JSON!
+  inquiryEvaluated(inquiryId: ID!): JSON!
+  cursorMoved(graphId: ID!): CursorPosition!
+  presenceChanged(graphId: ID!): UserPresence!
+  nodeSelected(graphId: ID!): NodeSelection!
+  typingIndicator(nodeId: ID!): TypingIndicator!
+  editLockChanged(graphId: ID!): EditLock!
+  mediaProcessingJobUpdates(jobId: String!): MediaProcessingJob!
+  mediaFileJobUpdates(fileId: String!): MediaProcessingJob!
+}
+
+type CursorPosition {
+  userId: ID!
+  userName: String!
+  userAvatar: String
+  graphId: ID!
+  x: Float!
+  y: Float!
+  timestamp: DateTimeISO!
+}
+
+type NodeSelection {
+  userId: ID!
+  userName: String!
+  graphId: ID!
+  nodeIds: [ID!]!
+  timestamp: DateTimeISO!
+}
+
+type TypingIndicator {
+  userId: ID!
+  userName: String!
+  nodeId: ID!
+  isTyping: Boolean!
+  timestamp: DateTimeISO!
+}

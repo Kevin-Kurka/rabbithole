@@ -12,13 +12,14 @@ import {
 import { Pool } from 'pg';
 import {
   Conversation,
+  Message,
+  MessageRole,
   ConversationMessage,
   ConversationalAIResponse,
   SearchableNode,
-  MessageRole,
 } from '../entities/Conversation';
-import { User } from '../entities/User';
-import { Graph } from '../entities/Graph';
+import { User } from '../types/GraphTypes';
+import { Graph } from '../types/GraphTypes';
 import { conversationalAIService } from '../services/ConversationalAIService';
 
 interface Context {
@@ -72,7 +73,18 @@ export class ConversationalAIResolver {
         graphId
       );
 
-      return result;
+      return {
+        conversationId: result.conversationId,
+        answer: result.response,
+        sources: result.relevantNodes.map((node: any) => ({
+          id: node.id,
+          title: node.title,
+          type: node.type || 'unknown',
+          content: node.content || '',
+          similarity: node.similarity
+        })),
+        suggestedFollowUp: []
+      };
     } catch (error) {
       console.error('Error in sendAIMessage:', error);
       throw error instanceof Error
@@ -260,7 +272,13 @@ export class ConversationalAIResolver {
         graphId
       );
 
-      return nodes;
+      return nodes.map((node: any) => ({
+        id: node.id,
+        title: node.title,
+        type: node.type || 'unknown',
+        content: node.content || '',
+        similarity: node.similarity
+      }));
     } catch (error) {
       console.error('Error in searchNodesSemantic:', error);
       throw error instanceof Error

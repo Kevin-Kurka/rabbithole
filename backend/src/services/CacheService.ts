@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { Graph, VeracityScore } from '../types/GraphTypes';
+import { Graph } from '../types/GraphTypes';
 
 /**
  * Cache configuration for different data types
@@ -62,49 +62,7 @@ export class CacheService {
     return `${config.prefix}:${id}`;
   }
 
-  // =================================================================
-  // VERACITY SCORE CACHING
-  // =================================================================
 
-  /**
-   * Cache veracity score (5 min TTL)
-   */
-  async cacheVeracityScore(nodeId: string, score: VeracityScore): Promise<void> {
-    const key = this.key(CacheService.CONFIGS.VERACITY, nodeId);
-    await this.redis.setex(
-      key,
-      CacheService.CONFIGS.VERACITY.ttl,
-      JSON.stringify(score)
-    );
-  }
-
-  /**
-   * Get cached veracity score
-   */
-  async getVeracityScore(nodeId: string): Promise<VeracityScore | null> {
-    const key = this.key(CacheService.CONFIGS.VERACITY, nodeId);
-    const cached = await this.redis.get(key);
-
-    if (!cached) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(cached) as VeracityScore;
-    } catch (error) {
-      console.error('Error parsing cached veracity score:', error);
-      await this.redis.del(key); // Remove corrupted cache
-      return null;
-    }
-  }
-
-  /**
-   * Invalidate veracity score cache
-   */
-  async invalidateVeracity(nodeId: string): Promise<void> {
-    const key = this.key(CacheService.CONFIGS.VERACITY, nodeId);
-    await this.redis.del(key);
-  }
 
   // =================================================================
   // GRAPH DATA CACHING

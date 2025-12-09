@@ -12,7 +12,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { GraphCanvasNode, GraphCanvasEdge, GraphLevel } from '@/types/graph';
+import { GraphCanvasNode, GraphCanvasEdge } from '@/types/graph';
 
 /**
  * Filter state interface
@@ -21,7 +21,6 @@ export interface FilterState {
   veracityRange: [number, number];
   methodologies: string[];
   nodeTypes: string[];
-  levels: GraphLevel[];
   dateRange: {
     start: Date | null;
     end: Date | null;
@@ -48,7 +47,6 @@ const defaultFilters: FilterState = {
   veracityRange: [0, 1],
   methodologies: [],
   nodeTypes: [],
-  levels: [GraphLevel.LEVEL_0, GraphLevel.LEVEL_1],
   dateRange: {
     start: null,
     end: null,
@@ -103,10 +101,7 @@ export default function FilterPanel({
       );
     }
 
-    // Filter by level
-    filteredNodes = filteredNodes.filter((node) =>
-      filters.levels.includes(node.data.level)
-    );
+
 
     // Filter by date range
     if (filters.dateRange.start || filters.dateRange.end) {
@@ -179,24 +174,13 @@ export default function FilterPanel({
     }));
   };
 
-  /**
-   * Toggle level filter
-   */
-  const toggleLevel = (level: GraphLevel) => {
-    setFilters((prev) => ({
-      ...prev,
-      levels: prev.levels.includes(level)
-        ? prev.levels.filter((l) => l !== level)
-        : [...prev.levels, level],
-    }));
-  };
+
 
   const hasActiveFilters =
     filters.veracityRange[0] !== 0 ||
     filters.veracityRange[1] !== 1 ||
     filters.methodologies.length > 0 ||
     filters.nodeTypes.length > 0 ||
-    filters.levels.length < 2 ||
     filters.dateRange.start !== null ||
     filters.dateRange.end !== null;
 
@@ -231,9 +215,8 @@ export default function FilterPanel({
           )}
         </h3>
         <svg
-          className={`w-5 h-5 text-gray-400 transition-transform ${
-            isExpanded ? 'transform rotate-180' : ''
-          }`}
+          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'transform rotate-180' : ''
+            }`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -328,32 +311,7 @@ export default function FilterPanel({
             </div>
           )}
 
-          {/* Levels */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Graph Level
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                <input
-                  type="checkbox"
-                  checked={filters.levels.includes(GraphLevel.LEVEL_0)}
-                  onChange={() => toggleLevel(GraphLevel.LEVEL_0)}
-                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                Level 0 (Verified)
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                <input
-                  type="checkbox"
-                  checked={filters.levels.includes(GraphLevel.LEVEL_1)}
-                  onChange={() => toggleLevel(GraphLevel.LEVEL_1)}
-                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                Level 1 (Editable)
-              </label>
-            </div>
-          </div>
+
 
           {/* Date Range */}
           <div>

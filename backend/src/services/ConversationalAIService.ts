@@ -321,7 +321,10 @@ export class ConversationalAIService {
             formattedResponse.indexOf(match)
           );
           if (beforeMatch.lastIndexOf('[') > beforeMatch.lastIndexOf(']')) {
-            return match; // Already part of a link
+            return match; // Already part of a link text
+          }
+          if (beforeMatch.lastIndexOf('(') > beforeMatch.lastIndexOf(')')) {
+            return match; // Inside link URL or other parenthesized text
           }
           if (beforeMatch.lastIndexOf('`') > beforeMatch.lastIndexOf('`', beforeMatch.length - 1)) {
             return match; // Inside code block

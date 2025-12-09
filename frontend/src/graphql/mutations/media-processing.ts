@@ -13,13 +13,11 @@ export const PROCESS_DOCUMENT = gql`
       extractFigures: $extractFigures
       extractSections: $extractSections
     ) {
-      success
+      jobId
       fileId
-      extractedText
-      tableCount
-      figureCount
-      sectionCount
-      processingTime
+      status
+      progress
+      error
     }
   }
 `;
@@ -27,20 +25,17 @@ export const PROCESS_DOCUMENT = gql`
 export const PROCESS_AUDIO = gql`
   mutation ProcessAudio(
     $fileId: ID!
-    $transcribe: Boolean
-    $detectLanguage: Boolean
+    $options: AudioTranscriptionOptions
   ) {
     processAudio(
       fileId: $fileId
-      transcribe: $transcribe
-      detectLanguage: $detectLanguage
+      options: $options
     ) {
-      success
+      jobId
       fileId
-      transcript
-      language
-      duration
-      processingTime
+      status
+      progress
+      error
     }
   }
 `;
@@ -48,25 +43,17 @@ export const PROCESS_AUDIO = gql`
 export const PROCESS_VIDEO = gql`
   mutation ProcessVideo(
     $fileId: ID!
-    $extractFrames: Boolean
-    $performOcr: Boolean
-    $detectScenes: Boolean
-    $fps: Int
+    $options: VideoAnalysisOptions
   ) {
     processVideo(
       fileId: $fileId
-      extractFrames: $extractFrames
-      performOcr: $performOcr
-      detectScenes: $detectScenes
-      fps: $fps
+      options: $options
     ) {
-      success
+      jobId
       fileId
-      frameCount
-      sceneCount
-      ocrText
-      duration
-      processingTime
+      status
+      progress
+      error
     }
   }
 `;

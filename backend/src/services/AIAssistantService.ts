@@ -781,4 +781,104 @@ ${analysis.edges.length > 30 ? `... and ${analysis.edges.length - 30} more edges
 
     return Math.max(0, this.MAX_REQUESTS_PER_HOUR - recentRequests.length);
   }
+  /**
+   * Classify an inquiry based on the Logic Tree
+   */
+  async classifyInquiry(text: string, inquiry: string): Promise<{
+    type: string;
+    confidence: number;
+    reasoning: string;
+  }> {
+    const prompt = `You are a helper for a logic adjudication system. Your task is to analyze the user's inquiry about a highlighted text and classify it into one of the specific logic fallback categories.
+    
+Highlighted Text: "${text}"
+User Inquiry: "${inquiry}"
+
+- Slippery Slope
+- Hasty Generalization
+- Categorical Syllogism
+- Modus Ponens
+- Modus Tollens
+- Generalization
+- Analogy
+- Abduction
+
+Return ONLY a JSON object with the following format:
+{
+  "type": "LOGIC_TYPE_ENUM_VALUE",
+  "confidence": 0.0 to 1.0,
+  "reasoning": "Brief explanation of why it fits this category"
+}
+
+Use the standard enum values (e.g., AD_HOMINEM, STRAW_MAN, MODUS_PONENS).`;
+
+    try {
+      const response = await this.callOllama([
+        { role: 'system', content: 'You are a logic expert. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ], 500);
+
+      const match = response.match(/\{[\s\S]*\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      throw new Error('Failed to parse AI response');
+    } catch (error) {
+      console.error('Error classifying inquiry:', error);
+      return {
+        type: 'UNKNOWN',
+        confidence: 0,
+        reasoning: 'Failed to classify inquiry.'
+      };
+    }
+  }
+
+  /**
+   * Generate refinement suggestions for an inquiry
+   */
+  async refineInquiry(
+    inquiryId: string,
+    history: Array<{ role: string; content: string }>
+  ): Promise<{
+    question: string;
+    suggestedNodes: Array<{ title: string; type: string; description: string }>;
+  }> {
+    const context = history.map(m => `${m.role}: ${m.content}`).join('\n');
+
+    const prompt = `You are guiding a user to refine a logical inquiry. 
+    
+Conversation History:
+${context}
+
+Your goal is to help the user strengthen their inquiry with evidence and clarity.
+1. Ask a follow-up question to clarify the argument or request specific evidence.
+2. Suggest 1-2 nodes that could be added to the graph (e.g., specific evidence, counter-arguments).
+
+Return ONLY a JSON object with the following format:
+{
+  "question": "Your follow-up question here",
+  "suggestedNodes": [
+    { "title": "Node Title", "type": "evidence/claim", "description": "Why this node is needed" }
+  ]
+}`;
+
+    try {
+      const response = await this.callOllama([
+        { role: 'system', content: 'You are a helpful logic tutor. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ], 600);
+
+      const match = response.match(/\{[\s\S]*\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      throw new Error('Failed to parse AI response');
+    } catch (error) {
+      console.error('Error refining inquiry:', error);
+      return {
+        question: 'Could you provide more details about your inquiry?',
+        suggestedNodes: []
+      };
+    }
+  }
 }

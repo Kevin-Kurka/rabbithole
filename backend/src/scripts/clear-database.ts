@@ -30,16 +30,10 @@ async function clearDatabase() {
       'public."ActivityReactions"',
       'public."ActivityPosts"',
       'public."Comments"',
+      // Inquiry system (replaces challenges)
       'public."Inquiries"',
       'public."InquiryVotes"',
       'public."Notifications"',
-
-      // Challenge system
-      'public."ChallengeComments"',
-      'public."ChallengeEvidence"',
-      'public."ChallengeVotes"',
-      'public."ChallengeResolutions"',
-      'public."Challenges"',
 
       // Curator system
       'public."CuratorAuditLog"',
@@ -72,9 +66,7 @@ async function clearDatabase() {
       'public."MethodologyNodeTypes"',
       'public."Methodologies"',
 
-      // Gamification
-      'public."UserAchievements"',
-      'public."Achievements"',
+      // User reputation (keep - used by consensus scoring)
       'public."UserReputation"',
 
       // Graph data - most important!

@@ -42,7 +42,7 @@ export interface EvaluationResult {
  * Provides type-specific AI evaluation for each of the 12 inquiry types.
  * Each inquiry type has custom evaluation criteria tailored to its domain.
  *
- * Inquiry Types (formerly Challenges) (7):
+ * Inquiry Types (7):
  * - factual_accuracy: Verify claims against primary sources
  * - logical_fallacy: Detect reasoning errors
  * - missing_context: Identify omitted information
@@ -51,7 +51,7 @@ export interface EvaluationResult {
  * - statistical_validity: Check methodology
  * - causal_relationship: Evaluate causation vs correlation
  *
- * Inquiry Types (5):
+ * Additional Inquiry Types (5):
  * - scientific_inquiry: Assess hypothesis and methodology
  * - historical_interpretation: Evaluate sources and context
  * - legal_analysis: Check precedent and reasoning
@@ -74,7 +74,7 @@ export class AIEvaluationService {
     const inquiryType = position.inquiryType;
 
     switch (inquiryType) {
-      // Challenge Types (7)
+      // Inquiry Types (7)
       case 'factual_accuracy':
         return this.evaluateFactualAccuracy(position);
       case 'logical_fallacy':
@@ -109,11 +109,11 @@ export class AIEvaluationService {
   }
 
   // =========================================================================
-  // CHALLENGE TYPES (7)
+  // INQUIRY TYPES (7)
   // =========================================================================
 
   /**
-   * Evaluate Factual Accuracy Challenge
+   * Evaluate Factual Accuracy Inquiry
    *
    * Criteria:
    * - Primary source verification (40%)
@@ -122,7 +122,7 @@ export class AIEvaluationService {
    * - Expert consensus (15%)
    */
   private async evaluateFactualAccuracy(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this factual accuracy challenge:
+    const prompt = `Evaluate this factual accuracy inquiry:
 
 Argument: ${position.argument}
 Stance: ${position.stance}
@@ -173,7 +173,7 @@ Return JSON:
   }
 
   /**
-   * Evaluate Logical Fallacy Challenge
+   * Evaluate Logical Fallacy Inquiry
    *
    * Criteria:
    * - Fallacy identification accuracy (40%)
@@ -182,7 +182,7 @@ Return JSON:
    * - Logical structure (10%)
    */
   private async evaluateLogicalFallacy(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this logical fallacy challenge:
+    const prompt = `Evaluate this logical fallacy inquiry:
 
 Argument: ${position.argument}
 Stance: ${position.stance}
@@ -228,7 +228,7 @@ Return JSON:
   }
 
   /**
-   * Evaluate Missing Context Challenge
+   * Evaluate Missing Context Inquiry
    *
    * Criteria:
    * - Context identification (35%)
@@ -237,7 +237,7 @@ Return JSON:
    * - Impact assessment (10%)
    */
   private async evaluateMissingContext(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this missing context challenge:
+    const prompt = `Evaluate this missing context inquiry:
 
 Argument: ${position.argument}
 Evidence: ${position.evidence.map(e => e.content).join(' | ')}
@@ -273,7 +273,7 @@ Return JSON with scores 0.0-1.0 for each criterion and feedback.`;
   }
 
   /**
-   * Evaluate Source Reliability Challenge
+   * Evaluate Source Reliability Inquiry
    *
    * Criteria:
    * - Track record analysis (40%)
@@ -282,13 +282,13 @@ Return JSON with scores 0.0-1.0 for each criterion and feedback.`;
    * - Expertise verification (10%)
    */
   private async evaluateSourceReliability(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this source reliability challenge:
+    const prompt = `Evaluate this source reliability inquiry:
 
 Argument: ${position.argument}
 Evidence: ${position.evidence.map(e => `${e.type}: ${e.source || e.url}`).join(' | ')}
 
 Evaluate based on:
-1. TRACK RECORD (40%): Does the challenge provide evidence of the source's past accuracy/inaccuracy?
+1. TRACK RECORD (40%): Does the inquiry provide evidence of the source's past accuracy/inaccuracy?
 2. BIAS ASSESSMENT (30%): Is potential bias identified and explained with examples?
 3. CROSS-REFERENCING (20%): Are alternative sources compared for verification?
 4. EXPERTISE VERIFICATION (10%): Is the source's domain expertise evaluated?
@@ -318,7 +318,7 @@ Return JSON with scores and feedback.`;
   }
 
   /**
-   * Evaluate Bias Detection Challenge
+   * Evaluate Bias Detection Inquiry
    *
    * Criteria:
    * - Bias type identification (30%)
@@ -327,7 +327,7 @@ Return JSON with scores and feedback.`;
    * - Evidence of bias (15%)
    */
   private async evaluateBiasDetection(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this bias detection challenge:
+    const prompt = `Evaluate this bias detection inquiry:
 
 Argument: ${position.argument}
 
@@ -368,7 +368,7 @@ Return JSON with scores and feedback.`;
   }
 
   /**
-   * Evaluate Statistical Validity Challenge
+   * Evaluate Statistical Validity Inquiry
    *
    * Criteria:
    * - Methodology assessment (35%)
@@ -377,7 +377,7 @@ Return JSON with scores and feedback.`;
    * - Replication/peer review (15%)
    */
   private async evaluateStatisticalValidity(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this statistical validity challenge:
+    const prompt = `Evaluate this statistical validity inquiry:
 
 Argument: ${position.argument}
 Evidence: ${position.evidence.map(e => e.content).join(' | ')}
@@ -420,7 +420,7 @@ Return JSON with scores and feedback.`;
   }
 
   /**
-   * Evaluate Causal Relationship Challenge
+   * Evaluate Causal Relationship Inquiry
    *
    * Criteria:
    * - Causation evidence (40%)
@@ -429,7 +429,7 @@ Return JSON with scores and feedback.`;
    * - Alternative explanations (10%)
    */
   private async evaluateCausalRelationship(position: InquiryPosition): Promise<EvaluationResult> {
-    const prompt = `Evaluate this causal relationship challenge:
+    const prompt = `Evaluate this causal relationship inquiry:
 
 Argument: ${position.argument}
 Evidence: ${position.evidence.map(e => e.content).join(' | ')}

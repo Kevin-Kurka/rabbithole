@@ -2,7 +2,7 @@
  * GraphNode Component
  *
  * Custom node component for React Flow with:
- * - Veracity score color coding
+ * - Credibility score color coding
  * - Level 0/1 visual distinction
  * - Lock icons for read-only nodes
  * - Zinc theme styling
@@ -10,17 +10,16 @@
 
 import React, { memo, CSSProperties } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { Lock, AlertCircle } from 'lucide-react';
-import { NodeData, GraphLevel } from '@/types/graph';
+import { Lock } from 'lucide-react';
+import { NodeData } from '@/types/graph';
 import { theme } from '@/styles/theme';
-import { VeracityIndicator } from './veracity';
 
 /**
- * Get color based on veracity score (weight)
+ * Get color based on credibility score (weight)
  */
-const getVeracityColor = (weight: number, level: GraphLevel): CSSProperties => {
-  // Level 0 nodes always get verified styling
-  if (level === GraphLevel.LEVEL_0 || weight >= 1.0) {
+const getCredibilityColor = (weight: number): CSSProperties => {
+  // Verified nodes (100% confidence)
+  if (weight >= 1.0) {
     return {
       backgroundColor: '#10b981', // green-500
       borderColor: '#059669', // green-600
@@ -61,11 +60,11 @@ const getVeracityColor = (weight: number, level: GraphLevel): CSSProperties => {
 };
 
 /**
- * Format veracity score for display
+ * Format credibility score for display
  */
-const formatVeracity = (weight: number, level: GraphLevel): string => {
-  if (level === GraphLevel.LEVEL_0 || weight >= 1.0) {
-    return 'Level 0 - Verified';
+const formatCredibility = (weight: number): string => {
+  if (weight >= 1.0) {
+    return 'Verified';
   }
   return `${(weight * 100).toFixed(0)}% confidence`;
 };
@@ -73,10 +72,10 @@ const formatVeracity = (weight: number, level: GraphLevel): string => {
 /**
  * GraphNode component
  */
-function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
-  const { label, weight, level, isLocked, methodology, challengeCount } = data;
-  const colors = getVeracityColor(weight, level);
-  const hasChallenges = challengeCount && challengeCount > 0;
+function GraphNode({ data: dataProp, selected, dragging }: NodeProps) {
+  const data = dataProp as NodeData;
+  const { label, weight, isLocked, methodology } = data;
+  const colors = getCredibilityColor(weight);
 
   return (
     <div
@@ -85,14 +84,14 @@ function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
         borderWidth: '2px',
         borderStyle: 'solid',
         borderRadius: theme.radius.lg,
-        padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+        padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
         minWidth: '160px',
         maxWidth: '240px',
         boxShadow: selected
           ? '0 0 0 2px #3b82f6' // blue-500 ring for selection
           : dragging
-          ? theme.shadows.lg
-          : theme.shadows.md,
+            ? theme.shadow.lg
+            : theme.shadow.md,
         transition: 'all 0.2s ease',
         opacity: dragging ? 0.8 : 1,
         cursor: isLocked ? 'not-allowed' : 'grab',
@@ -104,57 +103,23 @@ function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
         type="target"
         position={Position.Top}
         style={{
-          backgroundColor: theme.colors.border.primary,
+          backgroundColor: theme.colors.border.DEFAULT,
           width: '12px',
           height: '12px',
           border: `2px solid ${colors.borderColor}`,
         }}
       />
 
-      {/* Veracity Indicator in top-left corner */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '6px',
-          left: '6px',
-        }}
-      >
-        <VeracityIndicator
-          score={weight}
-          size="xs"
-          isLevel0={level === GraphLevel.LEVEL_0}
-        />
-      </div>
 
-      {/* Challenge indicator (orange dot) */}
-      {hasChallenges && (
+
+
+
+      {/* Lock icon for Level 0 or locked nodes */}
+      {(weight >= 1.0 || isLocked) && (
         <div
           style={{
             position: 'absolute',
             top: '4px',
-            right: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            backgroundColor: 'rgba(249, 115, 22, 0.9)', // orange-500
-            borderRadius: theme.radius.full,
-            padding: '2px 6px',
-          }}
-          title={`${challengeCount} active challenge${challengeCount !== 1 ? 's' : ''}`}
-        >
-          <AlertCircle size={10} style={{ color: '#ffffff' }} />
-          <span style={{ fontSize: '10px', color: '#ffffff', fontWeight: 600 }}>
-            {challengeCount}
-          </span>
-        </div>
-      )}
-
-      {/* Lock icon for Level 0 or locked nodes */}
-      {(level === GraphLevel.LEVEL_0 || isLocked) && (
-        <div
-          style={{
-            position: 'absolute',
-            top: hasChallenges ? '26px' : '4px',
             right: '4px',
             backgroundColor: 'rgba(0, 0, 0, 0.3)',
             borderRadius: theme.radius.sm,
@@ -178,7 +143,7 @@ function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
         {label || 'Untitled Node'}
       </div>
 
-      {/* Veracity badge */}
+      {/* Credibility badge */}
       <div
         style={{
           fontSize: '11px',
@@ -187,7 +152,7 @@ function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
           color: colors.color,
         }}
       >
-        {formatVeracity(weight, level)}
+        {formatCredibility(weight)}
       </div>
 
       {/* Methodology tag (if present) */}
@@ -211,7 +176,7 @@ function GraphNode({ data, selected, dragging }: NodeProps<NodeData>) {
         type="source"
         position={Position.Bottom}
         style={{
-          backgroundColor: theme.colors.border.primary,
+          backgroundColor: theme.colors.border.DEFAULT,
           width: '12px',
           height: '12px',
           border: `2px solid ${colors.borderColor}`,

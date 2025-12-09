@@ -449,9 +449,9 @@ JOIN public."Nodes" n ON n.id = ef.evidence_id
 WHERE n.id = $nodeId
 ```
 
-### Veracity Scoring
+### Credibility Scoring
 
-Duplicate detection can influence veracity scores:
+Duplicate detection can influence credibility scores:
 
 - Lower weight for duplicates
 - Boost weight for original sources

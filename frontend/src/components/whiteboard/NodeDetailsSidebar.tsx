@@ -18,6 +18,8 @@ const GET_NODE_DETAILS = gql`
       type
       content
       veracity
+      credibility_score
+      consensus_score
       props
       created_at
       updated_at
@@ -25,6 +27,7 @@ const GET_NODE_DETAILS = gql`
         id
         type
         weight
+        credibility_score
         target_node {
           id
           title
@@ -118,11 +121,10 @@ export const NodeDetailsSidebar: React.FC<NodeDetailsSidebarProps> = ({
                   {index > 0 && <ChevronRight className="w-3 h-3 text-gray-400" />}
                   <button
                     onClick={() => navigateBreadcrumb(index)}
-                    className={`px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                      index === drilldownPath.length - 1
+                    className={`px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${index === drilldownPath.length - 1
                         ? 'font-semibold text-blue-600'
                         : 'text-gray-600 dark:text-gray-400'
-                    }`}
+                      }`}
                   >
                     {pathNode.title}
                   </button>
@@ -136,15 +138,25 @@ export const NodeDetailsSidebar: React.FC<NodeDetailsSidebarProps> = ({
       {/* Content */}
       <div className="p-4 space-y-4">
         {/* Basic Info */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h3 className="text-xl font-bold">{nodeDetails.title}</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
               {nodeDetails.type}
             </span>
-            <span className="text-sm text-gray-500">
-              Veracity: {(nodeDetails.veracity * 100).toFixed(1)}%
-            </span>
+
+            {/* Split Scores Display */}
+            <div className="flex gap-2">
+              <span className={`px-2 py-1 text-xs rounded border ${(nodeDetails.credibility_score || 0) > 0.7
+                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30'
+                  : 'bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30'
+                }`}>
+                Credibility: {((nodeDetails.credibility_score || 0) * 100).toFixed(0)}%
+              </span>
+              <span className="px-2 py-1 text-xs rounded border bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/30">
+                Consensus: {((nodeDetails.consensus_score || 0) * 100).toFixed(0)}%
+              </span>
+            </div>
           </div>
           {nodeDetails.content && (
             <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">

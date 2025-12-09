@@ -401,7 +401,7 @@ export class DeduplicationService {
   private combineMetadata(nodes: any[]): any {
     const combined: any = {
       sources: [],
-      created_at: nodes.map(n => n.created_at).sort()[0], // Earliest
+      created_at: nodes.map(n => n.created_at).sort((a, b) => (new Date(a).getTime() - new Date(b).getTime()))[0], // Earliest
       merged_from: nodes.map(n => n.id),
       merge_timestamp: new Date().toISOString(),
     };
@@ -418,9 +418,6 @@ export class DeduplicationService {
     return combined;
   }
 
-  /**
-   * Check if claim/challenge already exists (prevent duplicate debates)
-   */
   /**
    * Check if inquiry already exists (prevent duplicate debates)
    */

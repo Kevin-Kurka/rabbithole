@@ -14,7 +14,7 @@ import {
   GraphFork,
   GraphAncestor,
 } from '../entities/GraphVersion';
-import { Graph } from '../entities/Graph';
+import { Graph } from '../types/GraphTypes';
 import { GraphVersionService } from '../services/GraphVersionService';
 
 @Resolver(GraphVersion)

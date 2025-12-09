@@ -5,9 +5,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
-import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, Plus, X } from 'lucide-react';
+import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, X } from 'lucide-react';
 import LoginDialog from '@/components/forms/login-dialog';
-import { CredibilityBadge } from '@/components/credibility/credibility-badge';
+import { CredibilityBadge } from '@/components/credibility-badge';
+import { ConversationalInquiryModal } from '@/components/inquiry/ConversationalInquiryModal';
+import { AIAssistantFAB } from '@/components/ai-assistant/ai-assistant-fab';
+import { CREATE_FORMAL_INQUIRY } from '@/graphql/mutations/inquiry';
 
 // GraphQL queries and mutations
 const GET_GRAPHS_QUERY = gql`
@@ -26,11 +29,8 @@ const SEARCH_NODES_QUERY = gql`
       nodes {
         id
         title
-        veracityScore {
-          veracityScore
-          evidenceCount
-          challengeCount
-        }
+        type
+        relevance
       }
     }
   }
@@ -83,9 +83,9 @@ export default function HomePage() {
   // Fetch graphs
   const { data: graphsData } = useQuery(GET_GRAPHS_QUERY);
 
-  // Fetch JFK nodes via search
+  // Fetch initial nodes (generic)
   const { data: nodesData } = useQuery(SEARCH_NODES_QUERY, {
-    variables: { query: 'JFK' },
+    variables: { query: '' }, // Empty query to get recent/random nodes
   });
 
   // AI state
@@ -105,14 +105,39 @@ export default function HomePage() {
   // Node positions state
   const [nodes, setNodes] = useState<Node[]>([]);
 
-  // Set default graph to JFK when graphs load
+  const [createFormalInquiry] = useMutation(CREATE_FORMAL_INQUIRY, {
+    onCompleted: (data) => {
+      console.log('Inquiry Created:', data);
+    },
+    onError: (error) => {
+      console.error('Error creating inquiry:', error);
+    }
+  });
+
+  const handleInquirySubmit = async (inquiryData: any) => {
+    try {
+      await createFormalInquiry({
+        variables: {
+          input: {
+            title: inquiryData.title,
+            description: inquiryData.description,
+            type: inquiryData.type,
+            targetNodeId: inquiryData.targetNodeId,
+            evidence: inquiryData.evidence
+          }
+        }
+      });
+      // setShowProposalModal(false); // Let the modal handle closing after success message
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Set default graph
   useEffect(() => {
     if (graphsData?.graphs?.length > 0 && !selectedGraphId) {
-      // Find JFK graph or use first graph
-      const jfkGraph = graphsData.graphs.find((g: any) =>
-        g.name.includes('JFK') || g.name.includes('Assassination')
-      );
-      setSelectedGraphId(jfkGraph?.id || graphsData.graphs[0].id);
+      // Default to the first available graph
+      setSelectedGraphId(graphsData.graphs[0].id);
     }
   }, [graphsData, selectedGraphId]);
 
@@ -122,10 +147,10 @@ export default function HomePage() {
       const displayNodes = nodesData.search.nodes.slice(0, 8).map((node: any, index: number) => ({
         id: node.id,
         title: node.title,
-        type: 'Node',
-        credibility: node.veracityScore?.veracityScore || 0.85, // Use actual veracity score or default to 85%
-        evidenceCount: node.veracityScore?.evidenceCount || 0,
-        challengeCount: node.veracityScore?.challengeCount || 0,
+        type: node.type || 'Node',
+        credibility: node.relevance || 0.85, // Use relevance or default since credibility isn't available in search
+        evidenceCount: 0, // Not available in search result
+        challengeCount: 0, // Not available in search result
         x: 20 + (index % 4) * 20 + Math.random() * 10,
         y: 30 + Math.floor(index / 4) * 30 + Math.random() * 10,
         connections: [],
@@ -148,7 +173,7 @@ export default function HomePage() {
           input: {
             graphId: selectedGraphId,
             question: aiQuery,
-            userId: session?.user?.id || '00000000-0000-0000-0000-000000000000',
+            userId: (session?.user as any)?.id || '00000000-0000-0000-0000-000000000000',
           },
         },
       });
@@ -228,7 +253,7 @@ export default function HomePage() {
 
       // Find exact match or first result
       const node = data?.search?.nodes?.find((n: any) => n.title === suggestion)
-                   || data?.search?.nodes?.[0];
+        || data?.search?.nodes?.[0];
 
       if (node?.id) {
         // Navigate to node details page
@@ -407,15 +432,6 @@ export default function HomePage() {
 
       {/* Floating Navigation - Top Right */}
       <div className="fixed top-8 right-8 flex items-center gap-3 z-50">
-        {/* Propose New Topic Button */}
-        <button
-          onClick={() => setShowProposalModal(true)}
-          className="px-4 py-2 bg-blue-600/20 border border-blue-400/30 rounded-lg hover:bg-blue-600/30 transition-all shadow-2xl flex items-center gap-2"
-          style={{ borderWidth: '1px' }}
-        >
-          <Plus className="w-4 h-4 text-blue-300" />
-          <span className="text-blue-100 text-sm font-medium">Propose New Topic</span>
-        </button>
 
         {/* Avatar */}
         <button
@@ -433,6 +449,12 @@ export default function HomePage() {
             <User className="w-6 h-6 text-white" />
           )}
         </button>
+        {/* Login Modal */}
+        <LoginDialog
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+        />
+
       </div>
 
       {/* AI Chat Input - Bottom */}
@@ -534,64 +556,21 @@ export default function HomePage() {
         onClose={() => setShowLoginModal(false)}
       />
 
-      {/* Topic Proposal Modal */}
-      {showProposalModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
-          <div className="relative w-full max-w-2xl mx-4">
-            <div className="bg-zinc-900 border border-white/20 rounded-lg shadow-2xl overflow-hidden" style={{ borderWidth: '1px' }}>
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">Propose New Topic</h2>
-                <button
-                  onClick={() => setShowProposalModal(false)}
-                  className="text-zinc-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Conversational Inquiry Modal */}
+      <ConversationalInquiryModal
+        isOpen={showProposalModal}
+        onClose={() => setShowProposalModal(false)}
+        onSubmit={handleInquirySubmit}
+      // No selected text or target node for general inquiries
+      />
 
-              {/* Content */}
-              <div className="px-6 py-8">
-                <div className="text-center py-12">
-                  <AlertTriangle className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">Coming Soon</h3>
-                  <p className="text-zinc-400 max-w-md mx-auto">
-                    The formal topic proposal process is being developed. This will include:
-                  </p>
-                  <ul className="text-zinc-400 text-sm mt-4 space-y-2 max-w-md mx-auto text-left">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>AI-powered duplicate detection</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>Reference quality assessment</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>Formal justification requirements</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>AI evaluation and approval workflow</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+      {/* AI Assistant FAB */}
+      <AIAssistantFAB
+        isOpen={showProposalModal}
+        onClick={() => setShowProposalModal(true)}
+        suggestionCount={0}
+      />
 
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-white/10 flex justify-end">
-                <button
-                  onClick={() => setShowProposalModal(false)}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         /* Layer 1 - Fastest, Largest Stars */

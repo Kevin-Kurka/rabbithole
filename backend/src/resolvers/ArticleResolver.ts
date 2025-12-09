@@ -1,5 +1,5 @@
-import { Resolver, Query, Mutation, Arg, Ctx, InputType, Field, ID } from 'type-graphql';
-import { Node } from '../types/GraphTypes';
+import { Resolver, Query, Mutation, Arg, Ctx, InputType, Field, ID, FieldResolver, Root } from 'type-graphql';
+import { LegacyNode as Node } from '../types/GraphTypes';
 import { Context } from '../types/context';
 import { Pool } from 'pg';
 
@@ -41,6 +41,61 @@ class PublishArticleInput {
 
 @Resolver(() => Node)
 export class ArticleResolver {
+  // Field Resolvers for properties hidden in 'props' JSON
+  @FieldResolver(() => String, { nullable: true })
+  title(@Root() node: Node): string | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.title || null;
+    } catch { return null; }
+  }
+
+  @FieldResolver(() => String, { nullable: true })
+  narrative(@Root() node: Node): string | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.narrative || null;
+    } catch { return null; }
+  }
+
+  @FieldResolver(() => Number, { nullable: true })
+  weight(@Root() node: Node): number | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.weight || null;
+    } catch { return null; }
+  }
+
+  @FieldResolver(() => String, { nullable: true })
+  publishedAt(@Root() node: Node): string | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.publishedAt || null;
+    } catch { return null; }
+  }
+
+  @FieldResolver(() => [String], { nullable: true })
+  permissions(@Root() node: Node): string[] | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.permissions || null;
+    } catch { return null; }
+  }
+
+  @FieldResolver(() => String, { nullable: true })
+  authorId(@Root() node: Node): string | null {
+    try {
+      const props = typeof node.props === 'string' ? JSON.parse(node.props) : node.props;
+      // @ts-ignore
+      return props.authorId || null;
+    } catch { return null; }
+  }
+
   @Query(() => [Node])
   async getArticles(
     @Arg('graphId', () => ID, { nullable: true }) graphId: string | undefined,

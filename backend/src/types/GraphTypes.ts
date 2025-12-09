@@ -51,20 +51,7 @@ export class Notification {
     created_at: Date;
 }
 
-@ObjectType()
-export class VeracityScore {
-    @Field(() => ID)
-    id: string;
 
-    @Field(() => Float)
-    veracity_score: number;
-
-    @Field(() => Float)
-    confidence: number;
-
-    @Field(() => Int)
-    evidence_count: number;
-}
 
 @ObjectType()
 export class Comment {
@@ -87,8 +74,8 @@ export class Comment {
     parentCommentId?: string;
 }
 
-@ObjectType()
-export class Node {
+@ObjectType('LegacyNode')
+export class LegacyNode {
     @Field(() => ID)
     id: string;
 
@@ -108,8 +95,8 @@ export class Node {
     updated_at: Date;
 }
 
-@ObjectType()
-export class Edge {
+@ObjectType('LegacyEdge')
+export class LegacyEdge {
     @Field(() => ID)
     id: string;
 
@@ -146,17 +133,26 @@ export class Graph {
     @Field({ nullable: true })
     description?: string;
 
-    @Field(() => [Node])
-    nodes: Node[];
+    @Field(() => [LegacyNode])
+    nodes: LegacyNode[];
 
-    @Field(() => [Edge])
-    edges: Edge[];
+    @Field(() => [LegacyEdge])
+    edges: LegacyEdge[];
 
     @Field()
     created_at: Date;
 
     @Field()
     updated_at: Date;
+
+    @Field(() => Int, { nullable: true })
+    level?: number;
+
+    @Field({ nullable: true })
+    privacy?: string;
+
+    @Field({ nullable: true })
+    methodology?: string;
 }
 
 export enum MethodologyStatus {
@@ -252,29 +248,7 @@ export class UserMethodologyProgress {
     completed_at?: Date;
 }
 
-@ObjectType()
-export class PromotionEvent {
-    @Field(() => ID)
-    id: string;
 
-    @Field(() => ID)
-    graph_id: string;
-
-    @Field()
-    graph_name: string;
-
-    @Field(() => Int)
-    previous_level: number;
-
-    @Field(() => Int)
-    new_level: number;
-
-    @Field()
-    promoted_at: Date;
-
-    @Field()
-    promotion_reason: string;
-}
 
 @ObjectType()
 export class ConsensusVote {
@@ -309,38 +283,7 @@ export class ConsensusVote {
     updated_at: Date;
 }
 
-@ObjectType()
-export class PromotionEligibility {
-    @Field(() => ID)
-    graph_id: string;
 
-    @Field(() => Float)
-    methodology_completion_score: number;
-
-    @Field(() => Float)
-    consensus_score: number;
-
-    @Field(() => Float)
-    evidence_quality_score: number;
-
-    @Field(() => Float)
-    challenge_resolution_score: number;
-
-    @Field(() => Float)
-    overall_score: number;
-
-    @Field()
-    is_eligible: boolean;
-
-    @Field({ nullable: true })
-    blocking_reason?: string;
-
-    @Field(() => [String])
-    missing_requirements: string[];
-
-    @Field()
-    calculated_at: Date;
-}
 
 @ObjectType()
 export class ConsensusStatus {
@@ -410,11 +353,9 @@ export class UserReputation {
     @Field(() => Int)
     methodology_completions: number;
 
-    @Field(() => Int)
-    challenges_raised: number;
 
-    @Field(() => Int)
-    challenges_resolved: number;
+
+
 
     @Field(() => Float)
     overall_reputation_score: number;
@@ -453,38 +394,7 @@ export class MethodologyCompletionTracking {
     verification_notes?: string;
 }
 
-@ObjectType()
-export class PromotionResult {
-    @Field(() => ID)
-    graph_id: string;
 
-    @Field()
-    promotion_successful: boolean;
-
-    @Field(() => Int)
-    previous_level: number;
-
-    @Field({ nullable: true })
-    new_level?: number;
-
-    @Field(() => PromotionEligibility)
-    eligibility_breakdown: PromotionEligibility;
-
-    @Field({ nullable: true })
-    promotion_message?: string;
-
-    @Field({ nullable: true })
-    failure_reason?: string;
-
-    @Field(() => [String])
-    detailed_requirements: string[];
-
-    @Field()
-    evaluated_at: Date;
-
-    @Field(() => ID)
-    evaluated_by: string;
-}
 
 @ObjectType()
 export class MethodologyWorkflowStep {
@@ -768,8 +678,8 @@ export class ActivityPost {
     @Field(() => ID)
     node_id: string;
 
-    @Field(() => Node, { nullable: true })
-    node?: Node;
+    @Field(() => LegacyNode, { nullable: true })
+    node?: LegacyNode;
 
     @Field(() => ID)
     author_id: string;
@@ -860,387 +770,4 @@ export class SharePostInput {
 
     @Field({ nullable: true })
     comment?: string;
-}
-
-
-
-@ObjectType()
-export class CuratorReview {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    auditLogId: string;
-
-    @Field(() => ID, { nullable: true })
-    reviewerId?: string;
-
-    @Field()
-    reviewType: string;
-
-    @Field(() => Float)
-    rating: number;
-
-    @Field()
-    verdict: string;
-
-    @Field({ nullable: true })
-    comments?: string;
-
-    @Field({ nullable: true })
-    specificConcerns?: string;
-
-    @Field({ nullable: true })
-    recommendations?: string;
-
-    @Field({ nullable: true })
-    actionRequired?: string;
-
-    @Field({ nullable: true })
-    actionTaken?: string;
-
-    @Field()
-    escalated: boolean;
-
-    @Field(() => ID, { nullable: true })
-    escalatedToUserId?: string;
-
-    @Field(() => Date)
-    reviewedAt: Date;
-
-    @Field(() => Date)
-    createdAt: Date;
-}
-
-@ObjectType()
-export class CuratorRole {
-    @Field(() => ID)
-    id: string;
-
-    @Field()
-    roleName: string;
-
-    @Field({ nullable: true })
-    displayName?: string;
-
-    @Field({ nullable: true })
-    description?: string;
-
-    @Field(() => Int)
-    tier: number;
-
-    @Field(() => Int)
-    minReputationRequired: number;
-
-    @Field(() => Int)
-    minContributionsRequired: number;
-
-    @Field(() => [String])
-    expertiseAreasRequired: string[];
-
-    @Field()
-    requiresApplication: boolean;
-
-    @Field()
-    requiresCommunityVote: boolean;
-
-    @Field(() => Int)
-    minVotesRequired: number;
-
-    @Field(() => Float)
-    approvalThreshold: number;
-
-    @Field({ nullable: true })
-    icon?: string;
-
-    @Field({ nullable: true })
-    color?: string;
-
-    @Field({ nullable: true })
-    badgeImageUrl?: string;
-
-    @Field()
-    isActive: boolean;
-
-    @Field()
-    created_at: Date;
-
-    @Field()
-    updated_at: Date;
-}
-
-@ObjectType()
-export class RolePermission {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    roleId: string;
-
-    @Field()
-    permissionType: string;
-
-    @Field()
-    resourceType: string;
-
-    @Field()
-    canCreate: boolean;
-
-    @Field()
-    canRead: boolean;
-
-    @Field()
-    canEdit: boolean;
-
-    @Field()
-    canDelete: boolean;
-
-    @Field()
-    canApprove: boolean;
-
-    @Field()
-    canReject: boolean;
-
-    @Field()
-    canPromoteToLevel0: boolean;
-
-    @Field()
-    canDemoteFromLevel0: boolean;
-
-    @Field()
-    canAssignVeracityScore: boolean;
-
-    @Field()
-    canOverrideConsensus: boolean;
-
-    @Field(() => Int)
-    maxDailyActions: number;
-
-    @Field()
-    requiresPeerReview: boolean;
-
-    @Field()
-    requiresSecondApproval: boolean;
-
-    @Field()
-    description: string;
-
-    @Field()
-    createdAt: Date;
-
-    @Field()
-    updatedAt: Date;
-}
-
-@ObjectType()
-export class UserCurator {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    userId: string;
-
-    @Field(() => ID)
-    roleId: string;
-
-    @Field()
-    status: string;
-
-    @Field()
-    assignedAt: Date;
-
-    @Field(() => ID, { nullable: true })
-    assignedByUserId?: string;
-
-    @Field({ nullable: true })
-    expiresAt?: Date;
-
-    @Field(() => [String])
-    expertiseAreas: string[];
-
-    @Field(() => [String])
-    specializationTags: string[];
-
-    @Field({ nullable: true })
-    notes?: string;
-
-    @Field(() => CuratorStats)
-    stats: CuratorStats;
-
-    @Field()
-    created_at: Date;
-
-    @Field()
-    updated_at: Date;
-}
-
-@ObjectType()
-export class CuratorStats {
-    @Field(() => Int)
-    totalActions: number;
-
-    @Field(() => Int)
-    approvedActions: number;
-
-    @Field(() => Int)
-    rejectedActions: number;
-
-    @Field(() => Int, { nullable: true })
-    overturnedActions?: number;
-
-    @Field(() => Float, { nullable: true })
-    peerReviewScore?: number;
-
-    @Field(() => Float, { nullable: true })
-    communityTrustScore?: number;
-
-    @Field(() => Float, { nullable: true })
-    accuracyRate?: number;
-}
-
-@ObjectType()
-export class CuratorApplication {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    userId: string;
-
-    @Field(() => ID)
-    roleId: string;
-
-    @Field()
-    status: string;
-
-    @Field()
-    applicationStatement: string;
-
-    @Field()
-    motivation: string;
-
-    @Field(() => [String])
-    expertiseAreas: string[];
-
-    @Field()
-    relevantExperience: string;
-
-    @Field(() => [String], { nullable: true })
-    sampleContributions?: string[];
-
-    @Field(() => Date)
-    submittedAt: Date;
-
-    @Field(() => CuratorApplicationStats)
-    stats: CuratorApplicationStats;
-
-    @Field({ nullable: true })
-    votingStartedAt?: Date;
-
-    @Field({ nullable: true })
-    votingDeadline?: Date;
-
-    @Field(() => Int, { nullable: true })
-    votesFor?: number;
-
-    @Field(() => Int, { nullable: true })
-    votesAgainst?: number;
-
-    @Field(() => Int, { nullable: true })
-    votesAbstain?: number;
-
-    @Field(() => Int, { nullable: true })
-    totalVotingWeight?: number;
-
-    @Field({ nullable: true })
-    reviewedByUserId?: string;
-
-    @Field({ nullable: true })
-    reviewedAt?: Date;
-
-    @Field({ nullable: true })
-    decision?: string;
-
-    @Field({ nullable: true })
-    decisionReason?: string;
-
-    @Field({ nullable: true })
-    reviewerNotes?: string;
-
-    @Field({ nullable: true })
-    conditionsForApproval?: string;
-
-    @Field(() => Int, { nullable: true })
-    probationPeriodDays?: number;
-
-    @Field(() => Date, { nullable: true })
-    decisionMadeAt?: Date;
-
-    @Field(() => Date)
-    created_at: Date;
-
-    @Field(() => Date)
-    updated_at: Date;
-}
-
-@ObjectType()
-export class CuratorApplicationStats {
-    @Field(() => Int)
-    reputation: number;
-
-    @Field(() => Int)
-    contributions: number;
-
-    @Field(() => Int)
-    challengesWon: number;
-}
-
-@ObjectType()
-export class CuratorApplicationVote {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    applicationId: string;
-
-    @Field(() => ID)
-    voterId: string;
-
-    @Field()
-    vote: string;
-
-    @Field(() => Float)
-    voteWeight: number;
-
-    @Field({ nullable: true })
-    rationale?: string;
-
-    @Field(() => Date)
-    votedAt: Date;
-}
-
-@ObjectType()
-export class CuratorAuditLog {
-    @Field(() => ID)
-    id: string;
-
-    @Field(() => ID)
-    curatorId: string;
-
-    @Field(() => ID)
-    performedByUserId: string;
-
-    @Field()
-    action: string;
-
-    @Field()
-    resource: string;
-
-    @Field({ nullable: true })
-    resourceId?: string;
-
-    @Field({ nullable: true })
-    details?: string;
-
-    @Field(() => Date)
-    performedAt: Date;
 }

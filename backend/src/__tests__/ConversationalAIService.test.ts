@@ -92,7 +92,7 @@ describe('ConversationalAIService', () => {
 
       // Verify graph filter is applied
       const queryCall = (mockPool.query as jest.Mock).mock.calls[0];
-      expect(queryCall[0]).toContain('WHERE n.graph_id = $2');
+      expect(queryCall[0]).toContain("WHERE n.props->>'graphId' = $2");
       expect(queryCall[1]).toContain(graphId);
     });
 

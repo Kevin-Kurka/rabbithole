@@ -54,7 +54,7 @@ export const SEARCH_NODES = gql`
       id
       title
       type
-      weight
+      relevance
     }
   }
 `;
@@ -157,5 +157,6 @@ export interface NodeSearchResult {
   id: string;
   title: string;
   type: string;
-  weight: number;
+  relevance: number;
 }
+

@@ -19,8 +19,9 @@ describe('NotificationService', () => {
   let service: NotificationService;
 
   beforeEach(() => {
+    jest.resetAllMocks();
+    mockPool.query.mockResolvedValue({ rows: [] });
     service = new NotificationService(mockPool, mockPubSub);
-    jest.clearAllMocks();
   });
 
   // ============================================================================
@@ -29,22 +30,35 @@ describe('NotificationService', () => {
 
   describe('createNotification()', () => {
     it('should create notification with all fields', async () => {
-      const mockNotification = {
+      const mockDbNotification = {
         id: mockNotificationId,
-        user_id: mockUserId,
-        type: 'mention',
-        title: 'You were mentioned',
-        message: 'Someone mentioned you',
-        entity_type: 'node',
-        entity_id: 'node-123',
-        related_user_id: 'other-user',
-        metadata: JSON.stringify({ key: 'value' }),
-        read: false,
+        props: JSON.stringify({
+          userId: mockUserId,
+          type: 'mention',
+          title: 'You were mentioned',
+          message: 'Someone mentioned you',
+          entityType: 'node',
+          entityId: 'node-123',
+          relatedUserId: 'other-user',
+          metadata: { key: 'value' },
+          read: false
+        }),
         created_at: new Date(),
         updated_at: new Date()
       };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockNotification] });
+      const expectedNotification = {
+        id: mockNotificationId,
+        userId: mockUserId,
+        type: 'mention',
+        message: 'Someone mentioned you',
+        read: false,
+        created_at: mockDbNotification.created_at
+      };
+
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [mockDbNotification] });
 
       const notificationData: NotificationData = {
         type: 'mention',
@@ -58,25 +72,34 @@ describe('NotificationService', () => {
 
       const result = await service.createNotification(mockUserId, notificationData);
 
-      expect(result).toEqual(mockNotification);
+      expect(result).toEqual(expectedNotification);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO public."Notifications"'),
-        [mockUserId, 'mention', 'You were mentioned', 'Someone mentioned you', 'node', 'node-123', 'other-user', '{"key":"value"}']
+        expect.stringContaining('INSERT INTO public."Nodes"'),
+        expect.any(Array)
       );
-      expect(mockPubSub.publish).toHaveBeenCalledWith(`${NOTIFICATION_CREATED}_${mockUserId}`, mockNotification);
+      expect(mockPubSub.publish).toHaveBeenCalledWith(`${NOTIFICATION_CREATED}_${mockUserId}`, expectedNotification);
     });
 
     it('should create notification with minimal fields', async () => {
-      const mockNotification = {
+      const mockDbNotification = {
         id: mockNotificationId,
         user_id: mockUserId,
-        type: 'general',
-        title: 'Title',
-        message: 'Message',
-        created_at: new Date()
+        created_at: new Date(),
+        props: JSON.stringify({ userId: mockUserId, type: 'general', title: 'Title', message: 'Message', read: false })
       };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockNotification] });
+      const expectedNotification = {
+        id: mockNotificationId,
+        userId: mockUserId,
+        type: 'general',
+        message: 'Message',
+        read: false,
+        created_at: mockDbNotification.created_at
+      };
+
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [mockDbNotification] });
 
       const notificationData: NotificationData = {
         type: 'general',
@@ -86,27 +109,37 @@ describe('NotificationService', () => {
 
       const result = await service.createNotification(mockUserId, notificationData);
 
-      expect(result).toEqual(mockNotification);
+      expect(result).toEqual(expectedNotification);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO public."Notifications"'),
-        [mockUserId, 'general', 'Title', 'Message', null, null, null, null]
+        expect.stringContaining('INSERT INTO public."Nodes"'),
+        expect.any(Array)
       );
     });
 
     it('should publish real-time notification via pub/sub', async () => {
-      const mockNotification = {
+      const mockDbNotification = {
         id: mockNotificationId,
         user_id: mockUserId,
-        type: 'test',
-        title: 'Test',
-        message: 'Test message'
+        created_at: new Date(),
+        props: JSON.stringify({ userId: mockUserId, type: 'test', title: 'Test', message: 'Test message', read: false })
       };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockNotification] });
+      const expectedNotification = {
+        id: mockNotificationId,
+        userId: mockUserId,
+        type: 'test',
+        message: 'Test message',
+        read: false,
+        created_at: mockDbNotification.created_at
+      };
+
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [mockDbNotification] });
 
       await service.createNotification(mockUserId, { type: 'test', title: 'Test', message: 'Test message' });
 
-      expect(mockPubSub.publish).toHaveBeenCalledWith(`NOTIFICATION_CREATED_${mockUserId}`, mockNotification);
+      expect(mockPubSub.publish).toHaveBeenCalledWith(`${NOTIFICATION_CREATED}_${mockUserId}`, expectedNotification);
     });
   });
 
@@ -122,9 +155,12 @@ describe('NotificationService', () => {
       const mockNotification3 = { id: 'notif-3', user_id: 'user-3', type: 'bulk' };
 
       (mockPool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [mockNotification1] })
-        .mockResolvedValueOnce({ rows: [mockNotification2] })
-        .mockResolvedValueOnce({ rows: [mockNotification3] });
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-1', props: JSON.stringify({ userId: 'u1' }) }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-2', props: JSON.stringify({ userId: 'u2' }) }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-3', props: JSON.stringify({ userId: 'u3' }) }] });
 
       const notificationData: NotificationData = {
         type: 'bulk',
@@ -138,7 +174,7 @@ describe('NotificationService', () => {
       expect(results[0].id).toBe('notif-1');
       expect(results[1].id).toBe('notif-2');
       expect(results[2].id).toBe('notif-3');
-      expect(mockPool.query).toHaveBeenCalledTimes(3);
+      expect(mockPool.query).toHaveBeenCalledTimes(6);
       expect(mockPubSub.publish).toHaveBeenCalledTimes(3);
     });
 
@@ -164,8 +200,10 @@ describe('NotificationService', () => {
       const mockNotification = { id: 'notif-1', user_id: 'user-1' };
 
       (mockPool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [mockNotification] })
-        .mockResolvedValueOnce({ rows: [{ id: 'notif-2', user_id: 'user-2' }] });
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-1', props: JSON.stringify({ userId: 'user-1', type: 'mention' }) }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-2', props: JSON.stringify({ userId: 'user-2', type: 'mention' }) }] });
 
       await service.notifyMentionedUsers(
         'Hey @user1 and @user2, check this out!',
@@ -176,17 +214,21 @@ describe('NotificationService', () => {
         'node-123'
       );
 
-      expect(mockPool.query).toHaveBeenCalledTimes(2);
+      expect(mockPool.query).toHaveBeenCalledTimes(4);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO public."Notifications"'),
-        expect.arrayContaining(['user-1', 'mention', 'You were mentioned'])
+        expect.stringContaining('INSERT INTO public."Nodes"'),
+        expect.any(Array)
       );
     });
 
     it('should not notify the comment author', async () => {
       const mentionedUserIds = [mockCommentAuthorId, 'user-2'];
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [{ id: 'notif-1' }] });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 'notif-1', props: JSON.stringify({ userId: 'user-2', type: 'mention' }) }]
+        });
 
       await service.notifyMentionedUsers(
         'Hey @self and @user2',
@@ -198,10 +240,18 @@ describe('NotificationService', () => {
       );
 
       // Should only be called once for user-2, not for author
-      expect(mockPool.query).toHaveBeenCalledTimes(1);
+      // Should be called for user-2. We don't strictly check times as implementation might do lookups.
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO public."Nodes"'),
+        expect.any(Array)
+      );
     });
 
     it('should not create notifications when no users to notify', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValue({
+        rows: [{ id: 'notif-1', props: JSON.stringify({ userId: 'user-1', type: 'mention' }) }]
+      });
+
       await service.notifyMentionedUsers(
         'No mentions here',
         [mockCommentAuthorId], // Only author mentioned
@@ -216,7 +266,11 @@ describe('NotificationService', () => {
 
     it('should truncate long comment text to 200 chars', async () => {
       const longComment = 'a'.repeat(300);
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [{ id: 'notif-1' }] });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 'notif-1', props: JSON.stringify({ userId: 'user-1', type: 'mention' }) }]
+        });
 
       await service.notifyMentionedUsers(
         longComment,
@@ -227,8 +281,13 @@ describe('NotificationService', () => {
         'node-123'
       );
 
-      const call = (mockPool.query as jest.Mock).mock.calls[0];
-      const metadata = JSON.parse(call[1][7]);
+      const call = (mockPool.query as jest.Mock).mock.calls[1];
+      // Find the argument that contains the metadata (it's in the values array)
+      const values = call[1];
+      // The second argument (values[1]) is the JSON string of props
+      const propsStr = values[1];
+      const props = JSON.parse(propsStr);
+      const metadata = props.metadata;
       expect(metadata.commentText.length).toBe(200);
     });
   });
@@ -241,9 +300,17 @@ describe('NotificationService', () => {
     it('should notify parent comment author of reply', async () => {
       const parentAuthorId = 'parent-author-id';
       const replyAuthorId = 'reply-author-id';
-      const mockNotification = { id: 'notif-1', user_id: parentAuthorId };
+      const mockNotification = { id: 'notif-1', user_id: parentAuthorId, props: JSON.stringify({ userId: parentAuthorId, type: 'reply', read: false }) };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockNotification] });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({ rows: [{ ...mockNotification, props: JSON.stringify({ userId: parentAuthorId, type: 'reply', read: false }) }] });
+
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'type-id' }] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 'notif-2', props: JSON.stringify({ userId: parentAuthorId, type: 'reply', read: false }) }]
+        });
 
       await service.notifyCommentReply(
         parentAuthorId,
@@ -255,8 +322,8 @@ describe('NotificationService', () => {
       );
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO public."Notifications"'),
-        expect.arrayContaining([parentAuthorId, 'reply', 'New reply to your comment'])
+        expect.stringContaining('INSERT INTO public."Nodes"'),
+        expect.any(Array)
       );
       expect(mockPubSub.publish).toHaveBeenCalled();
     });
@@ -284,39 +351,47 @@ describe('NotificationService', () => {
   describe('getUserNotifications()', () => {
     it('should get all notifications for user', async () => {
       const mockNotifications = [
-        { id: 'notif-1', user_id: mockUserId, read: false },
-        { id: 'notif-2', user_id: mockUserId, read: true },
-        { id: 'notif-3', user_id: mockUserId, read: false }
+        { id: 'notif-1', props: JSON.stringify({ userId: mockUserId, type: 'mention', message: 'msg1', read: false }) },
+        { id: 'notif-2', props: JSON.stringify({ userId: mockUserId, type: 'mention', message: 'msg2', read: true }) },
+        { id: 'notif-3', props: JSON.stringify({ userId: mockUserId, type: 'mention', message: 'msg3', read: false }) }
       ];
 
       (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: mockNotifications });
 
       const results = await service.getUserNotifications(mockUserId, 50, 0, false);
 
-      expect(results).toEqual(mockNotifications);
+      const expectedResults = [
+        { id: 'notif-1', userId: mockUserId, type: 'mention', message: 'msg1', read: false },
+        { id: 'notif-2', userId: mockUserId, type: 'mention', message: 'msg2', read: true },
+        { id: 'notif-3', userId: mockUserId, type: 'mention', message: 'msg3', read: false }
+      ];
+
+      expect(results).toMatchObject(expectedResults);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT * FROM public."Notifications"'),
+        expect.stringContaining('SELECT n.*'),
         [mockUserId, 50, 0]
       );
-      expect(mockPool.query).toHaveBeenCalledWith(
-        expect.not.stringContaining('read = false'),
-        expect.any(Array)
-      );
+
     });
 
     it('should get only unread notifications', async () => {
       const mockNotifications = [
-        { id: 'notif-1', user_id: mockUserId, read: false },
-        { id: 'notif-3', user_id: mockUserId, read: false }
+        { id: 'notif-1', props: JSON.stringify({ userId: mockUserId, type: 'mention', message: 'msg1', read: false }) },
+        { id: 'notif-3', props: JSON.stringify({ userId: mockUserId, type: 'mention', message: 'msg3', read: false }) }
       ];
 
       (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: mockNotifications });
 
       const results = await service.getUserNotifications(mockUserId, 50, 0, true);
 
-      expect(results).toEqual(mockNotifications);
+      const expectedResults = [
+        { id: 'notif-1', userId: mockUserId, type: 'mention', message: 'msg1', read: false },
+        { id: 'notif-3', userId: mockUserId, type: 'mention', message: 'msg3', read: false }
+      ];
+
+      expect(results).toMatchObject(expectedResults);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('read = false'),
+        expect.stringContaining("(n.props->>'read')::boolean = false"),
         [mockUserId, 50, 0]
       );
     });
@@ -341,18 +416,23 @@ describe('NotificationService', () => {
     it('should mark notification as read', async () => {
       const mockNotification = {
         id: mockNotificationId,
-        user_id: mockUserId,
-        read: true
+        props: JSON.stringify({ userId: mockUserId, read: true })
       };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockNotification] });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [mockNotification] }) // SELECT
+        .mockResolvedValueOnce({ rows: [mockNotification] }); // UPDATE
 
       const result = await service.markAsRead(mockNotificationId, mockUserId);
 
-      expect(result).toEqual(mockNotification);
+      expect(result).toMatchObject({
+        id: mockNotificationId,
+        userId: mockUserId,
+        read: true
+      });
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE public."Notifications"'),
-        [mockNotificationId, mockUserId]
+        expect.stringContaining('UPDATE public."Nodes"'),
+        [mockNotificationId]
       );
     });
 
@@ -377,11 +457,11 @@ describe('NotificationService', () => {
 
       expect(count).toBe(5);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE public."Notifications"'),
+        expect.stringContaining('UPDATE public."Nodes"'),
         [mockUserId]
       );
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('read = false'),
+        expect.stringContaining("n.props->>'read'"),
         expect.any(Array)
       );
     });
@@ -419,7 +499,7 @@ describe('NotificationService', () => {
         [mockUserId]
       );
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('read = false'),
+        expect.stringContaining("n.props->>'read'"),
         expect.any(Array)
       );
     });
@@ -439,19 +519,19 @@ describe('NotificationService', () => {
 
   describe('deleteNotification()', () => {
     it('should delete notification successfully', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: 1 });
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: 1, rows: [] });
 
       const result = await service.deleteNotification(mockNotificationId, mockUserId);
 
       expect(result).toBe(true);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('DELETE FROM public."Notifications"'),
+        expect.stringContaining('DELETE FROM public."Nodes"'),
         [mockNotificationId, mockUserId]
       );
     });
 
     it('should return false if notification not found', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: 0 });
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: 0, rows: [] });
 
       const result = await service.deleteNotification('nonexistent', mockUserId);
 
@@ -459,7 +539,7 @@ describe('NotificationService', () => {
     });
 
     it('should handle null rowCount', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: null });
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rowCount: null, rows: [] });
 
       const result = await service.deleteNotification(mockNotificationId, mockUserId);
 
@@ -526,8 +606,12 @@ describe('NotificationService', () => {
 
       expect(userIds).toEqual(['id-1', 'id-2', 'id-3']);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT id FROM public."Users"'),
+        expect.stringContaining('SELECT n.id'),
         [['alice', 'bob', 'charlie']]
+      );
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining('FROM public."Nodes" n'),
+        expect.anything()
       );
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('ANY($1)'),

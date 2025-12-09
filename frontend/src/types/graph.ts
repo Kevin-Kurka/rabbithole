@@ -7,16 +7,7 @@
 
 import { Node as FlowNode, Edge as FlowEdge } from '@xyflow/react';
 
-/**
- * Graph levels for veracity and edit permissions
- * @deprecated Use weight-based checks instead (weight >= 0.90 for high credibility)
- */
-export enum GraphLevel {
-  /** Level 0: Verified, read-only nodes/edges */
-  LEVEL_0 = 0,
-  /** Level 1: Editable nodes/edges with veracity scores */
-  LEVEL_1 = 1,
-}
+
 
 /**
  * Check if a node/edge has high credibility (replaces Level 0 check)
@@ -32,25 +23,34 @@ export const shouldBeLocked = (weight: number): boolean => {
   return isHighCredibility(weight);
 };
 
-/**
- * Get GraphLevel enum value from weight (for backward compatibility)
- * @deprecated Components should use weight directly, not level
- */
-export const getLevelFromWeight = (weight: number): GraphLevel => {
-  return isHighCredibility(weight) ? GraphLevel.LEVEL_0 : GraphLevel.LEVEL_1;
-};
+
 
 /**
  * Backend node structure from GraphQL
  */
-export interface GraphNode {
+/**
+ * Backend node structure from GraphQL
+ */
+export interface Node {
   id: string;
+  title: string;
+  type: string;
+  content?: string;
   weight: number;
-  props: string; // JSON string containing node properties
-  level?: GraphLevel;
+  veracity?: number;
+  credibility_score?: number;
+  consensus_score?: number;
+  props: any; // Can be string or object depending on parsing
+
   createdAt?: string;
   updatedAt?: string;
+
+  // Relations
+  edges?: any[];
+  inquiries?: any[];
 }
+
+export type GraphNode = Node;
 
 /**
  * Backend edge structure from GraphQL
@@ -64,8 +64,10 @@ export interface GraphEdge {
     id: string;
   };
   weight: number;
+  credibility_score?: number;
+  consensus_score?: number;
   props: string; // JSON string containing edge properties
-  level?: GraphLevel;
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -94,11 +96,12 @@ export interface Graph {
 export interface NodeData {
   label: string;
   weight: number;
-  level: GraphLevel;
+
   methodology?: string;
   isLocked: boolean;
   graphId?: string; // ID of the graph this node belongs to
   graphColor?: string; // Color indicator for multi-graph overlay
+  challengeCount?: number;
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -109,7 +112,7 @@ export interface NodeData {
 export interface EdgeData {
   label?: string;
   weight: number;
-  level: GraphLevel;
+
   isLocked: boolean;
   graphId?: string; // ID of the graph this edge belongs to
   graphColor?: string; // Color indicator for multi-graph overlay
@@ -202,7 +205,7 @@ export interface GraphCanvasProps {
  * Veracity score color mapping
  */
 export interface VeracityColorScheme {
-  level0: string; // Verified (weight = 1.0)
+
   high: string; // High confidence (0.7-0.99)
   medium: string; // Medium confidence (0.4-0.69)
   low: string; // Low confidence (0.1-0.39)

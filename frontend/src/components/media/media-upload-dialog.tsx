@@ -200,61 +200,83 @@ export function MediaUploadDialog({
     setUploadProgress(0);
 
     try {
+      console.log('[MediaUpload] Starting upload for:', selectedFile.file.name);
+
       // Upload file
-      const { data: uploadData } = await uploadFile({
+      const { data: uploadData, errors: uploadErrors } = await uploadFile({
         variables: {
           file: selectedFile.file,
           type: selectedFile.type,
         },
       });
 
+      if (uploadErrors) {
+        console.error('[MediaUpload] Upload errors:', uploadErrors);
+        throw new Error(uploadErrors[0]?.message || 'Upload failed');
+      }
+
       if (!uploadData?.uploadMediaFile?.success) {
-        throw new Error("Upload failed");
+        console.error('[MediaUpload] Upload failed:', uploadData);
+        throw new Error(uploadData?.uploadMediaFile?.error || 'Upload failed');
       }
 
       const fileId = uploadData.uploadMediaFile.fileId;
+      console.log('[MediaUpload] File uploaded successfully:', fileId);
       setUploadProgress(50);
 
-      // Process based on type
-      let processingResult;
-
-      if (selectedFile.type === "document") {
-        processingResult = await processDocument({
-          variables: {
-            fileId,
-            extractTables: options.extractTables,
-            extractFigures: options.extractFigures,
-            extractSections: options.extractSections,
-          },
-        });
-      } else if (selectedFile.type === "audio") {
-        processingResult = await processAudio({
-          variables: {
-            fileId,
-            transcribe: options.transcribe,
-            detectLanguage: options.detectLanguage,
-          },
-        });
-      } else if (selectedFile.type === "video") {
-        processingResult = await processVideo({
-          variables: {
-            fileId,
-            extractFrames: options.extractFrames,
-            performOcr: options.performOcr,
-            detectScenes: options.detectScenes,
-            fps: options.fps,
-          },
-        });
+      // Process based on type (this happens async, so we don't wait for completion)
+      try {
+        if (selectedFile.type === "document") {
+          console.log('[MediaUpload] Queueing document processing');
+          await processDocument({
+            variables: {
+              fileId,
+              extractTables: options.extractTables,
+              extractFigures: options.extractFigures,
+              extractSections: options.extractSections,
+            },
+          });
+        } else if (selectedFile.type === "audio") {
+          console.log('[MediaUpload] Queueing audio processing');
+          await processAudio({
+            variables: {
+              fileId,
+              options: {
+                language: options.detectLanguage ? undefined : 'en',
+                speakerDiarization: false,
+              },
+            },
+          });
+        } else if (selectedFile.type === "video") {
+          console.log('[MediaUpload] Queueing video processing');
+          await processVideo({
+            variables: {
+              fileId,
+              options: {
+                extractFrames: options.extractFrames,
+                frameRate: options.fps,
+                detectScenes: options.detectScenes,
+                performOcr: options.performOcr,
+              },
+            },
+          });
+        }
+        console.log('[MediaUpload] Processing queued successfully');
+      } catch (processError) {
+        // Log processing error but don't fail the upload
+        console.warn('[MediaUpload] Processing queue failed (non-fatal):', processError);
       }
 
       setUploadProgress(100);
 
-      // Success
+      // Success - close dialog
+      console.log('[MediaUpload] Upload complete, closing dialog');
       setTimeout(() => {
         onUploadComplete?.(fileId);
         handleClose();
       }, 500);
     } catch (err) {
+      console.error('[MediaUpload] Upload failed:', err);
       setError(err instanceof Error ? err.message : "Upload failed");
       setUploadProgress(0);
     } finally {

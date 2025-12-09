@@ -6,7 +6,6 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "tsc --project tsconfig.json",
-    "populate-level0": "DATABASE_URL=postgres://user:password@postgres:5432/rabbithole_db ts-node src/scripts/populate-level0.ts",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:docker": "DATABASE_URL=postgres://postgres:postgres@postgres:5432/rabbithole_db ts-node src/scripts/seed.ts",
     "seed:achievements": "ts-node src/scripts/seed-achievements.ts",
@@ -24,7 +23,8 @@
     "seed:demo": "ts-node src/scripts/seed-demo-data.ts",
     "seed:demo:docker": "DATABASE_URL=postgres://postgres:postgres@localhost:5432/rabbithole_db ts-node src/scripts/seed-demo-data.ts",
     "clear:db": "ts-node src/scripts/clear-database.ts",
-    "clear:db:docker": "DATABASE_URL=postgres://postgres:postgres@localhost:5432/rabbithole_db ts-node src/scripts/clear-database.ts"
+    "clear:db:docker": "DATABASE_URL=postgres://postgres:postgres@localhost:5432/rabbithole_db ts-node src/scripts/clear-database.ts",
+    "seed:jfk": "ts-node src/scripts/seed-jfk.ts"
   },
   "keywords": [],
   "author": "",

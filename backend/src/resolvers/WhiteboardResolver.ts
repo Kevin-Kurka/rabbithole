@@ -579,7 +579,7 @@ export class WhiteboardResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteNode(
+  async deleteCanvasNode(
     @Arg('nodeId', () => ID) nodeId: string,
     @Ctx() { pool, userId }: Context
   ): Promise<boolean> {

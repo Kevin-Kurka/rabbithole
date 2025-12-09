@@ -20,7 +20,7 @@ describe('SearchService', () => {
 
     // Setup mock embedding service
     mockEmbeddingService = new EmbeddingService() as jest.Mocked<EmbeddingService>;
-    (EmbeddingService as jest.Mock).mockImplementation(() => mockEmbeddingService);
+    (EmbeddingService as unknown as jest.Mock).mockImplementation(() => mockEmbeddingService);
   });
 
   describe('search (full-text)', () => {
@@ -67,7 +67,7 @@ describe('SearchService', () => {
       await service.search(mockPool, 'test', { graphId: 'graph-123' });
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('AND n.graph_id ='),
+        expect.stringContaining("n.props->>'graphId'"),
         expect.arrayContaining(['graph-123'])
       );
     });
@@ -165,7 +165,7 @@ describe('SearchService', () => {
       });
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringMatching(/AND nt\.name = ANY.*AND n\.graph_id =/s),
+        expect.stringMatching(/AND nt\.name = ANY.*n\.props->>'graphId'/s),
         expect.anything()
       );
     });
@@ -367,9 +367,17 @@ describe('SearchService', () => {
         new Error('Embedding failed')
       );
 
-      await expect(service.semanticSearch(mockPool, 'test')).rejects.toThrow(
-        'Embedding failed'
-      );
+      // Mock fallback search query response
+      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [] });
+
+      // Should not throw, but fallback to full-text search
+      await expect(service.semanticSearch(mockPool, 'test')).resolves.not.toThrow();
+
+      // Should have attempted embedding
+      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
+
+      // Should have fallen back to full-text search (called pool.query)
+      expect(mockPool.query).toHaveBeenCalled();
     });
   });
 });

@@ -5,7 +5,7 @@ import { gql } from '@apollo/client';
 // ============================================================================
 
 export const ARTICLE_FRAGMENT = gql`
-  fragment ArticleFields on Node {
+  fragment ArticleFields on LegacyNode {
     id
     title
     narrative

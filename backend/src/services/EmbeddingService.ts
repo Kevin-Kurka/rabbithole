@@ -372,7 +372,7 @@ export class EmbeddingService {
       if (value === null || value === undefined) continue;
 
       // Handle strings
-      if (typeof value === 'string') {
+      if (typeof value === 'string' && value.trim().length > 0) {
         textParts.push(`${key}: ${value}`);
       }
       // Handle numbers and booleans

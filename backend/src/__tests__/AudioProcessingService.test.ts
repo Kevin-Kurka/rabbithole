@@ -147,15 +147,15 @@ describe('AudioProcessingService', () => {
       };
 
       // Create default segment when none available
-      const segments = !mockResponse.segments
+      const segments = !(mockResponse as any).segments
         ? [
-            {
-              segmentOrder: 1,
-              startTime: 0,
-              endTime: mockResponse.duration || 0,
-              text: mockResponse.text,
-            },
-          ]
+          {
+            segmentOrder: 1,
+            startTime: 0,
+            endTime: mockResponse.duration || 0,
+            text: mockResponse.text,
+          },
+        ]
         : [];
 
       expect(segments).toHaveLength(1);

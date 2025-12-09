@@ -1,19 +1,20 @@
 /**
- * AIAssistantResolver - PARTIALLY FUNCTIONAL
+ * AIAssistantResolver - AI-powered assistant features
  *
- * WARNING: Evidence-related mutations are broken due to schema refactor:
- * - uploadEvidence() - Queries dropped table public."EvidenceFiles"
- * - processEvidenceWithClaims() - Queries dropped tables public."EvidenceFiles" and public."Evidence"
- *
- * These mutations will throw errors until EvidenceFileResolver is refactored.
- *
- * WORKING FEATURES:
+ * FEATURES:
  * - chatWithAssistant() - Conversational AI (no database dependencies)
  * - getConversationHistory() - Uses Conversations table
  * - searchKnowledgeBase() - Uses Nodes/Edges
- * - matchClaimsToNodes() - Graph queries work fine
- * - verifyClaimAgainstGraph() - Graph queries work fine
- * - generateRelatedInquiries() - Graph queries work fine
+ * - matchClaimsToNodes() - Graph queries
+ * - verifyClaimAgainstGraph() - Graph queries
+ * - generateRelatedInquiries() - Graph queries
+ * - classifyInquiry() - Logic tree classification
+ *
+ * EVIDENCE HANDLING:
+ * - FormalInquiryResolver - Structured argumentation and inquiry
+ * - ContentAnalysisResolver - AI-powered content analysis
+ * - GraphTraversalResolver - Advanced graph queries
+ * - Direct Node creation with type "Evidence"
  */
 
 import {
@@ -301,22 +302,39 @@ class ChatResponse {
   conversationId?: string;
 }
 
+
+
 @ObjectType()
-class EvidenceUploadResult {
+class LogicClassification {
   @Field()
-  success!: boolean;
+  type!: string;
 
-  @Field(() => ID, { nullable: true })
-  fileId?: string;
+  @Field(() => Float)
+  confidence!: number;
 
-  @Field(() => ID, { nullable: true })
-  evidenceId?: string;
+  @Field()
+  reasoning!: string;
+}
 
-  @Field({ nullable: true })
-  error?: string;
+@ObjectType()
+class SuggestedNode {
+  @Field()
+  title!: string;
 
-  @Field({ nullable: true })
-  processingStatus?: string; // queued | processing | completed | failed
+  @Field()
+  type!: string;
+
+  @Field()
+  description!: string;
+}
+
+@ObjectType()
+class RefinementSuggestion {
+  @Field()
+  question!: string;
+
+  @Field(() => [SuggestedNode])
+  suggestedNodes!: SuggestedNode[];
 }
 
 // ============================================================================
@@ -341,22 +359,33 @@ class SendMessageInput {
   nodeId?: string; // Specific node context
 }
 
+
+
 @InputType()
-class UploadEvidenceInput {
-  @Field({ nullable: true })
-  context?: string;
+class ClassifyInquiryInput {
+  @Field()
+  text!: string;
 
-  @Field(() => ID, { nullable: true })
-  articleId?: string;
+  @Field()
+  inquiry!: string;
+}
 
-  @Field(() => ID, { nullable: true })
-  nodeId?: string;
+@InputType()
+class RefineInquiryInput {
+  @Field(() => ID)
+  inquiryId!: string;
 
-  @Field(() => ID, { nullable: true })
-  graphId?: string;
+  @Field(() => [ChatMessageInput])
+  history!: ChatMessageInput[];
+}
 
-  @Field({ nullable: true, defaultValue: true })
-  autoExtractClaims?: boolean;
+@InputType()
+class ChatMessageInput {
+  @Field()
+  role!: string;
+
+  @Field()
+  content!: string;
 }
 
 // ============================================================================
@@ -579,188 +608,7 @@ export class AIAssistantResolver {
   // EVIDENCE PROCESSING
   // ==========================================================================
 
-  /**
-   * Upload evidence file with automatic claim extraction
-   * Note: Use EvidenceFileResolver.uploadFile first to get fileId, then pass it here
-   */
-  @Mutation(() => EvidenceUploadResult)
-  async uploadEvidence(
-    @Arg('fileId', () => ID) fileId: string,
-    @Arg('input') input: UploadEvidenceInput,
-    @Ctx() { pool, userId }: Context
-  ): Promise<EvidenceUploadResult> {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'Authentication required',
-      };
-    }
 
-    try {
-      // Get file info from database
-      const fileResult = await pool.query(
-        `SELECT * FROM public."EvidenceFiles" WHERE id = $1 AND uploaded_by = $2`,
-        [fileId, userId]
-      );
-
-      if (fileResult.rows.length === 0) {
-        return {
-          success: false,
-          error: 'File not found or access denied',
-        };
-      }
-
-      const fileRow = fileResult.rows[0];
-
-      // Enqueue for media processing
-      await mediaQueueService.enqueueMediaProcessing(
-        fileId,
-        fileRow.file_type,
-        {
-          extractTables: true,
-          extractFigures: true,
-          extractSections: true,
-          transcribe: true,
-          extractFrames: true,
-        },
-        input.autoExtractClaims ? 8 : 5 // Higher priority if auto-extract enabled
-      );
-
-      // Update processing status
-      await pool.query(
-        `UPDATE public."EvidenceFiles"
-         SET processing_status = 'queued'
-         WHERE id = $1`,
-        [fileId]
-      );
-
-      return {
-        success: true,
-        fileId,
-        evidenceId: fileRow.evidence_id,
-        processingStatus: 'queued',
-      };
-    } catch (error: any) {
-      console.error('Error in uploadEvidence:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to upload evidence',
-      };
-    }
-  }
-
-  /**
-   * Process evidence file to extract claims (manual trigger)
-   */
-  @Mutation(() => ClaimExtractionResult)
-  async processEvidenceWithClaims(
-    @Arg('fileId', () => ID) fileId: string,
-    @Ctx() { pool, userId, pubSub }: Context
-  ): Promise<ClaimExtractionResult> {
-    if (!userId) {
-      throw new Error('Authentication required');
-    }
-
-    const startTime = Date.now();
-
-    try {
-      // Get file content
-      const fileResult = await pool.query(
-        `SELECT ef.*, e.content, e.target_node_id
-         FROM public."EvidenceFiles" ef
-         LEFT JOIN public."Evidence" e ON ef.evidence_id = e.id
-         WHERE ef.id = $1 AND ef.deleted_at IS NULL`,
-        [fileId]
-      );
-
-      if (fileResult.rows.length === 0) {
-        throw new Error('File not found');
-      }
-
-      const file = fileResult.rows[0];
-
-      // Extract text content (from processing results or file)
-      let textContent = file.extracted_text || file.markdown_content;
-
-      if (!textContent) {
-        throw new Error(
-          'No text content available. Please process the document first.'
-        );
-      }
-
-      // Use AI to extract claims
-      const claims = await this.extractClaimsFromText(pool, textContent, userId);
-
-      // Match claims to existing nodes
-      const matchedNodes = await this.matchClaimsToNodes(pool, claims);
-
-      // Identify primary sources
-      const primarySources = await this.identifyPrimarySources(
-        pool,
-        textContent,
-        file
-      );
-
-      // Store extracted claims
-      for (const claim of claims) {
-        await pool.query(
-          `INSERT INTO public."ExtractedClaims" (
-            file_id, claim_text, context, confidence, category,
-            start_position, end_position, extracted_by
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            fileId,
-            claim.claimText,
-            claim.context,
-            claim.confidence,
-            claim.category,
-            claim.startPosition,
-            claim.endPosition,
-            userId,
-          ]
-        );
-      }
-
-      const processingTimeMs = Date.now() - startTime;
-
-      const result: ClaimExtractionResult = {
-        fileId,
-        claims,
-        matchedNodes,
-        primarySources,
-        totalClaims: claims.length,
-        extractedAt: new Date(),
-        processingTimeMs,
-      };
-
-      // Publish subscription event
-      await pubSub.publish('CLAIM_EXTRACTED', {
-        fileId,
-        claims,
-        isComplete: true,
-      });
-
-      // Log audit event
-      await pool.query(
-        `INSERT INTO public."AuditLog" (
-          user_id, action, entity_type, entity_id, metadata
-        ) VALUES ($1, 'claims_extracted', 'evidence_file', $2, $3)`,
-        [
-          userId,
-          fileId,
-          JSON.stringify({
-            claim_count: claims.length,
-            processing_time_ms: processingTimeMs,
-          }),
-        ]
-      );
-
-      return result;
-    } catch (error: any) {
-      console.error('Error in processEvidenceWithClaims:', error);
-      throw new Error(`Failed to extract claims: ${error.message}`);
-    }
-  }
 
   /**
    * Match evidence file to relevant nodes in the graph
@@ -1111,7 +959,7 @@ export class AIAssistantResolver {
     claimText: string,
     userId: string
   ): Promise<VerificationReport> {
-    // TODO: Implement FactCheckingService integration
+    // Fact-checking is now handled by Formal Inquiry System
     // For now, return a basic report
 
     // Search for related evidence
@@ -1157,10 +1005,10 @@ export class AIAssistantResolver {
       veracityScore > 0.7
         ? 'verified'
         : veracityScore < 0.3
-        ? 'refuted'
-        : veracityScore > 0.5
-        ? 'mixed'
-        : 'unverified';
+          ? 'refuted'
+          : veracityScore > 0.5
+            ? 'mixed'
+            : 'unverified';
 
     return {
       claimId,
@@ -1269,5 +1117,32 @@ export class AIAssistantResolver {
     if (mimetype.startsWith('video/')) return 'video';
     if (mimetype.startsWith('audio/')) return 'audio';
     return 'document';
+  }
+  /**
+   * Classify an inquiry using LogicLens
+   */
+  @Mutation(() => LogicClassification)
+  async classifyInquiry(
+    @Arg('input') input: ClassifyInquiryInput,
+    @Ctx() { userId }: Context
+  ): Promise<LogicClassification> {
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+    return this.aiService.classifyInquiry(input.text, input.inquiry);
+  }
+
+  /**
+   * Refine an inquiry with AI guidance
+   */
+  @Mutation(() => RefinementSuggestion)
+  async refineInquiry(
+    @Arg('input') input: RefineInquiryInput,
+    @Ctx() { userId }: Context
+  ): Promise<RefinementSuggestion> {
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+    return this.aiService.refineInquiry(input.inquiryId, input.history);
   }
 }

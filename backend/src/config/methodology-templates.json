@@ -7,7 +7,10 @@
         {
           "id": "hypothesis",
           "type": "methodology",
-          "position": { "x": 100, "y": 100 },
+          "position": {
+            "x": 100,
+            "y": 100
+          },
           "data": {
             "label": "Hypothesis",
             "description": "State your hypothesis - What do you think will happen and why?",
@@ -24,7 +27,10 @@
         {
           "id": "experiment",
           "type": "methodology",
-          "position": { "x": 350, "y": 100 },
+          "position": {
+            "x": 350,
+            "y": 100
+          },
           "data": {
             "label": "Experiment Design",
             "description": "Design your experiment to test the hypothesis",
@@ -41,7 +47,10 @@
         {
           "id": "data-collection",
           "type": "methodology",
-          "position": { "x": 600, "y": 100 },
+          "position": {
+            "x": 600,
+            "y": 100
+          },
           "data": {
             "label": "Data Collection",
             "description": "Collect and record experimental data",
@@ -58,7 +67,10 @@
         {
           "id": "analysis",
           "type": "methodology",
-          "position": { "x": 350, "y": 300 },
+          "position": {
+            "x": 350,
+            "y": 300
+          },
           "data": {
             "label": "Analysis",
             "description": "Analyze the data and identify patterns",
@@ -75,7 +87,10 @@
         {
           "id": "conclusion",
           "type": "methodology",
-          "position": { "x": 350, "y": 500 },
+          "position": {
+            "x": 350,
+            "y": 500
+          },
           "data": {
             "label": "Conclusion",
             "description": "Draw conclusions - Does the data support your hypothesis?",
@@ -148,7 +163,10 @@
         {
           "id": "identification",
           "type": "methodology",
-          "position": { "x": 100, "y": 150 },
+          "position": {
+            "x": 100,
+            "y": 150
+          },
           "data": {
             "label": "Identification",
             "description": "Identify potentially relevant documents and data sources",
@@ -165,7 +183,10 @@
         {
           "id": "preservation",
           "type": "methodology",
-          "position": { "x": 350, "y": 150 },
+          "position": {
+            "x": 350,
+            "y": 150
+          },
           "data": {
             "label": "Preservation",
             "description": "Preserve evidence to prevent alteration or destruction",
@@ -182,7 +203,10 @@
         {
           "id": "collection",
           "type": "methodology",
-          "position": { "x": 600, "y": 150 },
+          "position": {
+            "x": 600,
+            "y": 150
+          },
           "data": {
             "label": "Collection",
             "description": "Collect relevant documents and data",
@@ -199,7 +223,10 @@
         {
           "id": "review",
           "type": "methodology",
-          "position": { "x": 350, "y": 350 },
+          "position": {
+            "x": 350,
+            "y": 350
+          },
           "data": {
             "label": "Review",
             "description": "Review and analyze collected materials for relevance",
@@ -216,7 +243,10 @@
         {
           "id": "production",
           "type": "methodology",
-          "position": { "x": 350, "y": 550 },
+          "position": {
+            "x": 350,
+            "y": 550
+          },
           "data": {
             "label": "Production",
             "description": "Produce relevant documents to opposing party",
@@ -289,7 +319,10 @@
         {
           "id": "claim",
           "type": "methodology",
-          "position": { "x": 350, "y": 100 },
+          "position": {
+            "x": 350,
+            "y": 100
+          },
           "data": {
             "label": "Claim",
             "description": "State your central claim or thesis",
@@ -306,7 +339,10 @@
         {
           "id": "grounds",
           "type": "methodology",
-          "position": { "x": 100, "y": 250 },
+          "position": {
+            "x": 100,
+            "y": 250
+          },
           "data": {
             "label": "Grounds",
             "description": "Provide evidence and data supporting your claim",
@@ -323,7 +359,10 @@
         {
           "id": "warrant",
           "type": "methodology",
-          "position": { "x": 350, "y": 250 },
+          "position": {
+            "x": 350,
+            "y": 250
+          },
           "data": {
             "label": "Warrant",
             "description": "Explain how the grounds support the claim",
@@ -340,7 +379,10 @@
         {
           "id": "backing",
           "type": "methodology",
-          "position": { "x": 600, "y": 250 },
+          "position": {
+            "x": 600,
+            "y": 250
+          },
           "data": {
             "label": "Backing",
             "description": "Provide additional support for the warrant",
@@ -357,7 +399,10 @@
         {
           "id": "qualifier",
           "type": "methodology",
-          "position": { "x": 200, "y": 400 },
+          "position": {
+            "x": 200,
+            "y": 400
+          },
           "data": {
             "label": "Qualifier",
             "description": "Specify the strength or limitations of your claim",
@@ -374,7 +419,10 @@
         {
           "id": "rebuttal",
           "type": "methodology",
-          "position": { "x": 500, "y": 400 },
+          "position": {
+            "x": 500,
+            "y": 400
+          },
           "data": {
             "label": "Rebuttal",
             "description": "Address potential counter-arguments",
@@ -445,6 +493,98 @@
           "type": "custom",
           "data": {
             "label": "challenges",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        }
+      ]
+    },
+    {
+      "methodologyId": "logical-inquiry",
+      "name": "Logical Inquiry",
+      "initialNodes": [
+        {
+          "id": "subject",
+          "type": "methodology",
+          "position": {
+            "x": 100,
+            "y": 250
+          },
+          "data": {
+            "label": "Subject",
+            "description": "The highlighted text or claim being analyzed",
+            "nodeType": "subject",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 1,
+              "methodologyPhase": "subject"
+            }
+          }
+        },
+        {
+          "id": "charge",
+          "type": "methodology",
+          "position": {
+            "x": 350,
+            "y": 250
+          },
+          "data": {
+            "label": "Charge",
+            "description": "The specific fallacy or formal argument type",
+            "nodeType": "charge",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 2,
+              "methodologyPhase": "charge"
+            }
+          }
+        },
+        {
+          "id": "warrant",
+          "type": "methodology",
+          "position": {
+            "x": 600,
+            "y": 250
+          },
+          "data": {
+            "label": "Warrant",
+            "description": "Justification for why the subject fits the charge",
+            "nodeType": "warrant",
+            "weight": 0.1,
+            "level": 1,
+            "isLocked": false,
+            "metadata": {
+              "stepNumber": 3,
+              "methodologyPhase": "warrant"
+            }
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "e1",
+          "source": "subject",
+          "target": "charge",
+          "type": "custom",
+          "data": {
+            "label": "exhibits",
+            "weight": 0.5,
+            "level": 1,
+            "isLocked": false
+          }
+        },
+        {
+          "id": "e2",
+          "source": "warrant",
+          "target": "charge",
+          "type": "custom",
+          "data": {
+            "label": "justifies",
             "weight": 0.5,
             "level": 1,
             "isLocked": false

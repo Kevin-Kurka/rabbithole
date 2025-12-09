@@ -1,6 +1,16 @@
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Table for storing users
+CREATE TABLE IF NOT EXISTS public."Users" (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
 -- Table for defining types of nodes
 CREATE TABLE IF NOT EXISTS public."NodeTypes" (
@@ -84,15 +94,6 @@ CREATE TABLE IF NOT EXISTS public."Challenges" (
     CONSTRAINT either_node_or_edge CHECK (target_node_id IS NOT NULL OR target_edge_id IS NOT NULL)
 );
 
--- Table for storing users
-CREATE TABLE IF NOT EXISTS public."Users" (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username TEXT NOT NULL UNIQUE,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
 -- Table for storing comments
 CREATE TABLE IF NOT EXISTS public."Comments" (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -106,20 +107,37 @@ CREATE TABLE IF NOT EXISTS public."Comments" (
 
 -- Indexes for foreign keys to improve query performance
 CREATE INDEX ON public."Graphs" (level);
+
 CREATE INDEX ON public."Graphs" (created_by);
+
 CREATE INDEX ON public."Nodes" (graph_id);
+
 CREATE INDEX ON public."Nodes" (node_type_id);
+
 CREATE INDEX ON public."Nodes" (primary_source_id);
+
 CREATE INDEX ON public."Nodes" (is_level_0);
+
 CREATE INDEX ON public."Nodes" (created_by);
+
 CREATE INDEX ON public."Edges" (graph_id);
+
 CREATE INDEX ON public."Edges" (edge_type_id);
+
 CREATE INDEX ON public."Edges" (source_node_id);
+
 CREATE INDEX ON public."Edges" (target_node_id);
+
 CREATE INDEX ON public."Edges" (is_level_0);
+
 CREATE INDEX ON public."Edges" (created_by);
+
 CREATE INDEX ON public."Challenges" (target_node_id);
+
 CREATE INDEX ON public."Challenges" (target_edge_id);
+
 CREATE INDEX ON public."Comments" (author_id);
+
 CREATE INDEX ON public."Comments" (target_node_id);
+
 CREATE INDEX ON public."Comments" (target_edge_id);

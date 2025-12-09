@@ -53,7 +53,6 @@ import {
   ContextMenuItem,
   ContextMenuAction,
   HistoryItem,
-  GraphLevel,
   NodeData,
   EdgeData,
 } from '@/types/graph';
@@ -74,7 +73,7 @@ import {
 } from '@/graphql/queries/graphs';
 import GraphNode from './graph-node';
 import GraphEdge from './graph-edge';
-import ContextMenu from './context-menu';
+import ContextMenu from '@/components/shared/context-menu';
 import RemoteCursor from './collaboration/remote-cursor';
 import LayoutControls from './visualization/layout-controls';
 import { ActiveUser } from '@/types/collaboration';
@@ -232,16 +231,15 @@ function GraphCanvasInner({
           nds.map((n) =>
             n.id === updatedNode.id
               ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    weight: updatedNode.weight,
-                    level: updatedNode.level,
-                    graphId: primaryWritableGraphId,
-                    graphColor,
-                    ...JSON.parse(updatedNode.props || '{}'),
-                  },
-                }
+                ...n,
+                data: {
+                  ...n.data,
+                  weight: updatedNode.weight,
+                  graphId: primaryWritableGraphId,
+                  graphColor,
+                  ...JSON.parse(updatedNode.props || '{}'),
+                },
+              }
               : n
           )
         );
@@ -270,8 +268,7 @@ function GraphCanvasInner({
               data: {
                 label: props.label || 'New Node',
                 weight: newNode.weight,
-                level: newNode.level,
-                isLocked: newNode.level === GraphLevel.LEVEL_0,
+                isLocked: newNode.weight >= 1.0,
                 methodology: methodologyId,
                 ...props,
               },
@@ -306,14 +303,13 @@ function GraphCanvasInner({
           eds.map((e) =>
             e.id === updatedEdge.id
               ? {
-                  ...e,
-                  data: {
-                    ...e.data,
-                    weight: updatedEdge.weight,
-                    level: updatedEdge.level,
-                    ...JSON.parse(updatedEdge.props || '{}'),
-                  } as EdgeData,
-                }
+                ...e,
+                data: {
+                  ...e.data,
+                  weight: updatedEdge.weight,
+                  ...JSON.parse(updatedEdge.props || '{}'),
+                } as EdgeData,
+              }
               : e
           )
         );
@@ -342,8 +338,7 @@ function GraphCanvasInner({
               type: 'custom',
               data: {
                 weight: newEdge.weight,
-                level: newEdge.level,
-                isLocked: newEdge.level === GraphLevel.LEVEL_0,
+                isLocked: newEdge.weight >= 1.0,
                 ...props,
               },
             },
@@ -389,8 +384,7 @@ function GraphCanvasInner({
                 data: {
                   label: props.label || 'Node',
                   weight: node.weight || 0.5,
-                  level: node.level ?? GraphLevel.LEVEL_1,
-                  isLocked: node.level === GraphLevel.LEVEL_0,
+                  isLocked: (node.weight || 0.5) >= 1.0,
                   methodology: methodologyId,
                   graphId, // Track which graph this node belongs to
                   graphColor, // Color indicator for this graph
@@ -414,8 +408,7 @@ function GraphCanvasInner({
                 data: {
                   label: props.label,
                   weight: edge.weight || 0.5,
-                  level: edge.level ?? GraphLevel.LEVEL_1,
-                  isLocked: edge.level === GraphLevel.LEVEL_0,
+                  isLocked: (edge.weight || 0.5) >= 1.0,
                   graphId, // Track which graph this edge belongs to
                   graphColor, // Color indicator for this graph
                   metadata: props.metadata,
@@ -504,7 +497,7 @@ function GraphCanvasInner({
       if (readOnly) return;
 
       setNodes((nds) => {
-        const updatedNodes = applyNodeChanges(changes, nds);
+        const updatedNodes = applyNodeChanges(changes, nds) as GraphCanvasNode[];
 
         // Save position changes to database
         changes.forEach((change) => {
@@ -536,7 +529,7 @@ function GraphCanvasInner({
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       if (readOnly) return;
-      setEdges((eds) => applyEdgeChanges(changes, eds));
+      setEdges((eds) => applyEdgeChanges(changes, eds) as GraphCanvasEdge[]);
     },
     [readOnly]
   );
@@ -629,7 +622,6 @@ function GraphCanvasInner({
                     type: 'custom',
                     data: {
                       weight: newEdge.weight || 0.5,
-                      level: newEdge.level ?? GraphLevel.LEVEL_1,
                       isLocked: false,
                     },
                   },
@@ -1135,7 +1127,7 @@ function GraphCanvasInner({
           alignItems: 'center',
           justifyContent: 'center',
           height: '100%',
-          backgroundColor: theme.colors.bg.primary,
+          backgroundColor: theme.colors.background.primary,
           color: theme.colors.text.primary,
         }}
       >
@@ -1152,7 +1144,7 @@ function GraphCanvasInner({
           alignItems: 'center',
           justifyContent: 'center',
           height: '100%',
-          backgroundColor: theme.colors.bg.primary,
+          backgroundColor: theme.colors.background.primary,
           color: '#ef4444', // red-500
         }}
       >
@@ -1171,7 +1163,7 @@ function GraphCanvasInner({
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
-        onPaneClick={onPaneClick}
+        onPaneClick={onPaneClick as unknown as (event: React.MouseEvent | MouseEvent) => void}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
@@ -1186,20 +1178,20 @@ function GraphCanvasInner({
           animated: false,
         }}
         style={{
-          backgroundColor: theme.colors.canvas.bg,
+          backgroundColor: theme.colors.background.tertiary,
         }}
       >
-        {showControls && <Controls style={{ backgroundColor: theme.colors.bg.elevated }} />}
+        {showControls && <Controls style={{ backgroundColor: theme.colors.background.elevated }} />}
 
         {showMinimap && (
           <MiniMap
             style={{
-              backgroundColor: theme.colors.bg.secondary,
-              borderColor: theme.colors.border.primary,
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border.DEFAULT,
             }}
             nodeColor={(node) => {
               const data = node.data as NodeData;
-              if (data.level === GraphLevel.LEVEL_0 || data.weight >= 1.0) {
+              if (data.weight >= 1.0) {
                 return '#10b981'; // green-500
               }
               if (data.weight >= 0.7) return '#84cc16'; // lime-500
@@ -1215,7 +1207,7 @@ function GraphCanvasInner({
             variant={BackgroundVariant.Dots}
             gap={16}
             size={1}
-            color={theme.colors.canvas.dots}
+            color={theme.colors.neutral[300]}
           />
         )}
       </ReactFlow>

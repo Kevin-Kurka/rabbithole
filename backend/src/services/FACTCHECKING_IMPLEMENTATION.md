@@ -337,7 +337,7 @@ npm test FactCheckingService
 - **SearchService:** Combine full-text and semantic search
 - **GraphTraversalService:** Enhanced pathfinding for evidence chains
 - **NotificationService:** Alert users when veracity changes
-- **GamificationService:** Reward users for accurate fact-checking
+- **NotificationService:** Alert users about verification results and inquiries
 
 ## Dependencies
 

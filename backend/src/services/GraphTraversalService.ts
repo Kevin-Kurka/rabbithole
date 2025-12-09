@@ -15,7 +15,7 @@ import { Edge } from '../entities/Edge';
  * - Prepared statement patterns for query plan caching
  */
 export class GraphTraversalService {
-  constructor(private pool: Pool) {}
+  constructor(private pool: Pool) { }
 
   /**
    * Find shortest path between two nodes using bidirectional BFS
@@ -167,8 +167,8 @@ export class GraphTraversalService {
     const row = result.rows[0];
 
     // Reconstruct full path by combining forward and backward paths
-    const forwardPath: string[] = row.forward_path;
-    const backwardPath: string[] = row.backward_path.slice(1).reverse(); // Remove meeting point duplicate
+    const forwardPath: string[] = row.forward_path || [];
+    const backwardPath: string[] = (row.backward_path || []).slice(1).reverse(); // Remove meeting point duplicate
     const fullPath = [...forwardPath, ...backwardPath];
 
     const forwardEdges: string[] = row.forward_edges || [];

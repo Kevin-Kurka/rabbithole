@@ -1,9 +1,7 @@
 import { ObjectType, Field, ID, Float } from 'type-graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { Node } from './Node';
-import { Comment } from './Comment';
-import { User } from './User';
-import { VeracityScore } from './VeracityScore';
+import { Comment, User } from '../types/GraphTypes';
 
 /**
  * Edge Entity - Strict 4-Table Schema Compliant
@@ -45,7 +43,14 @@ export class Edge {
   created_at!: Date;
 
   @Field()
+  @Field()
   updated_at!: Date;
+
+  @Field(() => Float, { nullable: true })
+  credibility_score?: number;
+
+  @Field(() => Float, { nullable: true })
+  consensus_score?: number;
 
   // =========================================================================
   // CONVENIENCE FIELDS - Extracted from props for GraphQL queries
@@ -95,8 +100,7 @@ export class Edge {
   @Field(() => [Comment], { nullable: true })
   comments?: Comment[];
 
-  @Field(() => VeracityScore, { nullable: true })
-  veracity?: VeracityScore;
+
 
   @Field(() => User, { nullable: true })
   creator?: User;

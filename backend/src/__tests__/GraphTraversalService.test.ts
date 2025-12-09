@@ -10,39 +10,46 @@ describe('GraphTraversalService', () => {
   let service: GraphTraversalService;
 
   beforeEach(() => {
-    service = new GraphTraversalService();
+    service = new GraphTraversalService(mockPool);
     jest.clearAllMocks();
   });
 
-  describe('findShortestPath', () => {
-    it('should find the shortest path between two nodes', async () => {
-      const mockPath = [
-        { nodeId: 'node1', distance: 0 },
-        { nodeId: 'node2', distance: 1 },
-        { nodeId: 'node3', distance: 2 },
-      ];
+  describe('findPath', () => {
+    it('should find the path between two nodes', async () => {
+      const mockResult = {
+        meeting_node_id: 'node2',
+        forward_path: ['node1', 'node2'],
+        backward_path: ['node3', 'node2'],
+        forward_edges: ['edge1'],
+        backward_edges: ['edge2'],
+        total_depth: 2,
+        total_weight: 0.8
+      };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockPath,
-      });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [mockResult] }) // findPath query
+        .mockResolvedValueOnce({ rows: [] }) // fetchNodesByIds
+        .mockResolvedValueOnce({ rows: [] }); // fetchEdgesByIds
 
-      const result = await service.findShortestPath(mockPool, 'node1', 'node3');
+      const result = await service.findPath('node1', 'node3');
 
-      expect(result).toEqual(mockPath);
+      expect(result.found).toBe(true);
+      expect(result.pathLength).toBe(2);
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('WITH RECURSIVE'),
-        ['node1', 'node3', 10]
+        ['node1', 'node3', 6, 0.5]
       );
     });
 
-    it('should return empty array when no path exists', async () => {
+    it('should return not found when no path exists', async () => {
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
         rows: [],
       });
 
-      const result = await service.findShortestPath(mockPool, 'node1', 'node999');
+      const result = await service.findPath('node1', 'node999');
 
-      expect(result).toEqual([]);
+      expect(result.found).toBe(false);
+      expect(result.nodes).toEqual([]);
     });
 
     it('should respect max depth parameter', async () => {
@@ -50,58 +57,12 @@ describe('GraphTraversalService', () => {
         rows: [],
       });
 
-      await service.findShortestPath(mockPool, 'node1', 'node3', 5);
+      await service.findPath('node1', 'node3', 5);
 
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.any(String),
-        ['node1', 'node3', 5]
+        ['node1', 'node3', 5, 0.5]
       );
-    });
-  });
-
-  describe('getConnectedNodes', () => {
-    it('should get all directly connected nodes', async () => {
-      const mockNodes = [
-        { id: 'node2', title: 'Node 2', type: 'fact', relationship: 'supports' },
-        { id: 'node3', title: 'Node 3', type: 'claim', relationship: 'challenges' },
-      ];
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockNodes,
-      });
-
-      const result = await service.getConnectedNodes(mockPool, 'node1');
-
-      expect(result).toEqual(mockNodes);
-      expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('FROM public."Edges"'),
-        ['node1']
-      );
-    });
-
-    it('should return empty array for isolated nodes', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [],
-      });
-
-      const result = await service.getConnectedNodes(mockPool, 'isolated-node');
-
-      expect(result).toEqual([]);
-    });
-
-    it('should include both incoming and outgoing connections', async () => {
-      const mockNodes = [
-        { id: 'node2', title: 'Outgoing', type: 'fact', relationship: 'supports' },
-        { id: 'node3', title: 'Incoming', type: 'claim', relationship: 'supported_by' },
-      ];
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockNodes,
-      });
-
-      const result = await service.getConnectedNodes(mockPool, 'node1');
-
-      expect(result).toHaveLength(2);
     });
   });
 
@@ -109,72 +70,65 @@ describe('GraphTraversalService', () => {
     it('should get all nodes within specified depth', async () => {
       const mockSubgraph = {
         nodes: [
-          { id: 'node1', title: 'Root', type: 'claim', depth: 0 },
-          { id: 'node2', title: 'Child', type: 'fact', depth: 1 },
-          { id: 'node3', title: 'Grandchild', type: 'evidence', depth: 2 },
+          { id: 'node1', title: 'Root', node_type_id: 'type1', props: {}, ai: {}, created_at: new Date(), updated_at: new Date() },
+          { id: 'node2', title: 'Child', node_type_id: 'type2', props: {}, ai: {}, created_at: new Date(), updated_at: new Date() },
         ],
         edges: [
-          { source: 'node1', target: 'node2', relationship: 'supports' },
-          { source: 'node2', target: 'node3', relationship: 'cites' },
+          { id: 'edge1', source_node_id: 'node1', target_node_id: 'node2', edge_type_id: 'typeA', props: {}, ai: {}, created_at: new Date(), updated_at: new Date() },
         ],
       };
 
-      (mockPool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: mockSubgraph.nodes })
-        .mockResolvedValueOnce({ rows: mockSubgraph.edges });
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [{ subgraph: mockSubgraph }],
+      });
 
-      const result = await service.getSubgraph(mockPool, 'node1', 2);
+      const result = await service.getSubgraph('node1', 2);
 
-      expect(result).toEqual(mockSubgraph);
-      expect(mockPool.query).toHaveBeenCalledTimes(2);
-    });
-
-    it('should respect depth limit', async () => {
-      (mockPool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await service.getSubgraph(mockPool, 'node1', 3);
-
+      expect(result.nodes).toHaveLength(2);
+      expect(result.edges).toHaveLength(1);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE p.depth <='),
-        ['node1', 3]
+        expect.stringContaining('WITH RECURSIVE'),
+        ['node1', 2, 0.5, 500]
       );
     });
 
     it('should return empty subgraph for non-existent node', async () => {
-      (mockPool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] });
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [],
+      });
 
-      const result = await service.getSubgraph(mockPool, 'nonexistent', 2);
+      const result = await service.getSubgraph('nonexistent');
 
-      expect(result).toEqual({ nodes: [], edges: [] });
+      expect(result).toEqual({ nodes: [], edges: [], centerNode: null });
     });
   });
 
   describe('findRelatedNodes', () => {
     it('should find nodes related by specific relationship type', async () => {
-      const mockRelated = [
-        { id: 'node2', title: 'Evidence 1', type: 'evidence', distance: 1 },
-        { id: 'node3', title: 'Evidence 2', type: 'evidence', distance: 1 },
-      ];
+      const mockResult = {
+        nodes: [
+          { id: 'node2', title: 'Evidence 1', node_type_id: 'type1', props: {}, ai: {}, created_at: new Date(), updated_at: new Date() },
+        ],
+        paths: [
+          { node_path: ['node1', 'node2'], edge_path: ['edge1'], path_weight: 0.9, depth: 1 }
+        ]
+      };
 
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockRelated,
-      });
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ result: mockResult }] }) // findRelatedNodes query
+        .mockResolvedValueOnce({ rows: [] }); // fetchEdgesByIds
 
       const result = await service.findRelatedNodes(
-        mockPool,
         'node1',
-        'supports',
+        'type_supports',
         2
       );
 
-      expect(result).toEqual(mockRelated);
+      expect(result.nodes).toHaveLength(1);
+      expect(result.paths).toHaveLength(1);
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('et.relationship ='),
-        ['node1', 'supports', 2]
+        expect.stringContaining('WITH RECURSIVE'),
+        ['node1', 'type_supports', 2, 0.5]
       );
     });
 
@@ -184,106 +138,13 @@ describe('GraphTraversalService', () => {
       });
 
       const result = await service.findRelatedNodes(
-        mockPool,
         'node1',
         'nonexistent-relationship',
         2
       );
 
-      expect(result).toEqual([]);
-    });
-  });
-
-  describe('getNodeInfluence', () => {
-    it('should calculate node influence based on connections', async () => {
-      const mockInfluence = {
-        nodeId: 'node1',
-        incomingCount: 5,
-        outgoingCount: 3,
-        totalConnections: 8,
-        influenceScore: 0.75,
-      };
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [mockInfluence],
-      });
-
-      const result = await service.getNodeInfluence(mockPool, 'node1');
-
-      expect(result).toEqual(mockInfluence);
-      expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('COUNT'),
-        ['node1']
-      );
-    });
-
-    it('should return zero influence for isolated node', async () => {
-      const mockInfluence = {
-        nodeId: 'isolated',
-        incomingCount: 0,
-        outgoingCount: 0,
-        totalConnections: 0,
-        influenceScore: 0,
-      };
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [mockInfluence],
-      });
-
-      const result = await service.getNodeInfluence(mockPool, 'isolated');
-
-      expect(result.influenceScore).toBe(0);
-    });
-  });
-
-  describe('detectCycles', () => {
-    it('should detect circular relationships', async () => {
-      const mockCycles = [
-        { path: ['node1', 'node2', 'node3', 'node1'], length: 3 },
-      ];
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockCycles,
-      });
-
-      const result = await service.detectCycles(mockPool, 'node1');
-
-      expect(result).toEqual(mockCycles);
-      expect(result[0].path[0]).toBe(result[0].path[result[0].path.length - 1]);
-    });
-
-    it('should return empty array when no cycles exist', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [],
-      });
-
-      const result = await service.detectCycles(mockPool, 'node1');
-
-      expect(result).toEqual([]);
-    });
-  });
-
-  describe('getPathTypes', () => {
-    it('should get all relationship types in a path', async () => {
-      const mockTypes = ['supports', 'cites', 'challenges'];
-
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: mockTypes.map(type => ({ relationship: type })),
-      });
-
-      const result = await service.getPathTypes(mockPool, 'node1', 'node4');
-
-      expect(result).toEqual(mockTypes);
-    });
-
-    it('should return empty array for unconnected nodes', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [],
-      });
-
-      const result = await service.getPathTypes(mockPool, 'node1', 'node999');
-
-      expect(result).toEqual([]);
+      expect(result.nodes).toEqual([]);
+      expect(result.paths).toEqual([]);
     });
   });
 
@@ -294,18 +155,8 @@ describe('GraphTraversalService', () => {
       );
 
       await expect(
-        service.findShortestPath(mockPool, 'node1', 'node2')
+        service.findPath('node1', 'node2')
       ).rejects.toThrow('Database connection failed');
-    });
-
-    it('should handle invalid node IDs', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [],
-      });
-
-      const result = await service.getConnectedNodes(mockPool, '');
-
-      expect(result).toEqual([]);
     });
   });
 });

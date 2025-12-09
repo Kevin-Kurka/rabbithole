@@ -1,5 +1,6 @@
 'use client';
 
+// ... imports
 import { use, useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
@@ -9,6 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownEditor } from '@/components/forms/markdown-editor';
 import { useToast } from '@/hooks/use-toast';
+import { renderMarkdown } from '@/lib/markdown'; // Import shared renderer
+import DOMPurify from 'isomorphic-dompurify'; // Import for sanitization
+import { ConversationalInquiryModal } from '@/components/inquiry/ConversationalInquiryModal'; // Import Modal
 import {
   GET_ARTICLE,
   UPDATE_ARTICLE,
@@ -26,6 +30,9 @@ import {
   Calendar,
   Clock,
   CheckCircle,
+  BookOpen, // New Icon
+  Edit, // New Icon
+  Highlighter, // New Icon
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -41,6 +48,13 @@ export default function ArticlePage({ params }: ArticlePageProps) {
   const [title, setTitle] = useState('');
   const [narrative, setNarrative] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // New State for View Mode and Selection
+  const [isReading, setIsReading] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
+  const [showInquiryButton, setShowInquiryButton] = useState(false);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
 
   // Fetch article data
   const { data, loading, error } = useQuery(GET_ARTICLE, {
@@ -63,6 +77,37 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     const changed = title !== article.title || narrative !== article.narrative;
     setHasUnsavedChanges(changed);
   }, [title, narrative, article]);
+
+  // Text Selection Logic (Ported from Demo)
+  const handleTextSelection = () => {
+    if (!isReading) return; // Only allow selection in Read Mode
+
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+
+    if (text && text.length > 5) { // Lower threshold slightly
+      setSelectedText(text);
+      const range = selection?.getRangeAt(0);
+      const rect = range?.getBoundingClientRect();
+
+      if (rect) {
+        setSelectionPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10,
+        });
+        setShowInquiryButton(true);
+      }
+    } else {
+      setShowInquiryButton(false);
+    }
+  };
+
+  const handleCreateInquiry = () => {
+    setShowInquiryButton(false);
+    setIsInquiryModalOpen(true);
+    // Clear selection visually if desired, but keeping it makes context clear
+  };
+
 
   // Update article mutation
   const [updateArticle, { loading: updating }] = useMutation(UPDATE_ARTICLE, {
@@ -254,39 +299,55 @@ export default function ArticlePage({ params }: ArticlePageProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Read/Edit Toggle */}
               <Button
-                variant="outline"
-                onClick={handleDelete}
-                disabled={deleting}
+                variant={isReading ? "default" : "outline"}
+                onClick={() => setIsReading(!isReading)}
+                className="gap-2"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                {isReading ? <Edit className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                {isReading ? 'Edit Mode' : 'Read Mode'}
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={handleSave}
-                disabled={updating || !hasUnsavedChanges}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {updating ? 'Saving...' : 'Save'}
-              </Button>
+              <div className="h-4 w-px bg-zinc-800 mx-2" />
 
-              {!isPublished && (
-                <Button
-                  onClick={handlePublish}
-                  disabled={publishing || hasUnsavedChanges}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {publishing ? 'Publishing...' : 'Publish'}
-                </Button>
+              {!isReading && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleSave}
+                    disabled={updating || !hasUnsavedChanges}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {updating ? 'Saving...' : 'Save'}
+                  </Button>
+
+                  {!isPublished && (
+                    <Button
+                      onClick={handlePublish}
+                      disabled={publishing || hasUnsavedChanges}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      {publishing ? 'Publishing...' : 'Publish'}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Editor */}
+      {/* Content Area */}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Metadata */}
@@ -303,41 +364,101 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                 </span>
               </div>
             )}
+            {isReading && (
+              <div className="flex items-center gap-1.5 text-blue-400">
+                <Highlighter className="w-4 h-4" />
+                <span>Select text to start an inquiry</span>
+              </div>
+            )}
           </div>
 
-          {/* Title Input */}
+          {/* Title - Input vs Display */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Article title"
-              className="text-2xl font-bold h-auto py-3"
-              disabled={updating}
-            />
+            {!isReading && <Label htmlFor="title">Title</Label>}
+            {isReading ? (
+              <h1 className="text-4xl font-bold text-foreground py-3">{title || 'Untitled Article'}</h1>
+            ) : (
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Article title"
+                className="text-2xl font-bold h-auto py-3"
+                disabled={updating}
+              />
+            )}
           </div>
 
-          {/* Content Editor */}
-          <div className="space-y-2">
-            <Label htmlFor="narrative">Content</Label>
-            <MarkdownEditor
-              value={narrative}
-              onChange={setNarrative}
-              placeholder="Write your article content here..."
-              disabled={updating}
-              minHeight="500px"
-            />
+          {/* Content - Editor vs Reader */}
+          <div className="space-y-2 relative">
+            {!isReading && <Label htmlFor="narrative">Content</Label>}
+            {isReading ? (
+              <div
+                className="prose prose-zinc dark:prose-invert max-w-none min-h-[500px] mb-20"
+                onMouseUp={handleTextSelection}
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(renderMarkdown(narrative), {
+                    ALLOWED_TAGS: ['p', 'strong', 'em', 'code', 'pre', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br'],
+                    ALLOWED_ATTR: ['href', 'target', 'rel']
+                  })
+                }}
+              />
+            ) : (
+              <MarkdownEditor
+                value={narrative}
+                onChange={setNarrative}
+                placeholder="Write your article content here..."
+                disabled={updating}
+                minHeight="500px"
+              />
+            )}
+
+            {/* Floating Inquiry Button */}
+            {showInquiryButton && isReading && (
+              <button
+                onClick={handleCreateInquiry}
+                className="fixed bg-zinc-50 hover:bg-zinc-200 text-zinc-950 px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2 font-medium text-sm z-50 animate-in fade-in zoom-in duration-200"
+                style={{
+                  left: `${selectionPosition.x}px`,
+                  top: `${selectionPosition.y}px`,
+                  transform: 'translate(-50%, -100%)',
+                }}
+              >
+                <Highlighter className="w-4 h-4" />
+                Create Inquiry
+              </button>
+            )}
+
           </div>
 
           {/* Auto-save indicator */}
-          {hasUnsavedChanges && (
+          {hasUnsavedChanges && !isReading && (
             <p className="text-xs text-muted-foreground text-center">
               Auto-save will trigger in 30 seconds, or click Save to save now
             </p>
           )}
         </div>
       </div>
+
+      {/* Integrate Modal */}
+      <ConversationalInquiryModal
+        isOpen={isInquiryModalOpen}
+        onClose={() => setIsInquiryModalOpen(false)}
+        onSubmit={(inquiry) => {
+          console.log('Created inquiry:', inquiry);
+          toast({
+            title: 'Inquiry Created',
+            description: 'Your inquiry has been submitted successfully.',
+          });
+          setIsInquiryModalOpen(false);
+        }}
+        selectedText={selectedText}
+        targetNode={{
+          id: id,
+          title: title || 'This Content',
+        }}
+      />
+
     </div>
   );
 }

@@ -41,7 +41,7 @@ export const AIAssistantFAB: React.FC<AIAssistantFABProps> = ({
     <div
       className={`fixed bottom-6 right-6 z-50 ${className}`}
       style={{
-        filter: theme.shadows.xl,
+        filter: theme.shadow.xl,
       }}
     >
       <button
@@ -51,20 +51,20 @@ export const AIAssistantFAB: React.FC<AIAssistantFABProps> = ({
           width: '64px',
           height: '64px',
           borderRadius: theme.radius.full,
-          backgroundColor: isOpen ? theme.colors.button.primary.hover : theme.colors.button.primary.bg,
-          color: theme.colors.button.primary.text,
-          border: `2px solid ${theme.colors.border.primary}`,
+          backgroundColor: isOpen ? theme.colors.primary[600] : theme.colors.primary[500],
+          color: theme.colors.text.inverse,
+          border: `2px solid ${theme.colors.border.DEFAULT}`,
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           transform: 'scale(1)',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.backgroundColor = theme.colors.button.primary.hover;
+          e.currentTarget.style.backgroundColor = theme.colors.primary[600];
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
           if (!isOpen) {
-            e.currentTarget.style.backgroundColor = theme.colors.button.primary.bg;
+            e.currentTarget.style.backgroundColor = theme.colors.primary[500];
           }
         }}
         aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
@@ -109,7 +109,7 @@ export const AIAssistantFAB: React.FC<AIAssistantFABProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '0 6px',
-              border: `2px solid ${theme.colors.bg.primary}`,
+              border: `2px solid ${theme.colors.background.primary}`,
               animation: 'bounce 1s infinite',
             }}
             aria-label={`${suggestionCount} new suggestions`}
@@ -122,7 +122,7 @@ export const AIAssistantFAB: React.FC<AIAssistantFABProps> = ({
         <span
           className="absolute inset-0 rounded-full opacity-0 group-active:opacity-20 transition-opacity"
           style={{
-            backgroundColor: theme.colors.interactive.active,
+            backgroundColor: theme.colors.primary[200],
             borderRadius: theme.radius.full,
           }}
         />
@@ -137,20 +137,20 @@ export const AIAssistantFAB: React.FC<AIAssistantFABProps> = ({
       >
         <div
           style={{
-            backgroundColor: theme.colors.overlay.modal,
+            backgroundColor: theme.colors.background.elevated,
             color: theme.colors.text.primary,
-            padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+            padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
             borderRadius: theme.radius.md,
             fontSize: '14px',
-            border: `1px solid ${theme.colors.border.primary}`,
-            boxShadow: theme.shadows.md,
+            border: `1px solid ${theme.colors.border.DEFAULT}`,
+            boxShadow: theme.shadow.md,
           }}
         >
           {isOpen ? 'Close AI Assistant' : 'Ask AI Assistant'}
           {hasSuggestions && !isOpen && (
             <span
               style={{
-                marginLeft: theme.spacing.xs,
+                marginLeft: theme.spacing[2],
                 color: '#ef4444',
                 fontWeight: '600',
               }}

@@ -103,7 +103,7 @@ async function example2_matchClaims(pool: Pool) {
           console.log(`  ${i + 1}. "${match.title}"`);
           console.log(`     Similarity: ${(match.similarity * 100).toFixed(1)}%`);
           console.log(`     Type: ${match.nodeType || 'unknown'}`);
-          console.log(`     Level 0: ${match.isLevel0}`);
+
         });
       }
     });

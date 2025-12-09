@@ -33,7 +33,6 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   GET_MEDIA_PROCESSING_STATUS,
-  GET_MEDIA_FILE_DETAILS,
 } from "@/graphql/queries/media-processing";
 import {
   CANCEL_PROCESSING_JOB,
@@ -119,19 +118,16 @@ export function MediaProcessingStatus({
 }: MediaProcessingStatusProps) {
   const [showFullContent, setShowFullContent] = React.useState(false);
 
+  // Note: We need to get the jobId for this fileId first
+  // For now, we'll just use fileId as jobId (this should be improved)
   const {
     data: statusData,
     loading: statusLoading,
     error: statusError,
     refetch: refetchStatus,
   } = useQuery(GET_MEDIA_PROCESSING_STATUS, {
-    variables: { fileId },
+    variables: { jobId: fileId }, // Using fileId as jobId for now
     pollInterval: autoRefresh ? 2000 : 0,
-    skip: !fileId,
-  });
-
-  const { data: detailsData } = useQuery(GET_MEDIA_FILE_DETAILS, {
-    variables: { fileId },
     skip: !fileId,
   });
 
@@ -139,13 +135,13 @@ export function MediaProcessingStatus({
   const [retryJob] = useMutation(RETRY_PROCESSING_JOB);
 
   const status: ProcessingStatus =
-    statusData?.getMediaProcessingStatus?.status || "queued";
-  const progress = statusData?.getMediaProcessingStatus?.progress || 0;
-  const result: ProcessingResult | undefined =
-    statusData?.getMediaProcessingStatus?.result;
-  const error = statusData?.getMediaProcessingStatus?.error;
-  const processingTime = statusData?.getMediaProcessingStatus?.processingTime;
-  const fileDetails = detailsData?.getMediaFileDetails;
+    statusData?.mediaProcessingJob?.status || "queued";
+  const progress = statusData?.mediaProcessingJob?.progress || 0;
+  const resultString = statusData?.mediaProcessingJob?.result;
+  const result: ProcessingResult | undefined = resultString ? JSON.parse(resultString) : undefined;
+  const error = statusData?.mediaProcessingJob?.error;
+  const processingTime = undefined; // Not available in current schema
+  const fileDetails = undefined; // Not available without separate query
 
   const StatusIcon = STATUS_ICONS[status];
 
@@ -167,11 +163,6 @@ export function MediaProcessingStatus({
     }
   };
 
-  const handleDownload = () => {
-    if (fileDetails?.downloadUrl) {
-      window.open(fileDetails.downloadUrl, "_blank");
-    }
-  };
 
   if (statusLoading && !statusData) {
     return (
@@ -212,14 +203,9 @@ export function MediaProcessingStatus({
                   status === "processing" && "animate-spin"
                 )}
               />
-              {fileDetails?.filename || "Processing Media"}
+              Processing Media
             </CardTitle>
             <CardDescription className="mt-1">
-              {fileDetails?.type && (
-                <Badge variant="secondary" className="mr-2">
-                  {fileDetails.type}
-                </Badge>
-              )}
               {status === "queued" && "Waiting in queue..."}
               {status === "processing" && `Processing... ${progress}%`}
               {status === "completed" && "Processing completed"}
@@ -437,12 +423,7 @@ export function MediaProcessingStatus({
             </Button>
           )}
         </div>
-        {status === "completed" && fileDetails?.downloadUrl && (
-          <Button size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4" />
-            Download Results
-          </Button>
-        )}
+        {/* Download button removed - not available without file details */}
       </CardFooter>
     </Card>
   );

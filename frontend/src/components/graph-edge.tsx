@@ -2,10 +2,10 @@
  * GraphEdge Component
  *
  * Custom edge component for React Flow with:
- * - Veracity score color coding
+ * - Credibility score color coding
  * - Level 0/1 visual distinction
  * - Lock icons for read-only edges
- * - Edge labels with veracity scores
+ * - Edge labels with credibility scores
  */
 
 import React, { memo } from 'react';
@@ -18,10 +18,9 @@ import {
 import { Lock } from 'lucide-react';
 import { EdgeData, isHighCredibility } from '@/types/graph';
 import { theme } from '@/styles/theme';
-import { VeracityIndicator } from './veracity';
 
 /**
- * Get edge color based on veracity score
+ * Get edge color based on credibility score
  */
 const getEdgeColor = (weight: number): string => {
   if (weight >= 0.90) {
@@ -63,10 +62,11 @@ function GraphEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  data,
+  data: dataProp,
   selected,
   markerEnd,
-}: EdgeProps<EdgeData>) {
+}: EdgeProps) {
+  const data = dataProp as EdgeData;
   const { label, weight = 0.5, isLocked } = data || {};
 
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -108,7 +108,7 @@ function GraphEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             fontSize: '11px',
             pointerEvents: 'all',
-            backgroundColor: theme.colors.bg.primary,
+            backgroundColor: theme.colors.background.primary,
             padding: '2px 6px',
             borderRadius: theme.radius.sm,
             border: `1px solid ${edgeColor}`,
@@ -116,16 +116,11 @@ function GraphEdge({
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            boxShadow: theme.shadows.sm,
+            boxShadow: theme.shadow.sm,
           }}
           className="nodrag nopan"
         >
-          {/* Veracity indicator dot */}
-          <VeracityIndicator
-            score={weight}
-            size="xs"
-            isLevel0={highCredibility}
-          />
+          {/* Credibility indicator - using color-coded border */}
 
           {(highCredibility || isLocked) && (
             <Lock size={10} style={{ color: edgeColor }} />

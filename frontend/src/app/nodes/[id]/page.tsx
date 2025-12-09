@@ -14,6 +14,7 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { CreateInquirySidebar, FormalInquiryCard } from '@/components/inquiry';
+import { AdjudicationPanel } from '@/components/inquiry/adjudication-panel';
 import { TextSelectionMenu } from '@/components/shared';
 import { AddCommentDialog } from '@/components/forms';
 import { ArticleWithBadges } from '@/components/content/article-with-badges';
@@ -212,6 +213,21 @@ export default function NodeDetailsPage() {
       ],
       conclusion: 'Majority of witness testimonies show consistent patterns regarding shot direction and timing, though some discrepancies remain unexplained.'
     },
+    {
+      id: '3',
+      title: 'Logical Fallacy Check',
+      status: 'In Progress',
+      description: 'The argument relies on attacking the opponent rather than addressing the claim.',
+      startedDate: 'Feb 10, 2024',
+      contributors: 2,
+      evidenceCount: 1,
+      methodology: 'Logical Inquiry',
+      objective: 'Determine if the statement constitutes a logical fallacy.',
+      logicType: 'Ad Hominem',
+      highlightedText: '"You cannot trust him because he is a liar."',
+      findings: [],
+      credibilityScore: 45
+    }
   ];
 
   // Mock node data - replace with actual GraphQL query
@@ -637,8 +653,8 @@ export default function NodeDetailsPage() {
                                             relatedNode.credibility >= 80
                                               ? 'rgb(34, 197, 94)'
                                               : relatedNode.credibility >= 50
-                                              ? 'rgb(234, 179, 8)'
-                                              : 'rgb(239, 68, 68)',
+                                                ? 'rgb(234, 179, 8)'
+                                                : 'rgb(239, 68, 68)',
                                         }}
                                       />
                                       <span className="text-xs text-muted-foreground">
@@ -725,8 +741,8 @@ export default function NodeDetailsPage() {
                                                 relatedNode.credibility >= 80
                                                   ? 'rgb(34, 197, 94)'
                                                   : relatedNode.credibility >= 50
-                                                  ? 'rgb(234, 179, 8)'
-                                                  : 'rgb(239, 68, 68)',
+                                                    ? 'rgb(234, 179, 8)'
+                                                    : 'rgb(239, 68, 68)',
                                             }}
                                           />
                                           <span className="text-xs font-medium text-zinc-300">{relatedNode.credibility}%</span>
@@ -796,11 +812,10 @@ export default function NodeDetailsPage() {
                         <h2 className="text-2xl font-bold">{inquiry.title}</h2>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 rounded text-sm ${
-                          inquiry.status === 'In Progress'
+                        <span className={`px-3 py-1 rounded text-sm ${inquiry.status === 'In Progress'
                             ? 'bg-blue-500/10 text-blue-500'
                             : 'bg-green-500/10 text-green-500'
-                        }`}>
+                          }`}>
                           {inquiry.status}
                         </span>
                         <span className="text-sm text-muted-foreground">{inquiry.methodology}</span>
@@ -905,6 +920,13 @@ export default function NodeDetailsPage() {
                           <p className="text-sm">{inquiry.conclusion}</p>
                         </CardContent>
                       </Card>
+                    </div>
+                  )}
+
+                  {/* Adjudication Panel for Logical Inquiries */}
+                  {inquiry.methodology === 'Logical Inquiry' && (
+                    <div className="mb-6">
+                      <AdjudicationPanel inquiry={inquiry as any} />
                     </div>
                   )}
                 </div>

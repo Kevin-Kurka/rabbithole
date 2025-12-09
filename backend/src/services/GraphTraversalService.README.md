@@ -14,7 +14,7 @@ The `GraphTraversalService` provides optimized graph traversal operations for Pr
 
 ### Key Design Principles
 1. **Cycle Prevention**: All traversals track visited nodes to prevent infinite loops
-2. **Veracity Filtering**: Weight thresholds ensure high-quality path finding
+2. **Credibility Filtering**: Weight thresholds ensure high-quality path finding
 3. **Bounded Execution**: Depth and node limits prevent runaway queries
 4. **Bidirectional Search**: Path finding uses BFS from both ends for O(b^(d/2)) complexity
 
@@ -36,7 +36,7 @@ query FindPath {
     sourceNodeId: "abc-123"
     targetNodeId: "def-456"
     maxDepth: 4
-    minVeracity: 0.7
+    minCredibility: 0.7
   ) {
     found
     pathLength
@@ -60,7 +60,7 @@ query FindPath {
 - `sourceNodeId` (required): Starting node UUID
 - `targetNodeId` (required): Destination node UUID
 - `maxDepth` (default: 6, max: 10): Maximum path length
-- `minVeracity` (default: 0.5): Minimum edge weight threshold
+- `minCredibility` (default: 0.5): Minimum edge weight threshold
 
 **Algorithm**: Bidirectional BFS from both source and target, meeting in the middle
 
@@ -69,7 +69,7 @@ query FindPath {
 **Returns**:
 - `found`: Boolean indicating if path exists
 - `pathLength`: Number of edges in path
-- `totalWeight`: Accumulated veracity score (product of edge weights)
+- `totalWeight`: Accumulated credibility score (product of edge weights)
 - `nodes`: Array of nodes in path order
 - `edges`: Array of edges connecting path nodes
 
@@ -91,7 +91,7 @@ query GetSubgraph {
     nodeId: "abc-123"
     depth: 2
     direction: BOTH
-    minVeracity: 0.6
+    minCredibility: 0.6
     maxNodes: 100
   ) {
     centerNode {
@@ -120,7 +120,7 @@ query GetSubgraph {
 - `nodeId` (required): Center node UUID
 - `depth` (default: 2, max: 5): Expansion depth
 - `direction` (default: "both"): "outgoing", "incoming", or "both"
-- `minVeracity` (default: 0.5): Minimum edge weight
+- `minCredibility` (default: 0.5): Minimum edge weight
 - `maxNodes` (default: 500, max: 1000): Maximum nodes to return
 
 **Direction Options**:
@@ -153,7 +153,7 @@ query FindRelatedNodes {
     nodeId: "abc-123"
     edgeTypeId: "supports-edge-type-id"
     depth: 3
-    minVeracity: 0.7
+    minCredibility: 0.7
   ) {
     nodes {
       id
@@ -178,7 +178,7 @@ query FindRelatedNodes {
 - `nodeId` (required): Starting node UUID
 - `edgeTypeId` (required): Edge type UUID to filter by
 - `depth` (default: 3, max: 5): Traversal depth
-- `minVeracity` (default: 0.5): Minimum edge weight
+- `minCredibility` (default: 0.5): Minimum edge weight
 
 **Returns**:
 - `nodes`: All nodes reachable via specified edge type
@@ -193,7 +193,7 @@ query SupportingEvidence {
     nodeId: "claim-xyz"
     edgeTypeId: "edge-type-supports"
     depth: 2
-    minVeracity: 0.8
+    minCredibility: 0.8
   ) {
     nodes {
       id
@@ -269,9 +269,9 @@ query VerifyProvenance {
 
 ---
 
-### 5. getHighVeracityRelatedNodes - Trusted Neighbors
+### 5. getHighCredibilityRelatedNodes - Trusted Neighbors
 
-**Purpose**: Get direct neighbors with high combined veracity scores.
+**Purpose**: Get direct neighbors with high combined credibility scores.
 
 **Use Cases**:
 - "What are the most reliable connections?"
@@ -281,10 +281,10 @@ query VerifyProvenance {
 **GraphQL Query**:
 ```graphql
 query HighQualityNeighbors {
-  getHighVeracityRelatedNodes(
+  getHighCredibilityRelatedNodes(
     nodeId: "abc-123"
     limit: 20
-    minVeracity: 0.8
+    minCredibility: 0.8
   ) {
     id
     props
@@ -297,7 +297,7 @@ query HighQualityNeighbors {
 **Parameters**:
 - `nodeId` (required): Reference node UUID
 - `limit` (default: 20, max: 100): Maximum results
-- `minVeracity` (default: 0.7): Minimum weight threshold
+- `minCredibility` (default: 0.7): Minimum weight threshold
 
 **Scoring**: `combined_score = node.weight * edge.weight`
 
@@ -342,7 +342,7 @@ query NodeStats {
 | getSubgraph | O(b^d) | O(b^d) | 3 |
 | findRelatedNodes | O(b^d) | O(b^d) | 3 |
 | getNodeAncestors | O(d) | O(d) | 10 |
-| getHighVeracityRelatedNodes | O(1) | O(1) | N/A (direct only) |
+| getHighCredibilityRelatedNodes | O(1) | O(1) | N/A (direct only) |
 
 Where:
 - `b` = branching factor (average edges per node)
@@ -367,14 +367,14 @@ WHERE primary_source_id IS NOT NULL;
 
 **Recommended Indexes** (for optimization):
 ```sql
--- Veracity-filtered traversal
+-- Credibility-filtered traversal
 CREATE INDEX ON public."Edges"(source_node_id, weight DESC);
 CREATE INDEX ON public."Edges"(target_node_id, weight DESC);
 
 -- Edge type filtering
 CREATE INDEX ON public."Edges"(edge_type_id, source_node_id, target_node_id);
 
--- High-veracity queries
+-- High-credibility queries
 CREATE INDEX ON public."Nodes"(weight DESC) WHERE weight >= 0.7;
 CREATE INDEX ON public."Edges"(weight DESC) WHERE weight >= 0.7;
 ```
@@ -433,7 +433,7 @@ const pool = new Pool({
 ### Node Limits
 
 - `getSubgraph`: Default 500, max 1000 nodes
-- `getHighVeracityRelatedNodes`: Default 20, max 100 nodes
+- `getHighCredibilityRelatedNodes`: Default 20, max 100 nodes
 
 ---
 
@@ -462,7 +462,7 @@ query VerifyClaimProvenance {
     nodeId: "claim-123"
     edgeTypeId: "supports-type-id"
     depth: 2
-    minVeracity: 0.8
+    minCredibility: 0.8
   ) {
     nodes {
       is_level_0
@@ -472,16 +472,16 @@ query VerifyClaimProvenance {
 }
 ```
 
-### Case 2: Challenge Impact Analysis
+### Case 2: Inquiry Impact Analysis
 
-**Scenario**: Analyze how challenges affect a claim's veracity.
+**Scenario**: Analyze how inquiries affect a claim's credibility.
 
 ```graphql
-query AnalyzeChallenges {
-  # Find all challenges
-  challenges: findRelatedNodes(
+query AnalyzeInquiries {
+  # Find all inquiries
+  inquiries: findRelatedNodes(
     nodeId: "claim-456"
-    edgeTypeId: "challenges-type-id"
+    edgeTypeId: "investigates-type-id"
     depth: 1
   ) {
     nodes {
@@ -515,7 +515,7 @@ query GatherContextForAI {
     nodeId: "focus-node-789"
     depth: 2
     direction: BOTH
-    minVeracity: 0.6
+    minCredibility: 0.6
     maxNodes: 200
   ) {
     nodes {
@@ -532,9 +532,9 @@ query GatherContextForAI {
   }
 
   # Get high-quality direct connections
-  trusted: getHighVeracityRelatedNodes(
+  trusted: getHighCredibilityRelatedNodes(
     nodeId: "focus-node-789"
-    minVeracity: 0.9
+    minCredibility: 0.9
   ) {
     id
     props
@@ -590,7 +590,7 @@ SELECT * FROM graph_traversal;
 
 ### 1. Choose the Right Query
 
-- **Direct neighbors**: Use `getHighVeracityRelatedNodes`
+- **Direct neighbors**: Use `getHighCredibilityRelatedNodes`
 - **Specific relationships**: Use `findRelatedNodes`
 - **General exploration**: Use `getSubgraph`
 - **Connection discovery**: Use `findPath`
@@ -599,14 +599,14 @@ SELECT * FROM graph_traversal;
 ### 2. Set Appropriate Limits
 
 - Start with shallow depths (2-3) and increase if needed
-- Use `minVeracity >= 0.7` for high-confidence paths
+- Use `minCredibility >= 0.7` for high-confidence paths
 - Set conservative `maxNodes` limits for untrusted queries
 
 ### 3. Leverage Caching
 
 ```typescript
 // Example caching strategy
-const cacheKey = `subgraph:${nodeId}:${depth}:${direction}:${minVeracity}`;
+const cacheKey = `subgraph:${nodeId}:${depth}:${direction}:${minCredibility}`;
 const cached = await redis.get(cacheKey);
 if (cached) return JSON.parse(cached);
 
@@ -632,7 +632,7 @@ const paginated = allNodes.nodes.slice(offset, offset + limit);
 
 **Solutions**:
 1. Check if indexes exist: `\d+ "Edges"` in psql
-2. Reduce depth or increase `minVeracity`
+2. Reduce depth or increase `minCredibility`
 3. Run `VACUUM ANALYZE` on tables
 4. Check for missing statistics: `pg_stats`
 
@@ -652,7 +652,7 @@ const paginated = allNodes.nodes.slice(offset, offset + limit);
 
 **Solutions**:
 1. Verify edge directionality is correct
-2. Check `minVeracity` isn't too restrictive
+2. Check `minCredibility` isn't too restrictive
 3. Confirm nodes are in same graph
 4. Look for soft-deleted nodes/edges
 

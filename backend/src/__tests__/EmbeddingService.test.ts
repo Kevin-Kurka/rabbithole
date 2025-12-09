@@ -8,21 +8,35 @@ jest.mock('axios');
 const mockedOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+// Mock config
+jest.mock('../config', () => ({
+  config: {
+    openai: {
+      apiKey: undefined,
+      timeout: 10000,
+      maxRetries: 3,
+      embeddingModel: 'text-embedding-3-large',
+    },
+  },
+}));
+import { config } from '../config';
+
 describe('EmbeddingService', () => {
   let service: EmbeddingService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset config
+    (config as any).openai.apiKey = undefined;
     // Reset environment variables
-    delete process.env.OPENAI_API_KEY;
     delete process.env.OLLAMA_URL;
     delete process.env.OLLAMA_EMBEDDING_MODEL;
   });
 
   describe('initialization', () => {
     it('should initialize with OpenAI provider when API key is available', () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key-12345';
-      process.env.OPENAI_EMBEDDING_MODEL = 'text-embedding-3-large';
+      (config as any).openai.apiKey = 'sk-test-key-12345';
+      (config as any).openai.embeddingModel = 'text-embedding-3-large';
 
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       service = new EmbeddingService();
@@ -49,8 +63,8 @@ describe('EmbeddingService', () => {
 
   describe('generateEmbedding with OpenAI', () => {
     beforeEach(() => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
-      process.env.OPENAI_EMBEDDING_MODEL = 'text-embedding-3-large';
+      (config as any).openai.apiKey = 'sk-test-key';
+      (config as any).openai.embeddingModel = 'text-embedding-3-large';
     });
 
     it('should generate embedding successfully', async () => {
@@ -95,7 +109,7 @@ describe('EmbeddingService', () => {
       service = new EmbeddingService();
 
       await expect(service.generateEmbedding('')).rejects.toThrow(
-        'Text input cannot be empty after trimming'
+        'Text input must be a non-empty string'
       );
     });
 
@@ -103,7 +117,7 @@ describe('EmbeddingService', () => {
       service = new EmbeddingService();
 
       await expect(service.generateEmbedding(null as any)).rejects.toThrow(
-        'Text input must be a non-string'
+        'Text input must be a non-empty string'
       );
     });
 
@@ -206,7 +220,7 @@ describe('EmbeddingService', () => {
 
   describe('generateEmbedding with Ollama', () => {
     beforeEach(() => {
-      delete process.env.OPENAI_API_KEY;
+      (config as any).openai.apiKey = undefined;
       process.env.OLLAMA_URL = 'http://localhost:11434';
       process.env.OLLAMA_EMBEDDING_MODEL = 'nomic-embed-text';
     });
@@ -228,8 +242,7 @@ describe('EmbeddingService', () => {
       expect(result.model).toBe('nomic-embed-text');
       expect(mockedAxios.post).toHaveBeenCalledWith(
         expect.stringContaining('/api/embeddings'),
-        expect.objectContaining({ prompt: 'test query' }),
-        expect.any(Object)
+        expect.objectContaining({ prompt: 'test query' })
       );
     });
 
@@ -269,14 +282,14 @@ describe('EmbeddingService', () => {
 
       await service.generateEmbedding('  test with spaces  ');
 
-      const callArgs = mockedAxios.post.mock.calls[0][1];
+      const callArgs = mockedAxios.post.mock.calls[0][1] as any;
       expect(callArgs.prompt).toBe('test with spaces');
     });
   });
 
   describe('generateBatchEmbeddings', () => {
     beforeEach(() => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
     });
 
     it('should reject empty array', async () => {
@@ -302,16 +315,19 @@ describe('EmbeddingService', () => {
 
       const mockClient = {
         embeddings: {
-          create: jest.fn().mockResolvedValue({
-            data: mockEmbeddings.map((e, i) => ({
-              embedding: e,
-              index: i,
-            })),
-            model: 'text-embedding-3-large',
-            usage: {
-              prompt_tokens: 1000,
-              total_tokens: 1000,
-            },
+          create: jest.fn().mockImplementation((args) => {
+            const inputLength = Array.isArray(args.input) ? args.input.length : 1;
+            return Promise.resolve({
+              data: Array(inputLength).fill(null).map((_, i) => ({
+                embedding: Array(1536).fill(0.1),
+                index: i,
+              })),
+              model: 'text-embedding-3-large',
+              usage: {
+                prompt_tokens: 1000,
+                total_tokens: 1000,
+              },
+            });
           }),
         },
       };
@@ -449,7 +465,7 @@ describe('EmbeddingService', () => {
 
   describe('healthCheck', () => {
     it('should return true when embedding works', async () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
       service = new EmbeddingService();
 
       const mockClient = {
@@ -471,8 +487,10 @@ describe('EmbeddingService', () => {
     });
 
     it('should return false on embedding failure', async () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
       service = new EmbeddingService();
+      // Mock sleep to speed up retries
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const mockClient = {
         embeddings: {
@@ -482,6 +500,8 @@ describe('EmbeddingService', () => {
 
       mockedOpenAI.mockImplementation(() => mockClient as any);
       service = new EmbeddingService();
+      // Mock sleep again on the new instance
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const result = await service.healthCheck();
 
@@ -491,8 +511,11 @@ describe('EmbeddingService', () => {
 
   describe('error handling and retries', () => {
     it('should implement exponential backoff for retries', async () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
       service = new EmbeddingService();
+      // Spy on sleep to verify calls, but let it resolve fast
+      // Actually we want to verify the *delay* passed to it.
+      const sleepSpy = jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const mockClient = {
         embeddings: {
@@ -509,19 +532,27 @@ describe('EmbeddingService', () => {
 
       mockedOpenAI.mockImplementation(() => mockClient as any);
       service = new EmbeddingService();
+      // Re-apply spy on new instance
+      const retrySleepSpy = jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const startTime = Date.now();
       const result = await service.generateEmbedding('test');
       const duration = Date.now() - startTime;
 
       expect(result.vector).toBeDefined();
-      // Should take at least 1000ms + 2000ms = 3000ms due to exponential backoff
-      expect(duration).toBeGreaterThanOrEqual(2500); // Allow some tolerance
+
+      // Verify backoff values were correct
+      expect(retrySleepSpy).toHaveBeenCalledTimes(2);
+      expect(retrySleepSpy).toHaveBeenNthCalledWith(1, 1000); // 2^(1-1) * 1000 = 1000
+      expect(retrySleepSpy).toHaveBeenNthCalledWith(2, 2000); // 2^(2-1) * 1000 = 2000
+
+      // Duration assertion is removed because we mocked sleep
     });
 
     it('should handle network errors (ECONNREFUSED, ETIMEDOUT)', async () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
       service = new EmbeddingService();
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const mockClient = {
         embeddings: {
@@ -540,6 +571,7 @@ describe('EmbeddingService', () => {
 
       mockedOpenAI.mockImplementation(() => mockClient as any);
       service = new EmbeddingService();
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const result = await service.generateEmbedding('test');
 
@@ -548,8 +580,9 @@ describe('EmbeddingService', () => {
     });
 
     it('should exhaust retries and throw', async () => {
-      process.env.OPENAI_API_KEY = 'sk-test-key';
+      (config as any).openai.apiKey = 'sk-test-key';
       service = new EmbeddingService();
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       const mockClient = {
         embeddings: {
@@ -562,6 +595,7 @@ describe('EmbeddingService', () => {
 
       mockedOpenAI.mockImplementation(() => mockClient as any);
       service = new EmbeddingService();
+      jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
         'Failed to generate embedding after'

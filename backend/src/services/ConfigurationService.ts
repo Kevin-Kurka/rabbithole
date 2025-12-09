@@ -20,7 +20,8 @@ export class ConfigurationService {
       description: "PostgreSQL connection string",
       dataType: ConfigDataType.STRING,
       isSecret: true,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "DATABASE_MAX_CONNECTIONS",
@@ -29,7 +30,8 @@ export class ConfigurationService {
       description: "Maximum number of database connections in pool",
       dataType: ConfigDataType.NUMBER,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
 
     // Redis configurations
@@ -40,7 +42,8 @@ export class ConfigurationService {
       description: "Redis connection URL",
       dataType: ConfigDataType.STRING,
       isSecret: true,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "REDIS_TTL",
@@ -49,7 +52,8 @@ export class ConfigurationService {
       description: "Default TTL for Redis cache entries (seconds)",
       dataType: ConfigDataType.NUMBER,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
 
     // RabbitMQ configurations
@@ -60,7 +64,8 @@ export class ConfigurationService {
       description: "RabbitMQ connection URL",
       dataType: ConfigDataType.STRING,
       isSecret: true,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
 
     // AI Model configurations
@@ -71,7 +76,8 @@ export class ConfigurationService {
       description: "OpenAI API key for embeddings and chat",
       dataType: ConfigDataType.STRING,
       isSecret: true,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "OPENAI_MODEL",
@@ -80,7 +86,8 @@ export class ConfigurationService {
       description: "OpenAI model to use for chat completions",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
     {
       key: "OPENAI_EMBEDDING_MODEL",
@@ -89,7 +96,8 @@ export class ConfigurationService {
       description: "OpenAI model for generating embeddings",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
     {
       key: "OLLAMA_BASE_URL",
@@ -98,7 +106,8 @@ export class ConfigurationService {
       description: "Ollama service base URL",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "OLLAMA_MODEL",
@@ -107,7 +116,8 @@ export class ConfigurationService {
       description: "Ollama model to use for local inference",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
     {
       key: "AI_ENABLED",
@@ -116,7 +126,8 @@ export class ConfigurationService {
       description: "Enable AI features (embeddings, chat)",
       dataType: ConfigDataType.BOOLEAN,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
 
     // Document processing configurations
@@ -127,7 +138,8 @@ export class ConfigurationService {
       description: "Docling service URL for document processing",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "DOCLING_ENABLED",
@@ -136,7 +148,8 @@ export class ConfigurationService {
       description: "Enable Docling document processing",
       dataType: ConfigDataType.BOOLEAN,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
     {
       key: "WHISPER_URL",
@@ -145,7 +158,8 @@ export class ConfigurationService {
       description: "Whisper service URL for audio transcription",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "WHISPER_ENABLED",
@@ -154,7 +168,8 @@ export class ConfigurationService {
       description: "Enable Whisper audio transcription",
       dataType: ConfigDataType.BOOLEAN,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
 
     // Storage configurations
@@ -165,7 +180,8 @@ export class ConfigurationService {
       description: "Directory for uploaded files",
       dataType: ConfigDataType.STRING,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: false,
+      updatedAt: new Date(),
     },
     {
       key: "MAX_FILE_SIZE",
@@ -174,7 +190,8 @@ export class ConfigurationService {
       description: "Maximum file size for uploads (bytes)",
       dataType: ConfigDataType.NUMBER,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
     {
       key: "ALLOWED_FILE_TYPES",
@@ -183,7 +200,8 @@ export class ConfigurationService {
       description: "Allowed file types for uploads (JSON array)",
       dataType: ConfigDataType.JSON,
       isSecret: false,
-      updatedAt: new Date().toISOString(),
+      isPublic: true,
+      updatedAt: new Date(),
     },
   ];
 
@@ -252,6 +270,7 @@ export class ConfigurationService {
             description: row.description,
             dataType: row.data_type as ConfigDataType,
             isSecret: row.is_secret,
+            isPublic: row.is_public || false,
             updatedAt: row.updated_at,
             updatedBy: row.updated_by,
           };
@@ -263,6 +282,7 @@ export class ConfigurationService {
             description: row.description,
             dataType: row.data_type as ConfigDataType,
             isSecret: row.is_secret,
+            isPublic: row.is_public || false,
             updatedAt: row.updated_at,
             updatedBy: row.updated_by,
           });
@@ -342,6 +362,7 @@ export class ConfigurationService {
       description: result.rows[0].description,
       dataType: result.rows[0].data_type,
       isSecret: result.rows[0].is_secret,
+      isPublic: result.rows[0].is_public || false,
       updatedAt: result.rows[0].updated_at,
       updatedBy: result.rows[0].updated_by,
     };

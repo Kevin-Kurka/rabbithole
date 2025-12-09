@@ -73,9 +73,43 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
-// Use upload link for file upload support
+// Use upload link for file upload support with CSRF protection
 const uploadLink = createUploadLink({
   uri: getHttpUri(),
+  // Add custom fetch to include required headers for CSRF protection
+  fetch: (uri, options) => {
+    // Extract operation name from the request body if available
+    let operationName = '';
+    if (options?.body) {
+      try {
+        // For multipart uploads, the body might be FormData
+        if (options.body instanceof FormData) {
+          const operations = options.body.get('operations');
+          if (operations && typeof operations === 'string') {
+            const parsed = JSON.parse(operations);
+            operationName = parsed.operationName || '';
+          }
+        } else if (typeof options.body === 'string') {
+          const parsed = JSON.parse(options.body);
+          operationName = parsed.operationName || '';
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+
+    // Add CSRF protection header
+    const headers = {
+      ...(options?.headers || {}),
+      'x-apollo-operation-name': operationName || 'unknown',
+      'apollo-require-preflight': 'true',
+    };
+
+    return fetch(uri, {
+      ...options,
+      headers,
+    });
+  },
 });
 
 // Combine auth link with upload link
@@ -87,23 +121,23 @@ const httpLinkWithAuth = authLink.concat(uploadLink as any);
  */
 const wsLink = !isSSR
   ? new GraphQLWsLink(createClient({
-      url: getWsUri(),
-      connectionParams: async () => {
-        try {
-          // Get JWT token from NextAuth session for WebSocket auth
-          const session = await getSession() as any;
-          if (session?.accessToken) {
-            return {
-              Authorization: `Bearer ${session.accessToken}`,
-            };
-          }
-          return {};
-        } catch (error) {
-          console.error('Failed to get session for WebSocket:', error);
-          return {};
+    url: getWsUri(),
+    connectionParams: async () => {
+      try {
+        // Get JWT token from NextAuth session for WebSocket auth
+        const session = await getSession() as any;
+        if (session?.accessToken) {
+          return {
+            Authorization: `Bearer ${session.accessToken}`,
+          };
         }
-      },
-    }))
+        return {};
+      } catch (error) {
+        console.error('Failed to get session for WebSocket:', error);
+        return {};
+      }
+    },
+  }))
   : null;
 
 /**
@@ -112,16 +146,16 @@ const wsLink = !isSSR
  */
 const link = wsLink
   ? split(
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink,
-      httpLinkWithAuth, // Use auth-enabled HTTP link
-    )
+    ({ query }) => {
+      const definition = getMainDefinition(query);
+      return (
+        definition.kind === "OperationDefinition" &&
+        definition.operation === "subscription"
+      );
+    },
+    wsLink,
+    httpLinkWithAuth, // Use auth-enabled HTTP link
+  )
   : httpLinkWithAuth;
 
 const client = new ApolloClient({

@@ -7,7 +7,7 @@ import { EmbeddingService } from './EmbeddingService';
  */
 
 export interface SearchResult {
-  veracityScore?: { veracityScore: number; evidenceCount?: number; challengeCount?: number; };
+
   id: string;
   title: string;
   type: string; // article, fact, claim, person, etc.
@@ -214,7 +214,16 @@ export class SearchService {
 
     // Generate embedding for the search query
     const embeddingService = new EmbeddingService();
-    const queryEmbedding = await embeddingService.generateEmbedding(query);
+    let queryEmbedding;
+
+    try {
+      queryEmbedding = await embeddingService.generateEmbedding(query);
+    } catch (error) {
+      console.warn('Failed to generate embedding for query:', error);
+      // Fallback to full-text search
+      const results = await this.search(pool, query, { ...options, semanticSearch: false });
+      return [...results.articles, ...results.nodes];
+    }
 
     if (!queryEmbedding) {
       console.warn('Failed to generate embedding for query, falling back to full-text search');

@@ -89,33 +89,7 @@ export const GET_PROMOTION_ELIGIBILITY = gql`
         }
       }
 
-      challengeResolution {
-        id
-        name
-        currentScore
-        targetScore
-        isMet
-        description
-        recommendations
-        details {
-          overallScore
-          openChallenges
-          resolvedChallenges
-          isMet
-          challenges {
-            id
-            raisedBy {
-              id
-              username
-            }
-            description
-            status
-            raisedAt
-            resolvedAt
-            resolution
-          }
-        }
-      }
+
 
       nextAction {
         criterion
@@ -295,42 +269,4 @@ export const UPDATE_METHODOLOGY_STEP = gql`
   }
 `;
 
-/**
- * Raise a challenge
- */
-export const RAISE_CHALLENGE = gql`
-  mutation RaiseChallenge($graphId: ID!, $description: String!) {
-    raiseChallenge(graphId: $graphId, description: $description) {
-      success
-      challenge {
-        id
-        raisedBy {
-          id
-          username
-        }
-        description
-        status
-        raisedAt
-      }
-      message
-    }
-  }
-`;
 
-/**
- * Resolve a challenge
- */
-export const RESOLVE_CHALLENGE = gql`
-  mutation ResolveChallenge($challengeId: ID!, $resolution: String!) {
-    resolveChallenge(challengeId: $challengeId, resolution: $resolution) {
-      success
-      challenge {
-        id
-        status
-        resolvedAt
-        resolution
-      }
-      message
-    }
-  }
-`;

@@ -1,12 +1,71 @@
 # Project Rabbit Hole
 
-[![Test Suite](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/test.yml)
+**Collaborative Intelligence & Sensemaking Platform**
+
+Project Rabbit Hole is an AI-powered knowledge graph platform designed for evidence-based inquiry. It allows users to build dynamic graphs, analyze complex topics, and collaboratively distinguish between verified facts and speculation.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Node.js 18+
+- npm
+
+### Run the Stack
+```bash
+# Start Database, Backend, Frontend, and Microservices
+docker-compose up -d
+```
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:4000/graphql](http://localhost:4000/graphql) (Playground enabled)
+
+## 📂 Project Structure
+
+- **`backend/`**: Node.js/TypeScript GraphQL API.
+  - `src/resolvers/`: GraphQL Business Logic.
+  - `migrations/`: Database schema versioning.
+- **`frontend/`**: Next.js React Application.
+  - `src/components/Graph/`: React Flow visualization.
+- **`docs/`**: Project documentation.
+
+## 🛠️ Key Features
+- **Graph Engine**: Strict 4-table schema (`Nodes`, `Edges`) with JSONB properties.
+- **Formal Inquiry**: Structured workflows for collaborative truth-seeking.
+- **Media Intelligence**: Audio transcription and video analysis pipeline.
+- **Hybrid Search**: Semantic vector search + Full-text search.
+
+## 🧪 Testing
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed testing instructions.
+
+```bash
+# Backend Tests
+cd backend && npm test
+
+# Frontend E2E
+cd frontend && npx playwright test
+```
+com/YOUR_USERNAME/rabbithole/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/test.yml)
 [![Lint & Type Check](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/lint.yml/badge.svg)](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/lint.yml)
 [![Coverage Report](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/coverage.yml/badge.svg)](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/coverage.yml)
 [![Deploy](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/rabbithole/actions/workflows/deploy.yml)
-[![codecov](https://codecov.io/gh/YOUR_USERNAME/rabbithole/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/rabbithole)
-
 A collaborative knowledge graph platform for evidence-based inquiry. Build interactive graph visualizations to explore complex topics, connect evidence, and develop theories using structured methodologies.
+
+## Production Deployment
+
+1.  **Environment Variables**:
+    Copy `.env.example` to `.env` and populate all required variables.
+    Ensure `NODE_ENV=production`.
+
+2.  **Build and Run**:
+    ```bash
+    docker-compose -f docker-compose.prod.yml up -d --build
+    ```
+
+3.  **Verify**:
+    - Frontend: `http://localhost:3000`
+    - API: `http://localhost:4000/graphql`
+    - Health: `http://localhost:4000/health`
 
 ## Features
 

@@ -16,21 +16,13 @@ import { GraphResolver, NodeResolver, EdgeResolver } from './resolvers/GraphReso
 import { NodeTypeResolver } from './resolvers/NodeTypeResolver';
 import { EdgeTypeResolver } from './resolvers/EdgeTypeResolver';
 import { CommentResolver } from './resolvers/CommentResolver';
-import { MethodologyResolver } from './resolvers/MethodologyResolver';
-import { MethodologyNodeTypeResolver } from './resolvers/MethodologyNodeTypeResolver';
-import { MethodologyEdgeTypeResolver } from './resolvers/MethodologyEdgeTypeResolver';
-import { MethodologyWorkflowResolver } from './resolvers/MethodologyWorkflowResolver';
-import { UserMethodologyProgressResolver, MethodologyPermissionResolver } from './resolvers/UserMethodologyResolver';
-import { VeracityResolver } from './resolvers/VeracityResolver';
-import { ProcessValidationResolver } from './resolvers/ProcessValidationResolver';
-import { AIAssistantResolver } from './resolvers/AIAssistantResolver';
+
+
+
 import { SearchResolver } from './resolvers/SearchResolver';
-import { InquiryResolver } from './resolvers/InquiryResolver';
 import { FormalInquiryResolver } from './resolvers/FormalInquiryResolver';
 import { ArticleResolver } from './resolvers/ArticleResolver';
-import { EvidenceFileResolver } from './resolvers/EvidenceFileResolver';
 import { CollaborationResolver } from './resolvers/CollaborationResolver';
-import { GamificationResolver } from './resolvers/GamificationResolver';
 import { GraphVersionResolver } from './resolvers/GraphVersionResolver';
 import { ContentAnalysisResolver } from './resolvers/ContentAnalysisResolver';
 import { GraphTraversalResolver } from './resolvers/GraphTraversalResolver';
@@ -41,19 +33,14 @@ import {
   ConversationMessageFieldResolver,
   ConversationalAIResponseFieldResolver
 } from './resolvers/ConversationalAIResolver';
-import { FactCheckingResolver } from './resolvers/FactCheckingResolver';
+
 import { PostActivityResolver } from './resolvers/ActivityResolver';
 import { NodeAssociationResolver } from './resolvers/NodeAssociationResolver';
 import { WhiteboardResolver } from './resolvers/WhiteboardResolver';
 import { StickyNoteResolver } from './resolvers/StickyNoteResolver';
 import { CollaborativePresenceResolver } from './resolvers/CollaborativePresenceResolver';
 
-import {
-  CuratorRoleResolver,
-  UserCuratorResolver,
-  CuratorApplicationResolver,
-  CuratorAuditLogResolver
-} from './resolvers/CuratorResolver';
+
 import { MediaProcessingResolver } from './resolvers/MediaProcessingResolver';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { WebSocketServer } from 'ws';
@@ -95,22 +82,13 @@ async function main() {
       EdgeResolver,
       NodeTypeResolver,
       EdgeTypeResolver,
-      MethodologyResolver,
-      MethodologyNodeTypeResolver,
-      MethodologyEdgeTypeResolver,
-      MethodologyWorkflowResolver,
-      UserMethodologyProgressResolver,
-      MethodologyPermissionResolver,
-      VeracityResolver,
-      ProcessValidationResolver,
-      AIAssistantResolver,
+
+
+
       SearchResolver,
-      InquiryResolver,
       FormalInquiryResolver,
       ArticleResolver,
-      EvidenceFileResolver,
       CollaborationResolver,
-      GamificationResolver,
       GraphVersionResolver,
       ContentAnalysisResolver,
       GraphTraversalResolver,
@@ -119,17 +97,14 @@ async function main() {
       ConversationFieldResolver,
       ConversationMessageFieldResolver,
       ConversationalAIResponseFieldResolver,
-      FactCheckingResolver,
+
       PostActivityResolver,
       NodeAssociationResolver,
       WhiteboardResolver,
       StickyNoteResolver,
       CollaborativePresenceResolver,
 
-      CuratorRoleResolver,
-      UserCuratorResolver,
-      CuratorApplicationResolver,
-      CuratorAuditLogResolver,
+
       MediaProcessingResolver
     ],
     pubSub,
