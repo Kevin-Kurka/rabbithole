@@ -8,8 +8,6 @@ import { gql } from '@apollo/client';
 import { User, Sparkles, FileText, Link2, Shield, AlertTriangle, CheckCircle, Loader2, X } from 'lucide-react';
 import LoginDialog from '@/components/forms/login-dialog';
 import { CredibilityBadge } from '@/components/credibility-badge';
-import { ConversationalInquiryModal } from '@/components/inquiry/ConversationalInquiryModal';
-import { AIAssistantFAB } from '@/components/ai-assistant/ai-assistant-fab';
 import { CREATE_FORMAL_INQUIRY } from '@/graphql/mutations/inquiry';
 
 // GraphQL queries and mutations
@@ -38,7 +36,11 @@ const SEARCH_NODES_QUERY = gql`
 
 const AUTOCOMPLETE_QUERY = gql`
   query Autocomplete($query: String!, $limit: Int) {
-    autocomplete(query: $query, limit: $limit)
+    autocomplete(query: $query, limit: $limit) {
+      id
+      title
+      type
+    }
   }
 `;
 
@@ -72,7 +74,7 @@ export default function HomePage() {
   const router = useRouter();
   const apolloClient = useApolloClient();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showProposalModal, setShowProposalModal] = useState(false);
+
   const [aiQuery, setAiQuery] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -94,7 +96,7 @@ export default function HomePage() {
   const [askAI, { loading: aiLoading }] = useMutation(ASK_AI_MUTATION);
 
   // Search suggestions state
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -105,33 +107,7 @@ export default function HomePage() {
   // Node positions state
   const [nodes, setNodes] = useState<Node[]>([]);
 
-  const [createFormalInquiry] = useMutation(CREATE_FORMAL_INQUIRY, {
-    onCompleted: (data) => {
-      console.log('Inquiry Created:', data);
-    },
-    onError: (error) => {
-      console.error('Error creating inquiry:', error);
-    }
-  });
 
-  const handleInquirySubmit = async (inquiryData: any) => {
-    try {
-      await createFormalInquiry({
-        variables: {
-          input: {
-            title: inquiryData.title,
-            description: inquiryData.description,
-            type: inquiryData.type,
-            targetNodeId: inquiryData.targetNodeId,
-            evidence: inquiryData.evidence
-          }
-        }
-      });
-      // setShowProposalModal(false); // Let the modal handle closing after success message
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   // Set default graph
   useEffect(() => {
@@ -215,6 +191,7 @@ export default function HomePage() {
         const { data } = await apolloClient.query({
           query: AUTOCOMPLETE_QUERY,
           variables: { query: value, limit: 5 },
+          fetchPolicy: 'network-only',
         });
 
         if (data?.autocomplete && data.autocomplete.length > 0) {
@@ -240,27 +217,12 @@ export default function HomePage() {
     handleSearchInput(value);
   };
 
-  const handleSuggestionClick = async (suggestion: string) => {
+  const handleSuggestionClick = (node: any) => {
     setShowSuggestions(false);
     setAiQuery('');
 
-    try {
-      // Search for the node to get its ID
-      const { data } = await apolloClient.query({
-        query: SEARCH_NODES_QUERY,
-        variables: { query: suggestion },
-      });
-
-      // Find exact match or first result
-      const node = data?.search?.nodes?.find((n: any) => n.title === suggestion)
-        || data?.search?.nodes?.[0];
-
-      if (node?.id) {
-        // Navigate to node details page
-        router.push(`/nodes/${node.id}`);
-      }
-    } catch (error) {
-      console.error('Error finding node:', error);
+    if (node?.id) {
+      router.push(`/nodes/${node.id}`);
     }
   };
 
@@ -497,21 +459,21 @@ export default function HomePage() {
               </div>
               {searchSuggestions.map((suggestion, index) => (
                 <button
-                  key={index}
+                  key={suggestion.id || index}
                   type="button"
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="block w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0"
                 >
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-zinc-400" />
-                    <span>{suggestion}</span>
+                    <span>{suggestion.title}</span>
                   </div>
                 </button>
               ))}
             </div>
           )}
 
-          <div className="flex items-center gap-4 bg-zinc-900 border border-white/10 px-6 py-4 shadow-2xl" style={{ borderWidth: '1px', borderRadius: '8px' }}>
+          <div className="flex items-center gap-4 bg-zinc-900 border border-white/10 px-6 py-4 shadow-2xl" style={{ borderRadius: '8px' }}>
             <input
               type="text"
               value={aiQuery}
@@ -527,7 +489,7 @@ export default function HomePage() {
                 }
               }}
               placeholder="Search nodes or ask AI anything..."
-              className="flex-1 bg-transparent border-none outline-none text-white text-base placeholder:text-zinc-500"
+              className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-white text-base placeholder:text-zinc-500"
               disabled={aiLoading}
             />
             {isSearching && (
@@ -555,22 +517,6 @@ export default function HomePage() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
-
-      {/* Conversational Inquiry Modal */}
-      <ConversationalInquiryModal
-        isOpen={showProposalModal}
-        onClose={() => setShowProposalModal(false)}
-        onSubmit={handleInquirySubmit}
-      // No selected text or target node for general inquiries
-      />
-
-      {/* AI Assistant FAB */}
-      <AIAssistantFAB
-        isOpen={showProposalModal}
-        onClick={() => setShowProposalModal(true)}
-        suggestionCount={0}
-      />
-
 
       <style jsx>{`
         /* Layer 1 - Fastest, Largest Stars */

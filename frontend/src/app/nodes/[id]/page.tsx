@@ -20,6 +20,9 @@ import { AddCommentDialog } from '@/components/forms';
 import { ArticleWithBadges } from '@/components/content/article-with-badges';
 import { useQuery } from '@apollo/client';
 import { GET_FORMAL_INQUIRIES, type FormalInquiry } from '@/graphql/queries/formal-inquiries';
+import { CREATE_FORMAL_INQUIRY } from '@/graphql/mutations/inquiry';
+import { ConversationalInquiryModal } from '@/components/inquiry/ConversationalInquiryModal';
+import { useMutation } from '@apollo/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +87,10 @@ export default function NodeDetailsPage() {
 
   // Create inquiry dialog state
   const [createInquiryOpen, setCreateInquiryOpen] = useState(false);
+
+
+  // Conversational Inquiry state
+  const [showConversationalInquiry, setShowConversationalInquiry] = useState(false);
 
   // File upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -174,6 +181,35 @@ export default function NodeDetailsPage() {
     variables: { nodeId: id },
     skip: !id,
   });
+
+  const [createFormalInquiry] = useMutation(CREATE_FORMAL_INQUIRY, {
+    onCompleted: (data) => {
+      console.log('Inquiry Created:', data);
+      refetchInquiries();
+    },
+    onError: (error) => {
+      console.error('Error creating inquiry:', error);
+    }
+  });
+
+  const handleInquirySubmit = async (inquiryData: any) => {
+    try {
+      await createFormalInquiry({
+        variables: {
+          input: {
+            title: inquiryData.title,
+            description: inquiryData.description,
+            type: inquiryData.type,
+            targetNodeId: id, // Current node ID
+            evidence: inquiryData.evidence
+          }
+        }
+      });
+      setShowConversationalInquiry(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Mock inquiries data
   const mockInquiries = [
@@ -328,7 +364,7 @@ export default function NodeDetailsPage() {
   const handleTextInquiry = (text: string, selection: Selection) => {
     setSelectedText(text);
     setTextSelection(selection);
-    setCreateInquiryOpen(true);
+    setShowConversationalInquiry(true);
   };
 
   return (
@@ -796,6 +832,15 @@ export default function NodeDetailsPage() {
             onClick={() => setSelectedInquiry(null)}
           />
 
+          {/* Modal for Inquiry */}
+          <ConversationalInquiryModal
+            isOpen={showConversationalInquiry}
+            onClose={() => setShowConversationalInquiry(false)}
+            onSubmit={handleInquirySubmit}
+            selectedText={selectedText}
+            targetNode={{ id: node.id, title: node.title }}
+          />
+
           {/* Sidebar */}
           <div className="fixed right-0 top-0 h-full w-full max-w-2xl bg-zinc-950 dark:bg-zinc-950 border-l z-50 overflow-y-auto">
             {(() => {
@@ -813,8 +858,8 @@ export default function NodeDetailsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`px-3 py-1 rounded text-sm ${inquiry.status === 'In Progress'
-                            ? 'bg-blue-500/10 text-blue-500'
-                            : 'bg-green-500/10 text-green-500'
+                          ? 'bg-blue-500/10 text-blue-500'
+                          : 'bg-green-500/10 text-green-500'
                           }`}>
                           {inquiry.status}
                         </span>

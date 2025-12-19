@@ -88,14 +88,15 @@ export class SearchResolver {
     }
   }
 
-  @Query(() => [String])
+  @Query(() => [SearchResult])
   async autocomplete(
     @Arg('query') query: string,
     @Arg('limit', () => Int, { nullable: true, defaultValue: 5 }) limit: number,
     @Ctx() { pool }: Context
-  ): Promise<string[]> {
+  ): Promise<SearchResult[]> {
     try {
-      return await this.searchService.autocomplete(pool, query, limit);
+      const results = await this.searchService.autocomplete(pool, query, limit);
+      return results.map(this.mapSearchResult);
     } catch (error) {
       console.error('Autocomplete error:', error);
       return [];

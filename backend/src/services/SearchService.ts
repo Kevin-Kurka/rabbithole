@@ -179,21 +179,36 @@ export class SearchService {
     pool: Pool,
     query: string,
     limit: number = 5
-  ): Promise<string[]> {
+  ): Promise<SearchResult[]> {
     if (!query || query.length < 2) return [];
 
     const sql = `
-      SELECT DISTINCT n.props->>'title' as title
+      SELECT
+        n.id,
+        n.props->>'title' as title,
+        nt.name as type,
+        1.0 as relevance,
+        n.props->>'graphId' as "graphId"
       FROM public."Nodes" n
+      JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
       WHERE n.props->>'title' ILIKE $1
-      ORDER BY n.props->>'title'
+      ORDER BY LENGTH(n.props->>'title') ASC, n.props->>'title' ASC
       LIMIT $2
     `;
 
     // Fixed: Escape special LIKE characters (%, _, \) to prevent pattern injection
     const escapedQuery = query.replace(/[%_\\]/g, '\\$&');
     const result = await pool.query(sql, [`%${escapedQuery}%`, limit]);
-    return result.rows.map(row => row.title);
+
+    // Map to SearchResult interface
+    return result.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      type: row.type,
+      relevance: 1.0,
+      graphId: row.graphId || '',
+      graph_name: undefined
+    }));
   }
 
   /**
