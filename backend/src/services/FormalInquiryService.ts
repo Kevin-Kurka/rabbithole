@@ -642,12 +642,12 @@ export class FormalInquiryService {
 
         const consensusScore = agreeCount / totalVotes; // 0 to 1
 
-        // Update inquiry node's consensus_score column
+        // Update inquiry node's consensusScore in props (not as column)
         await pool.query(
             `UPDATE public.nodes
-       SET consensus_score = $1, updated_at = NOW()
+       SET props = props || $1::jsonb, updated_at = NOW()
        WHERE id = $2`,
-            [consensusScore, inquiryId]
+            [JSON.stringify({ consensusScore }), inquiryId]
         );
     }
 

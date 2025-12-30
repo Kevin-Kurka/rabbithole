@@ -54,27 +54,77 @@ export interface GroupedPositions {
 }
 
 /**
+ * Helper to parse JSONB props safely
+ */
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  return typeof props === 'string' ? JSON.parse(props) : props;
+}
+
+/**
  * ThresholdFilteringService
  *
  * Implements threshold-based filtering of inquiry positions to ensure only credible
  * arguments influence node credibility. Positions below configurable thresholds are
  * excluded from calculations, preventing non-credible positions from affecting truth.
  *
+ * ARCHITECTURE: Uses strict 4-table schema (node_types, edge_types, nodes, edges)
+ * All data is stored in JSONB props field - no standalone tables.
+ *
  * Three Threshold Levels:
  * 1. **Auto-Amend Threshold**: Highest bar - triggers automatic node amendments
  * 2. **Inclusion Threshold**: Medium bar - included in node credibility calculation
  * 3. **Display Threshold**: Lowest bar - visible in UI but not used in calculations
  * 4. **Below Display**: Completely excluded (hidden by default)
- *
- * Type-Specific Thresholds:
- * - Scientific inquiries: Highest thresholds (0.75/0.35/0.90)
- * - Statistical validity: High standards (0.75/0.40/0.88)
- * - Factual accuracy: High standards (0.70/0.30/0.85)
- * - Ethical evaluation: Lower thresholds (0.55/0.25/0.75)
- * - Bias detection: Lowest thresholds (0.50/0.20/0.70)
  */
 export class ThresholdFilteringService {
+  // Cache for node type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
+  private edgeTypeCache: Map<string, string> = new Map();
+
   constructor(private pool: Pool) {}
+
+  /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+
+    const result = await this.pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
+   * Get edge type ID by name (cached)
+   */
+  private async getEdgeTypeId(name: string): Promise<string | null> {
+    if (this.edgeTypeCache.has(name)) {
+      return this.edgeTypeCache.get(name)!;
+    }
+
+    const result = await this.pool.query(
+      `SELECT id FROM edge_types WHERE name = $1`,
+      [name]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    this.edgeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
 
   /**
    * Get threshold configuration for an inquiry type
@@ -83,30 +133,46 @@ export class ThresholdFilteringService {
    * @returns Threshold configuration
    */
   async getThreshold(inquiryType: string): Promise<CredibilityThreshold> {
+    const thresholdTypeId = await this.getNodeTypeId('CredibilityThreshold');
+
+    if (!thresholdTypeId) {
+      // Return defaults if type not defined
+      return this.getDefaultThreshold(inquiryType);
+    }
+
     const result = await this.pool.query(
-      `
-      SELECT
-        inquiry_type as "inquiryType",
-        inclusion_threshold as "inclusionThreshold",
-        display_threshold as "displayThreshold",
-        auto_amend_threshold as "autoAmendThreshold"
-      FROM public."CredibilityThresholds"
-      WHERE inquiry_type = $1
-      `,
-      [inquiryType]
+      `SELECT props FROM nodes
+       WHERE node_type_id = $1
+         AND (props->>'inquiryType')::text = $2
+         AND archived_at IS NULL
+       LIMIT 1`,
+      [thresholdTypeId, inquiryType]
     );
 
     if (result.rows.length === 0) {
-      // Default thresholds if type not found
-      return {
-        inquiryType,
-        inclusionThreshold: 0.60,
-        displayThreshold: 0.30,
-        autoAmendThreshold: 0.80
-      };
+      return this.getDefaultThreshold(inquiryType);
     }
 
-    return result.rows[0];
+    const props = parseProps(result.rows[0].props);
+
+    return {
+      inquiryType,
+      inclusionThreshold: props.inclusionThreshold || 0.60,
+      displayThreshold: props.displayThreshold || 0.30,
+      autoAmendThreshold: props.verifiedThreshold || props.autoAmendThreshold || 0.80
+    };
+  }
+
+  /**
+   * Get default threshold for unknown inquiry types
+   */
+  private getDefaultThreshold(inquiryType: string): CredibilityThreshold {
+    return {
+      inquiryType,
+      inclusionThreshold: 0.60,
+      displayThreshold: 0.30,
+      autoAmendThreshold: 0.80
+    };
   }
 
   /**
@@ -117,37 +183,49 @@ export class ThresholdFilteringService {
    */
   async getCrediblePositions(inquiryId: string): Promise<FilteredPosition[]> {
     const inquiry = await this.getInquiry(inquiryId);
-    const threshold = await this.getThreshold(inquiry.inquiryType);
+    const inquiryProps = parseProps(inquiry.props);
+    const threshold = await this.getThreshold(inquiryProps.inquiryType || 'default');
+
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+    const evidenceTypeNodeTypeId = await this.getNodeTypeId('EvidenceType');
+    const hasEvidenceTypeEdgeId = await this.getEdgeTypeId('HAS_EVIDENCE_TYPE');
+
+    if (!positionTypeId || !hasPositionEdgeTypeId) {
+      return [];
+    }
 
     const result = await this.pool.query(
-      `
-      SELECT
+      `SELECT
         p.id,
-        p.inquiry_id as "inquiryId",
-        p.created_by_user_id as "createdBy",
-        p.stance,
-        p.argument,
-        p.evidence_links as "evidenceLinks",
-        p.credibility_score as "credibilityScore",
-        p.evidence_quality_score as "evidenceQualityScore",
-        p.source_credibility_score as "sourceCredibilityScore",
-        p.coherence_score as "coherenceScore",
-        p.upvotes,
-        p.downvotes,
-        p.status,
-        p.created_at as "createdAt",
-        p.updated_at as "updatedAt",
-        et.code as "evidenceType"
-      FROM public."InquiryPositions" p
-      LEFT JOIN public."EvidenceTypes" et ON p.evidence_type_id = et.id
-      WHERE p.inquiry_id = $1
-        AND p.credibility_score >= $2
-      ORDER BY p.credibility_score DESC
-      `,
-      [inquiryId, threshold.inclusionThreshold]
+        p.props as position_props,
+        p.created_at,
+        p.updated_at,
+        (et.props->>'code')::text as evidence_type_code
+      FROM nodes p
+      JOIN edges e ON p.id = e.target_node_id
+      LEFT JOIN edges et_edge ON p.id = et_edge.source_node_id
+        AND et_edge.edge_type_id = $5
+      LEFT JOIN nodes et ON et_edge.target_node_id = et.id
+        AND et.node_type_id = $6
+      WHERE p.node_type_id = $1
+        AND e.edge_type_id = $2
+        AND e.source_node_id = $3
+        AND COALESCE((p.props->>'credibilityScore')::real, 0.5) >= $4
+        AND COALESCE((p.props->>'status')::text, 'active') != 'archived'
+        AND p.archived_at IS NULL
+      ORDER BY (p.props->>'credibilityScore')::real DESC`,
+      [
+        positionTypeId,
+        hasPositionEdgeTypeId,
+        inquiryId,
+        threshold.inclusionThreshold,
+        hasEvidenceTypeEdgeId,
+        evidenceTypeNodeTypeId
+      ]
     );
 
-    return result.rows.map(row => this.mapToFilteredPosition(row, threshold));
+    return result.rows.map(row => this.mapToFilteredPosition(row, inquiryId, threshold));
   }
 
   /**
@@ -158,34 +236,44 @@ export class ThresholdFilteringService {
    */
   async getGroupedPositions(inquiryId: string): Promise<GroupedPositions> {
     const inquiry = await this.getInquiry(inquiryId);
-    const threshold = await this.getThreshold(inquiry.inquiryType);
+    const inquiryProps = parseProps(inquiry.props);
+    const threshold = await this.getThreshold(inquiryProps.inquiryType || 'default');
+
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+    const evidenceTypeNodeTypeId = await this.getNodeTypeId('EvidenceType');
+    const hasEvidenceTypeEdgeId = await this.getEdgeTypeId('HAS_EVIDENCE_TYPE');
+
+    if (!positionTypeId || !hasPositionEdgeTypeId) {
+      return { verified: [], credible: [], weak: [], excluded: [] };
+    }
 
     const result = await this.pool.query(
-      `
-      SELECT
+      `SELECT
         p.id,
-        p.inquiry_id as "inquiryId",
-        p.created_by_user_id as "createdBy",
-        p.stance,
-        p.argument,
-        p.evidence_links as "evidenceLinks",
-        p.credibility_score as "credibilityScore",
-        p.evidence_quality_score as "evidenceQualityScore",
-        p.source_credibility_score as "sourceCredibilityScore",
-        p.coherence_score as "coherenceScore",
-        p.upvotes,
-        p.downvotes,
-        p.status,
-        p.created_at as "createdAt",
-        p.updated_at as "updatedAt",
-        et.code as "evidenceType"
-      FROM public."InquiryPositions" p
-      LEFT JOIN public."EvidenceTypes" et ON p.evidence_type_id = et.id
-      WHERE p.inquiry_id = $1
-        AND p.status != 'archived'
-      ORDER BY p.credibility_score DESC
-      `,
-      [inquiryId]
+        p.props as position_props,
+        p.created_at,
+        p.updated_at,
+        (et.props->>'code')::text as evidence_type_code
+      FROM nodes p
+      JOIN edges e ON p.id = e.target_node_id
+      LEFT JOIN edges et_edge ON p.id = et_edge.source_node_id
+        AND et_edge.edge_type_id = $4
+      LEFT JOIN nodes et ON et_edge.target_node_id = et.id
+        AND et.node_type_id = $5
+      WHERE p.node_type_id = $1
+        AND e.edge_type_id = $2
+        AND e.source_node_id = $3
+        AND COALESCE((p.props->>'status')::text, 'active') != 'archived'
+        AND p.archived_at IS NULL
+      ORDER BY (p.props->>'credibilityScore')::real DESC`,
+      [
+        positionTypeId,
+        hasPositionEdgeTypeId,
+        inquiryId,
+        hasEvidenceTypeEdgeId,
+        evidenceTypeNodeTypeId
+      ]
     );
 
     const verified: FilteredPosition[] = [];
@@ -194,7 +282,7 @@ export class ThresholdFilteringService {
     const excluded: FilteredPosition[] = [];
 
     for (const row of result.rows) {
-      const position = this.mapToFilteredPosition(row, threshold);
+      const position = this.mapToFilteredPosition(row, inquiryId, threshold);
 
       if (position.canAmendNode) {
         verified.push(position);
@@ -218,46 +306,57 @@ export class ThresholdFilteringService {
    * @param positionId - Position ID
    */
   async updatePositionStatus(positionId: string): Promise<void> {
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const formalInquiryTypeId = await this.getNodeTypeId('FormalInquiry');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+
+    if (!positionTypeId || !formalInquiryTypeId || !hasPositionEdgeTypeId) {
+      throw new Error('Required node/edge types not found');
+    }
+
     // Get position with inquiry type
     const result = await this.pool.query(
-      `
-      SELECT
-        p.credibility_score,
-        i.inquiry_type
-      FROM public."InquiryPositions" p
-      JOIN public."Inquiries" i ON p.inquiry_id = i.id
+      `SELECT
+        p.props as position_props,
+        inquiry.props as inquiry_props
+      FROM nodes p
+      JOIN edges e ON p.id = e.target_node_id
+      JOIN nodes inquiry ON e.source_node_id = inquiry.id
       WHERE p.id = $1
-      `,
-      [positionId]
+        AND p.node_type_id = $2
+        AND e.edge_type_id = $3
+        AND inquiry.node_type_id = $4`,
+      [positionId, positionTypeId, hasPositionEdgeTypeId, formalInquiryTypeId]
     );
 
     if (result.rows.length === 0) {
       throw new Error(`Position not found: ${positionId}`);
     }
 
-    const { credibility_score, inquiry_type } = result.rows[0];
-    const threshold = await this.getThreshold(inquiry_type);
+    const positionProps = parseProps(result.rows[0].position_props);
+    const inquiryProps = parseProps(result.rows[0].inquiry_props);
+
+    const credibilityScore = positionProps.credibilityScore || 0.5;
+    const threshold = await this.getThreshold(inquiryProps.inquiryType || 'default');
 
     // Determine new status
     let newStatus: string;
-    if (credibility_score >= threshold.autoAmendThreshold) {
+    if (credibilityScore >= threshold.autoAmendThreshold) {
       newStatus = 'verified';
-    } else if (credibility_score >= threshold.inclusionThreshold) {
+    } else if (credibilityScore >= threshold.inclusionThreshold) {
       newStatus = 'credible';
-    } else if (credibility_score >= threshold.displayThreshold) {
+    } else if (credibilityScore >= threshold.displayThreshold) {
       newStatus = 'weak';
     } else {
       newStatus = 'excluded';
     }
 
-    // Update status in database
+    // Update status in props
     await this.pool.query(
-      `
-      UPDATE public."InquiryPositions"
-      SET status = $1, updated_at = NOW()
-      WHERE id = $2
-      `,
-      [newStatus, positionId]
+      `UPDATE nodes
+       SET props = props || $1::jsonb, updated_at = NOW()
+       WHERE id = $2`,
+      [JSON.stringify({ status: newStatus }), positionId]
     );
   }
 
@@ -268,12 +367,22 @@ export class ThresholdFilteringService {
    * @returns Number of positions updated
    */
   async updateAllPositionStatuses(inquiryId: string): Promise<number> {
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+
+    if (!positionTypeId || !hasPositionEdgeTypeId) {
+      return 0;
+    }
+
     const positions = await this.pool.query(
-      `
-      SELECT id FROM public."InquiryPositions"
-      WHERE inquiry_id = $1 AND status != 'archived'
-      `,
-      [inquiryId]
+      `SELECT p.id FROM nodes p
+       JOIN edges e ON p.id = e.target_node_id
+       WHERE p.node_type_id = $1
+         AND e.edge_type_id = $2
+         AND e.source_node_id = $3
+         AND COALESCE((p.props->>'status')::text, 'active') != 'archived'
+         AND p.archived_at IS NULL`,
+      [positionTypeId, hasPositionEdgeTypeId, inquiryId]
     );
 
     let updated = 0;
@@ -297,40 +406,60 @@ export class ThresholdFilteringService {
    * @returns True if position meets auto-amend threshold
    */
   async canAmendNode(positionId: string): Promise<boolean> {
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const formalInquiryTypeId = await this.getNodeTypeId('FormalInquiry');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+
+    if (!positionTypeId || !formalInquiryTypeId || !hasPositionEdgeTypeId) {
+      return false;
+    }
+
     const result = await this.pool.query(
-      `
-      SELECT
-        p.credibility_score,
-        i.inquiry_type
-      FROM public."InquiryPositions" p
-      JOIN public."Inquiries" i ON p.inquiry_id = i.id
+      `SELECT
+        p.props as position_props,
+        inquiry.props as inquiry_props
+      FROM nodes p
+      JOIN edges e ON p.id = e.target_node_id
+      JOIN nodes inquiry ON e.source_node_id = inquiry.id
       WHERE p.id = $1
-      `,
-      [positionId]
+        AND p.node_type_id = $2
+        AND e.edge_type_id = $3
+        AND inquiry.node_type_id = $4`,
+      [positionId, positionTypeId, hasPositionEdgeTypeId, formalInquiryTypeId]
     );
 
     if (result.rows.length === 0) {
       return false;
     }
 
-    const { credibility_score, inquiry_type } = result.rows[0];
-    const threshold = await this.getThreshold(inquiry_type);
+    const positionProps = parseProps(result.rows[0].position_props);
+    const inquiryProps = parseProps(result.rows[0].inquiry_props);
 
-    return credibility_score >= threshold.autoAmendThreshold;
+    const credibilityScore = positionProps.credibilityScore || 0.5;
+    const threshold = await this.getThreshold(inquiryProps.inquiryType || 'default');
+
+    return credibilityScore >= threshold.autoAmendThreshold;
   }
 
   /**
-   * Get inquiry details
+   * Get inquiry details using node/edge pattern
    *
    * @private
    */
   private async getInquiry(inquiryId: string): Promise<any> {
+    const formalInquiryTypeId = await this.getNodeTypeId('FormalInquiry');
+
+    if (!formalInquiryTypeId) {
+      throw new Error('FormalInquiry node type not found');
+    }
+
     const result = await this.pool.query(
-      `
-      SELECT * FROM public."Inquiries"
-      WHERE id = $1
-      `,
-      [inquiryId]
+      `SELECT id, props, created_at, updated_at
+       FROM nodes
+       WHERE id = $1
+         AND node_type_id = $2
+         AND archived_at IS NULL`,
+      [inquiryId, formalInquiryTypeId]
     );
 
     if (result.rows.length === 0) {
@@ -347,34 +476,36 @@ export class ThresholdFilteringService {
    */
   private mapToFilteredPosition(
     row: any,
+    inquiryId: string,
     threshold: CredibilityThreshold
   ): FilteredPosition {
-    const credibility = row.credibilityScore || 0.5;
+    const props = parseProps(row.position_props);
+    const credibility = props.credibilityScore || 0.5;
 
     return {
       id: row.id,
-      inquiryId: row.inquiryId,
-      createdBy: row.createdBy,
-      stance: row.stance,
-      argument: row.argument,
-      evidenceType: row.evidenceType || 'unknown',
-      evidenceLinks: row.evidenceLinks || [],
+      inquiryId,
+      createdBy: props.authorId || props.createdBy || '',
+      stance: props.stance || 'neutral',
+      argument: props.argument || '',
+      evidenceType: row.evidence_type_code || props.evidenceType || 'unknown',
+      evidenceLinks: props.evidenceLinks || [],
 
       credibilityScore: credibility,
-      evidenceQualityScore: row.evidenceQualityScore || 0.5,
-      sourceCredibilityScore: row.sourceCredibilityScore || 0.5,
-      coherenceScore: row.coherenceScore || 0.5,
+      evidenceQualityScore: props.evidenceQualityScore || 0.5,
+      sourceCredibilityScore: props.sourceCredibilityScore || 0.5,
+      coherenceScore: props.coherenceScore || 0.5,
 
-      upvotes: row.upvotes || 0,
-      downvotes: row.downvotes || 0,
+      upvotes: props.upvotes || 0,
+      downvotes: props.downvotes || 0,
 
-      status: row.status,
+      status: props.status || 'credible',
       includedInCalculation: credibility >= threshold.inclusionThreshold,
       visibleInUI: credibility >= threshold.displayThreshold,
       canAmendNode: credibility >= threshold.autoAmendThreshold,
 
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     };
   }
 
@@ -394,23 +525,45 @@ export class ThresholdFilteringService {
     thresholds: CredibilityThreshold;
   }> {
     const inquiry = await this.getInquiry(inquiryId);
-    const threshold = await this.getThreshold(inquiry.inquiry_type);
+    const inquiryProps = parseProps(inquiry.props);
+    const threshold = await this.getThreshold(inquiryProps.inquiryType || 'default');
+
+    const positionTypeId = await this.getNodeTypeId('Position');
+    const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+
+    if (!positionTypeId || !hasPositionEdgeTypeId) {
+      return {
+        total: 0,
+        verified: 0,
+        credible: 0,
+        weak: 0,
+        excluded: 0,
+        thresholds: threshold
+      };
+    }
 
     const result = await this.pool.query(
-      `
-      SELECT
-        COUNT(*) FILTER (WHERE credibility_score >= $1) as verified,
-        COUNT(*) FILTER (WHERE credibility_score >= $2 AND credibility_score < $1) as credible,
-        COUNT(*) FILTER (WHERE credibility_score >= $3 AND credibility_score < $2) as weak,
-        COUNT(*) FILTER (WHERE credibility_score < $3) as excluded,
+      `SELECT
+        COUNT(*) FILTER (WHERE COALESCE((p.props->>'credibilityScore')::real, 0.5) >= $1) as verified,
+        COUNT(*) FILTER (WHERE COALESCE((p.props->>'credibilityScore')::real, 0.5) >= $2
+          AND COALESCE((p.props->>'credibilityScore')::real, 0.5) < $1) as credible,
+        COUNT(*) FILTER (WHERE COALESCE((p.props->>'credibilityScore')::real, 0.5) >= $3
+          AND COALESCE((p.props->>'credibilityScore')::real, 0.5) < $2) as weak,
+        COUNT(*) FILTER (WHERE COALESCE((p.props->>'credibilityScore')::real, 0.5) < $3) as excluded,
         COUNT(*) as total
-      FROM public."InquiryPositions"
-      WHERE inquiry_id = $4 AND status != 'archived'
-      `,
+      FROM nodes p
+      JOIN edges e ON p.id = e.target_node_id
+      WHERE p.node_type_id = $4
+        AND e.edge_type_id = $5
+        AND e.source_node_id = $6
+        AND COALESCE((p.props->>'status')::text, 'active') != 'archived'
+        AND p.archived_at IS NULL`,
       [
         threshold.autoAmendThreshold,
         threshold.inclusionThreshold,
         threshold.displayThreshold,
+        positionTypeId,
+        hasPositionEdgeTypeId,
         inquiryId
       ]
     );
