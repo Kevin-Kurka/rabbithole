@@ -4,7 +4,6 @@ import {
   Mutation,
   Arg,
   Ctx,
-  ID,
   Field,
   InputType,
   ObjectType
@@ -25,6 +24,14 @@ interface Context {
   pool: Pool;
   userId?: string;
   isAuthenticated?: boolean;
+}
+
+/**
+ * Helper to parse JSONB props safely
+ */
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  return typeof props === 'string' ? JSON.parse(props) : props;
 }
 
 /**
@@ -98,10 +105,58 @@ class ConfigurationValidationResult {
 
 /**
  * AdminConfigurationResolver
- * Handles all system configuration operations with security and validation
+ *
+ * Handles all system configuration operations with security and validation.
+ * Uses node/edge pattern - SystemConfiguration and ConfigurationAuditLog are NodeTypes.
  */
 @Resolver()
 export class AdminConfigurationResolver {
+  // Cache for node type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
+  private edgeTypeCache: Map<string, string> = new Map();
+
+  /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(pool: Pool, name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+
+    const result = await pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
+   * Get edge type ID by name (cached)
+   */
+  private async getEdgeTypeId(pool: Pool, name: string): Promise<string | null> {
+    if (this.edgeTypeCache.has(name)) {
+      return this.edgeTypeCache.get(name)!;
+    }
+
+    const result = await pool.query(
+      `SELECT id FROM edge_types WHERE name = $1`,
+      [name]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    this.edgeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
   /**
    * Mask secret values by showing only last 4 characters
    */
@@ -110,6 +165,26 @@ export class AdminConfigurationResolver {
       return '****';
     }
     return '*'.repeat(value.length - 4) + value.slice(-4);
+  }
+
+  /**
+   * Transform node row to SystemConfiguration
+   */
+  private nodeToConfiguration(row: any): SystemConfiguration {
+    const props = parseProps(row.props);
+    return {
+      id: row.id,
+      key: props.key,
+      value: props.value,
+      category: props.category,
+      description: props.description,
+      data_type: props.dataType || props.data_type || ConfigurationDataType.STRING,
+      is_secret: props.isSecret || props.is_secret || false,
+      is_system: props.isSystem || props.is_system || false,
+      updated_by: props.updatedBy || props.updated_by,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   }
 
   /**
@@ -138,9 +213,6 @@ export class AdminConfigurationResolver {
     if (!ctx.userId) {
       throw new Error('Authentication required. Admin access only.');
     }
-    // TODO: Add role-based access control check
-    // const isAdmin = await this.checkUserRole(ctx.userId, 'admin');
-    // if (!isAdmin) throw new Error('Admin privileges required');
   }
 
   /**
@@ -192,7 +264,6 @@ export class AdminConfigurationResolver {
 
         case ConfigurationDataType.STRING:
         default:
-          // String validation passes
           break;
       }
 
@@ -225,23 +296,51 @@ export class AdminConfigurationResolver {
   }
 
   /**
-   * Log configuration change to audit log
+   * Log configuration change to audit log (as a node)
    */
   private async logConfigurationChange(
     pool: Pool,
     configKey: string,
+    configNodeId: string,
     oldValue: string | null,
     newValue: string,
     userId: string,
     changeReason?: string
   ): Promise<void> {
     try {
-      await pool.query(
-        `INSERT INTO public."ConfigurationAuditLog"
-         (id, config_key, old_value, new_value, changed_by, changed_at, change_reason)
-         VALUES (uuid_generate_v4(), $1, $2, $3, $4, NOW(), $5)`,
-        [configKey, oldValue, newValue, userId, changeReason]
+      const auditLogTypeId = await this.getNodeTypeId(pool, 'ConfigurationAuditLog');
+      const auditsConfigEdgeTypeId = await this.getEdgeTypeId(pool, 'AUDITS_CONFIG');
+
+      if (!auditLogTypeId) {
+        console.warn('ConfigurationAuditLog node type not found, skipping audit');
+        return;
+      }
+
+      // Create audit log node
+      const auditProps = {
+        configKey,
+        previousValue: oldValue,
+        newValue,
+        changedBy: userId,
+        changeReason,
+        changedAt: new Date().toISOString()
+      };
+
+      const result = await pool.query(
+        `INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+         VALUES ($1, $2, NOW(), NOW())
+         RETURNING id`,
+        [auditLogTypeId, JSON.stringify(auditProps)]
       );
+
+      // Create edge to configuration node if we have the edge type
+      if (auditsConfigEdgeTypeId && configNodeId) {
+        await pool.query(
+          `INSERT INTO edges (edge_type_id, source_node_id, target_node_id, props, created_at, updated_at)
+           VALUES ($1, $2, $3, '{}', NOW(), NOW())`,
+          [auditsConfigEdgeTypeId, result.rows[0].id, configNodeId]
+        );
+      }
 
       console.log('Configuration change logged:', {
         key: configKey,
@@ -251,7 +350,6 @@ export class AdminConfigurationResolver {
       });
     } catch (error) {
       console.error('Failed to log configuration change:', error);
-      // Don't throw - logging failure shouldn't block the operation
     }
   }
 
@@ -265,16 +363,24 @@ export class AdminConfigurationResolver {
   ): Promise<MaskedConfiguration | null> {
     this.ensureAuthenticated(ctx);
 
-    const result = await ctx.pool.query<SystemConfiguration>(
-      `SELECT * FROM public."SystemConfiguration" WHERE key = $1`,
-      [key]
+    const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+    if (!configTypeId) {
+      return null;
+    }
+
+    const result = await ctx.pool.query(
+      `SELECT id, props, created_at, updated_at FROM nodes
+       WHERE node_type_id = $1
+         AND (props->>'key')::text = $2
+         AND archived_at IS NULL`,
+      [configTypeId, key]
     );
 
     if (result.rows.length === 0) {
       return null;
     }
 
-    return this.toMaskedConfiguration(result.rows[0]);
+    return this.toMaskedConfiguration(this.nodeToConfiguration(result.rows[0]));
   }
 
   /**
@@ -287,14 +393,26 @@ export class AdminConfigurationResolver {
   ): Promise<MaskedConfiguration[]> {
     this.ensureAuthenticated(ctx);
 
+    const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+    if (!configTypeId) {
+      return [];
+    }
+
     const query = category
-      ? `SELECT * FROM public."SystemConfiguration" WHERE category = $1 ORDER BY category, key`
-      : `SELECT * FROM public."SystemConfiguration" ORDER BY category, key`;
+      ? `SELECT id, props, created_at, updated_at FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'category')::text = $2
+           AND archived_at IS NULL
+         ORDER BY (props->>'category')::text, (props->>'key')::text`
+      : `SELECT id, props, created_at, updated_at FROM nodes
+         WHERE node_type_id = $1
+           AND archived_at IS NULL
+         ORDER BY (props->>'category')::text, (props->>'key')::text`;
 
-    const params = category ? [category] : [];
-    const result = await ctx.pool.query<SystemConfiguration>(query, params);
+    const params = category ? [configTypeId, category] : [configTypeId];
+    const result = await ctx.pool.query(query, params);
 
-    return result.rows.map(config => this.toMaskedConfiguration(config));
+    return result.rows.map(row => this.toMaskedConfiguration(this.nodeToConfiguration(row)));
   }
 
   /**
@@ -303,7 +421,6 @@ export class AdminConfigurationResolver {
   @Query(() => [String])
   async getConfigurationCategories(@Ctx() ctx: Context): Promise<string[]> {
     this.ensureAuthenticated(ctx);
-
     return Object.values(ConfigurationCategory);
   }
 
@@ -318,19 +435,39 @@ export class AdminConfigurationResolver {
   ): Promise<ConfigurationAuditLog[]> {
     this.ensureAuthenticated(ctx);
 
+    const auditLogTypeId = await this.getNodeTypeId(ctx.pool, 'ConfigurationAuditLog');
+    if (!auditLogTypeId) {
+      return [];
+    }
+
     const query = configKey
-      ? `SELECT * FROM public."ConfigurationAuditLog"
-         WHERE config_key = $1
-         ORDER BY changed_at DESC
-         LIMIT $2`
-      : `SELECT * FROM public."ConfigurationAuditLog"
-         ORDER BY changed_at DESC
-         LIMIT $1`;
+      ? `SELECT id, props, created_at FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'configKey')::text = $2
+           AND archived_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT $3`
+      : `SELECT id, props, created_at FROM nodes
+         WHERE node_type_id = $1
+           AND archived_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT $2`;
 
-    const params = configKey ? [configKey, limit] : [limit];
-    const result = await ctx.pool.query<ConfigurationAuditLog>(query, params);
+    const params = configKey ? [auditLogTypeId, configKey, limit] : [auditLogTypeId, limit];
+    const result = await ctx.pool.query(query, params);
 
-    return result.rows;
+    return result.rows.map(row => {
+      const props = parseProps(row.props);
+      return {
+        id: row.id,
+        config_key: props.configKey,
+        old_value: props.previousValue,
+        new_value: props.newValue,
+        changed_by: props.changedBy,
+        changed_at: props.changedAt || row.created_at,
+        change_reason: props.changeReason
+      };
+    });
   }
 
   /**
@@ -344,7 +481,6 @@ export class AdminConfigurationResolver {
     @Ctx() ctx: Context
   ): Promise<ConfigurationValidationResult> {
     this.ensureAuthenticated(ctx);
-
     return this.validateConfigurationValue(key, value, dataType);
   }
 
@@ -358,7 +494,6 @@ export class AdminConfigurationResolver {
   ): Promise<ConfigurationOperationResponse> {
     this.ensureAuthenticated(ctx);
 
-    // Validate the value
     const validation = this.validateConfigurationValue(
       input.key,
       input.value,
@@ -373,10 +508,21 @@ export class AdminConfigurationResolver {
     }
 
     try {
+      const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+      if (!configTypeId) {
+        return {
+          success: false,
+          message: 'SystemConfiguration node type not found'
+        };
+      }
+
       // Check if key already exists
       const existing = await ctx.pool.query(
-        `SELECT id FROM public."SystemConfiguration" WHERE key = $1`,
-        [input.key]
+        `SELECT id FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'key')::text = $2
+           AND archived_at IS NULL`,
+        [configTypeId, input.key]
       );
 
       if (existing.rows.length > 0) {
@@ -386,27 +532,30 @@ export class AdminConfigurationResolver {
         };
       }
 
-      // Insert new configuration
-      const result = await ctx.pool.query<SystemConfiguration>(
-        `INSERT INTO public."SystemConfiguration"
-         (id, key, value, category, description, data_type, is_secret, is_system, updated_by, created_at, updated_at)
-         VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, false, $7, NOW(), NOW())
+      // Create configuration node
+      const configProps = {
+        key: input.key,
+        value: input.value,
+        category: input.category,
+        description: input.description,
+        dataType: input.data_type,
+        isSecret: input.is_secret,
+        isSystem: false,
+        updatedBy: ctx.userId
+      };
+
+      const result = await ctx.pool.query(
+        `INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+         VALUES ($1, $2, NOW(), NOW())
          RETURNING *`,
-        [
-          input.key,
-          input.value,
-          input.category,
-          input.description,
-          input.data_type,
-          input.is_secret,
-          ctx.userId
-        ]
+        [configTypeId, JSON.stringify(configProps)]
       );
 
       // Log the creation
       await this.logConfigurationChange(
         ctx.pool,
         input.key,
+        result.rows[0].id,
         null,
         input.value,
         ctx.userId!,
@@ -420,7 +569,7 @@ export class AdminConfigurationResolver {
       return {
         success: true,
         message,
-        configuration: this.toMaskedConfiguration(result.rows[0])
+        configuration: this.toMaskedConfiguration(this.nodeToConfiguration(result.rows[0]))
       };
     } catch (error) {
       console.error('Failed to create configuration:', error);
@@ -442,10 +591,21 @@ export class AdminConfigurationResolver {
     this.ensureAuthenticated(ctx);
 
     try {
+      const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+      if (!configTypeId) {
+        return {
+          success: false,
+          message: 'SystemConfiguration node type not found'
+        };
+      }
+
       // Get existing configuration
-      const existingResult = await ctx.pool.query<SystemConfiguration>(
-        `SELECT * FROM public."SystemConfiguration" WHERE key = $1`,
-        [input.key]
+      const existingResult = await ctx.pool.query(
+        `SELECT id, props, created_at, updated_at FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'key')::text = $2
+           AND archived_at IS NULL`,
+        [configTypeId, input.key]
       );
 
       if (existingResult.rows.length === 0) {
@@ -455,7 +615,7 @@ export class AdminConfigurationResolver {
         };
       }
 
-      const existing = existingResult.rows[0];
+      const existing = this.nodeToConfiguration(existingResult.rows[0]);
 
       // Validate the new value
       const validation = this.validateConfigurationValue(
@@ -471,19 +631,27 @@ export class AdminConfigurationResolver {
         };
       }
 
-      // Update configuration
-      const result = await ctx.pool.query<SystemConfiguration>(
-        `UPDATE public."SystemConfiguration"
-         SET value = $1, updated_by = $2, updated_at = NOW()
-         WHERE key = $3
+      // Update configuration - merge new value into props
+      const existingProps = parseProps(existingResult.rows[0].props);
+      const updatedProps = {
+        ...existingProps,
+        value: input.value,
+        updatedBy: ctx.userId
+      };
+
+      const result = await ctx.pool.query(
+        `UPDATE nodes
+         SET props = $1, updated_at = NOW()
+         WHERE id = $2
          RETURNING *`,
-        [input.value, ctx.userId, input.key]
+        [JSON.stringify(updatedProps), existingResult.rows[0].id]
       );
 
       // Log the change
       await this.logConfigurationChange(
         ctx.pool,
         input.key,
+        existingResult.rows[0].id,
         existing.value,
         input.value,
         ctx.userId!,
@@ -497,7 +665,7 @@ export class AdminConfigurationResolver {
       return {
         success: true,
         message,
-        configuration: this.toMaskedConfiguration(result.rows[0])
+        configuration: this.toMaskedConfiguration(this.nodeToConfiguration(result.rows[0]))
       };
     } catch (error) {
       console.error('Failed to update configuration:', error);
@@ -510,7 +678,6 @@ export class AdminConfigurationResolver {
 
   /**
    * Mutation: Reset configuration to default value
-   * Note: This requires a separate table for default values or hardcoded defaults
    */
   @Mutation(() => ConfigurationOperationResponse)
   async resetConfiguration(
@@ -520,10 +687,21 @@ export class AdminConfigurationResolver {
     this.ensureAuthenticated(ctx);
 
     try {
+      const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+      if (!configTypeId) {
+        return {
+          success: false,
+          message: 'SystemConfiguration node type not found'
+        };
+      }
+
       // Get current value for audit log
-      const current = await ctx.pool.query<SystemConfiguration>(
-        `SELECT * FROM public."SystemConfiguration" WHERE key = $1`,
-        [key]
+      const current = await ctx.pool.query(
+        `SELECT id, props FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'key')::text = $2
+           AND archived_at IS NULL`,
+        [configTypeId, key]
       );
 
       if (current.rows.length === 0) {
@@ -533,7 +711,7 @@ export class AdminConfigurationResolver {
         };
       }
 
-      // Get default value (this would typically come from a defaults table)
+      const currentProps = parseProps(current.rows[0].props);
       const defaultValue = await this.getDefaultValue(key);
 
       if (!defaultValue) {
@@ -544,19 +722,26 @@ export class AdminConfigurationResolver {
       }
 
       // Update to default value
-      const result = await ctx.pool.query<SystemConfiguration>(
-        `UPDATE public."SystemConfiguration"
-         SET value = $1, updated_by = $2, updated_at = NOW()
-         WHERE key = $3
+      const updatedProps = {
+        ...currentProps,
+        value: defaultValue,
+        updatedBy: ctx.userId
+      };
+
+      const result = await ctx.pool.query(
+        `UPDATE nodes
+         SET props = $1, updated_at = NOW()
+         WHERE id = $2
          RETURNING *`,
-        [defaultValue, ctx.userId, key]
+        [JSON.stringify(updatedProps), current.rows[0].id]
       );
 
       // Log the reset
       await this.logConfigurationChange(
         ctx.pool,
         key,
-        current.rows[0].value,
+        current.rows[0].id,
+        currentProps.value,
         defaultValue,
         ctx.userId!,
         'Configuration reset to default'
@@ -565,7 +750,7 @@ export class AdminConfigurationResolver {
       return {
         success: true,
         message: 'Configuration reset to default value',
-        configuration: this.toMaskedConfiguration(result.rows[0])
+        configuration: this.toMaskedConfiguration(this.nodeToConfiguration(result.rows[0]))
       };
     } catch (error) {
       console.error('Failed to reset configuration:', error);
@@ -587,10 +772,21 @@ export class AdminConfigurationResolver {
     this.ensureAuthenticated(ctx);
 
     try {
+      const configTypeId = await this.getNodeTypeId(ctx.pool, 'SystemConfiguration');
+      if (!configTypeId) {
+        return {
+          success: false,
+          message: 'SystemConfiguration node type not found'
+        };
+      }
+
       // Check if configuration exists and is not a system config
-      const existing = await ctx.pool.query<SystemConfiguration>(
-        `SELECT * FROM public."SystemConfiguration" WHERE key = $1`,
-        [key]
+      const existing = await ctx.pool.query(
+        `SELECT id, props FROM nodes
+         WHERE node_type_id = $1
+           AND (props->>'key')::text = $2
+           AND archived_at IS NULL`,
+        [configTypeId, key]
       );
 
       if (existing.rows.length === 0) {
@@ -600,24 +796,27 @@ export class AdminConfigurationResolver {
         };
       }
 
-      if (existing.rows[0].is_system) {
+      const existingProps = parseProps(existing.rows[0].props);
+
+      if (existingProps.isSystem || existingProps.is_system) {
         return {
           success: false,
           message: `Cannot delete system configuration '${key}'`
         };
       }
 
-      // Delete configuration
+      // Soft delete configuration (archive it)
       await ctx.pool.query(
-        `DELETE FROM public."SystemConfiguration" WHERE key = $1`,
-        [key]
+        `UPDATE nodes SET archived_at = NOW() WHERE id = $1`,
+        [existing.rows[0].id]
       );
 
       // Log the deletion
       await this.logConfigurationChange(
         ctx.pool,
         key,
-        existing.rows[0].value,
+        existing.rows[0].id,
+        existingProps.value,
         '[DELETED]',
         ctx.userId!,
         'Configuration deleted'
@@ -638,10 +837,8 @@ export class AdminConfigurationResolver {
 
   /**
    * Helper: Get default value for a configuration key
-   * This would typically query a defaults table or use a hardcoded map
    */
   private async getDefaultValue(key: string): Promise<string | null> {
-    // Default configuration values (hardcoded for now)
     const defaults: Record<string, string> = {
       'database.pool.max': '20',
       'database.pool.idle_timeout': '30000',
