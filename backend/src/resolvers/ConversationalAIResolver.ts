@@ -191,11 +191,10 @@ export class ConversationalAIResolver {
     return {
       id: row.id,
       userId: props.userId,
-      graphId: props.graphId || props.contextId,
-      title: props.title,
-      metadata: props.metadata,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      graphId: props.graphId || props.contextId || '',
+      messages: [], // Populated by field resolver
+      lastUpdated: row.updatedAt,
+      messageCount: 0, // Populated by field resolver
     };
   }
 
@@ -281,12 +280,10 @@ export class ConversationalAIResolver {
       return {
         id: row.id,
         userId: props.userId,
-        graphId: props.graphId || props.contextId,
-        title: props.title,
-        metadata: props.metadata,
+        graphId: props.graphId || props.contextId || '',
+        messages: [], // Populated by field resolver
+        lastUpdated: row.updatedAt,
         messageCount: parseInt(row.messageCount, 10),
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
       };
     });
   }
@@ -352,13 +349,11 @@ export class ConversationalAIResolver {
     return result.rows.map(row => {
       const props = parseProps(row.props);
       return {
-        id: row.id,
-        conversationId: props.conversationId || conversationId,
         userId: props.userId,
+        conversationId: props.conversationId || conversationId,
         role: props.role,
         content: props.content,
-        metadata: props.metadata,
-        createdAt: row.createdAt,
+        timestamp: row.createdAt,
       };
     });
   }
@@ -455,11 +450,10 @@ export class ConversationalAIResolver {
     return {
       id: row.id,
       userId: props.userId,
-      graphId: props.graphId || props.contextId,
-      title: props.title,
-      metadata: props.metadata,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      graphId: props.graphId || props.contextId || '',
+      messages: [], // Populated by field resolver
+      lastUpdated: row.updatedAt,
+      messageCount: 0, // Populated by field resolver
     };
   }
 
@@ -540,7 +534,8 @@ export class ConversationFieldResolver {
       id: row.id,
       username: props.username,
       email: props.email,
-      createdAt: row.createdAt,
+      created_at: row.createdAt,
+      updated_at: row.createdAt, // Use createdAt as fallback
     };
   }
 
@@ -570,14 +565,15 @@ export class ConversationFieldResolver {
 
     return {
       id: row.id,
-      name: props.name,
+      name: props.name || '',
       description: props.description,
       level: props.level,
       methodology: props.methodology,
       privacy: props.privacy,
-      createdBy: props.createdBy,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      nodes: [], // Populated by field resolver if needed
+      edges: [], // Populated by field resolver if needed
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
     };
   }
 
@@ -615,13 +611,11 @@ export class ConversationFieldResolver {
     return result.rows.map(row => {
       const props = parseProps(row.props);
       return {
-        id: row.id,
-        conversationId: props.conversationId || conversation.id,
         userId: props.userId,
+        conversationId: props.conversationId || conversation.id,
         role: props.role,
         content: props.content,
-        metadata: props.metadata,
-        createdAt: row.createdAt,
+        timestamp: row.createdAt,
       };
     });
   }
@@ -677,7 +671,8 @@ export class ConversationMessageFieldResolver {
       id: row.id,
       username: props.username,
       email: props.email,
-      createdAt: row.createdAt,
+      created_at: row.createdAt,
+      updated_at: row.createdAt, // Use createdAt as fallback
     };
   }
 
@@ -703,11 +698,10 @@ export class ConversationMessageFieldResolver {
     return {
       id: row.id,
       userId: props.userId,
-      graphId: props.graphId || props.contextId,
-      title: props.title,
-      metadata: props.metadata,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      graphId: props.graphId || props.contextId || '',
+      messages: [], // Populated by field resolver
+      lastUpdated: row.updatedAt,
+      messageCount: 0, // Populated by field resolver
     };
   }
 }
@@ -739,11 +733,10 @@ export class ConversationalAIResponseFieldResolver {
     return {
       id: row.id,
       userId: props.userId,
-      graphId: props.graphId || props.contextId,
-      title: props.title,
-      metadata: props.metadata,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      graphId: props.graphId || props.contextId || '',
+      messages: [], // Populated by field resolver
+      lastUpdated: row.updatedAt,
+      messageCount: 0, // Populated by field resolver
     };
   }
 }
