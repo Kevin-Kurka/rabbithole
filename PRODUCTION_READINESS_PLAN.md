@@ -1,5 +1,29 @@
 # Production Readiness Plan
 
+## Implementation Status
+
+### ✅ Completed
+- [x] Migration 016: Add missing NodeTypes (SystemConfiguration, EvidenceType, CredibilityThreshold, Conversation, ConversationMessage, GraphLock, PresenceSession, File)
+- [x] Migration 017: Remove column violations and migrate data to JSONB props
+- [x] CredibilityCalculationService: Rewritten to use node/edge queries
+- [x] FormalInquiryService: Fixed to update consensusScore in props
+- [x] ThresholdFilteringService: Rewritten to use node/edge pattern
+- [x] AdminConfigurationResolver: Rewritten to use node/edge pattern
+
+### 🔄 Remaining Work
+- [ ] ConversationalAIResolver - References ConversationMessages table
+- [ ] ActivityResolver - References Users table
+- [ ] CollaborativePresenceResolver - References Users and GraphLocks tables
+- [ ] FileStorageService - References EvidenceFiles table
+- [ ] InquiryDeduplicationService - References Inquiries table
+- [ ] AmendmentService - References InquiryPositions table
+- [ ] Various other services/resolvers
+- [ ] Update tests to work with new architecture
+- [ ] Enable CI tests
+- [ ] Fix security vulnerabilities
+
+---
+
 ## Executive Summary
 
 This project uses a **strict 4-table graph database architecture**:
