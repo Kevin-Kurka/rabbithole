@@ -8,9 +8,12 @@ import { Pool } from 'pg';
  * - Ollama deepseek-r1:1.5b for conversational reasoning
  * - Ollama nomic-embed-text for semantic embeddings
  * - PostgreSQL pgvector for semantic node search
- * - Persistent conversation history in database
+ * - Persistent conversation history in database (as nodes/edges)
  * - Context window management for multi-turn conversations
  * - Markdown link formatting for node references
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
  */
 
 // ==================== TYPES ====================
@@ -74,6 +77,23 @@ interface ConversationContext {
   relevantNodes: SearchableNode[];
 }
 
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Parse props that could be string or object
+ */
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
 // ==================== SERVICE CLASS ====================
 
 export class ConversationalAIService {
@@ -83,6 +103,10 @@ export class ConversationalAIService {
   private maxContextMessages: number;
   private maxRelevantNodes: number;
   private similarityThreshold: number;
+
+  // Cache for node/edge type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
+  private edgeTypeCache: Map<string, string> = new Map();
 
   constructor() {
     this.ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
@@ -99,6 +123,38 @@ export class ConversationalAIService {
   - Max Relevant Nodes: ${this.maxRelevantNodes}
   - Similarity Threshold: ${this.similarityThreshold}
     `);
+  }
+
+  /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(pool: Pool, name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+    const result = await pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
+   * Get edge type ID by name (cached)
+   */
+  private async getEdgeTypeId(pool: Pool, name: string): Promise<string | null> {
+    if (this.edgeTypeCache.has(name)) {
+      return this.edgeTypeCache.get(name)!;
+    }
+    const result = await pool.query(
+      `SELECT id FROM edge_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.edgeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
   }
 
   /**
@@ -220,14 +276,14 @@ export class ConversationalAIService {
         ? `
           SELECT
             n.id,
-            n.title,
+            n.props->>'title' as title,
             n.props,
             n.ai,
             COALESCE((n.props->>'weight')::numeric, 1.0) as weight,
-            mnt.name as node_type,
+            nt.name as node_type,
             (1 - (n.ai <=> $1::vector)) as similarity
-          FROM public."Nodes" n
-          LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
+          FROM nodes n
+          LEFT JOIN node_types nt ON n.node_type_id = nt.id
           WHERE n.props->>'graphId' = $2
             AND n.ai IS NOT NULL
             AND (1 - (n.ai <=> $1::vector)) >= $3
@@ -237,14 +293,14 @@ export class ConversationalAIService {
         : `
           SELECT
             n.id,
-            n.title,
+            n.props->>'title' as title,
             n.props,
             n.ai,
             COALESCE((n.props->>'weight')::numeric, 1.0) as weight,
-            mnt.name as node_type,
+            nt.name as node_type,
             (1 - (n.ai <=> $1::vector)) as similarity
-          FROM public."Nodes" n
-          LEFT JOIN public."MethodologyNodeTypes" mnt ON n.node_type_id = mnt.id
+          FROM nodes n
+          LEFT JOIN node_types nt ON n.node_type_id = nt.id
           WHERE n.ai IS NOT NULL
             AND (1 - (n.ai <=> $1::vector)) >= $2
           ORDER BY n.ai <=> $1::vector
@@ -260,7 +316,7 @@ export class ConversationalAIService {
       const nodes: SearchableNode[] = result.rows.map(row => ({
         id: row.id,
         title: row.title || 'Untitled Node',
-        props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props,
+        props: parseProps(row.props),
         ai: typeof row.ai === 'string' ? JSON.parse(row.ai) : row.ai,
         node_type: row.node_type,
         weight: row.weight,
@@ -350,6 +406,7 @@ export class ConversationalAIService {
 
   /**
    * Get conversation history with context window management
+   * Uses HAS_MESSAGE edges to find messages belonging to a conversation
    *
    * @param pool - PostgreSQL connection pool
    * @param conversationId - Conversation ID
@@ -360,28 +417,46 @@ export class ConversationalAIService {
     conversationId: string
   ): Promise<ConversationMessage[]> {
     try {
+      const messageTypeId = await this.getNodeTypeId(pool, 'ConversationMessage');
+      const edgeTypeId = await this.getEdgeTypeId(pool, 'HAS_MESSAGE');
+
+      if (!messageTypeId || !edgeTypeId) {
+        console.warn('ConversationMessage or HAS_MESSAGE type not found');
+        return [];
+      }
+
+      // Query messages via HAS_MESSAGE edges
       const result = await pool.query(
         `
         SELECT
-          id,
-          conversation_id as "conversationId",
-          user_id as "userId",
-          role,
-          content,
-          metadata,
-          created_at as "createdAt"
-        FROM public."ConversationMessages"
-        WHERE conversation_id = $1
-        ORDER BY created_at DESC
-        LIMIT $2
+          m.id,
+          m.props->>'conversationId' as "conversationId",
+          m.props->>'userId' as "userId",
+          m.props->>'role' as role,
+          m.props->>'content' as content,
+          m.props->'metadata' as metadata,
+          m.created_at as "createdAt",
+          COALESCE((e.props->>'order')::int, 0) as message_order
+        FROM nodes m
+        JOIN edges e ON e.target_node_id = m.id
+        WHERE m.node_type_id = $1
+          AND e.edge_type_id = $2
+          AND e.source_node_id = $3
+        ORDER BY message_order DESC, m.created_at DESC
+        LIMIT $4
         `,
-        [conversationId, this.maxContextMessages]
+        [messageTypeId, edgeTypeId, conversationId, this.maxContextMessages]
       );
 
       // Reverse to get chronological order
       return result.rows.reverse().map(row => ({
-        ...row,
-        metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+        id: row.id,
+        conversationId: row.conversationId || conversationId,
+        userId: row.userId || '',
+        role: row.role as 'user' | 'assistant' | 'system',
+        content: row.content || '',
+        metadata: parseProps(row.metadata),
+        createdAt: row.createdAt,
       }));
     } catch (error) {
       console.error('Error retrieving conversation history:', error);
@@ -577,6 +652,7 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
 
   /**
    * Get conversation by ID with user ownership check
+   * Queries nodes table with Conversation node type
    */
   private async getConversation(
     pool: Pool,
@@ -584,20 +660,25 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
     userId: string
   ): Promise<Conversation | null> {
     try {
+      const conversationTypeId = await this.getNodeTypeId(pool, 'Conversation');
+      if (!conversationTypeId) {
+        console.warn('Conversation node type not found');
+        return null;
+      }
+
       const result = await pool.query(
         `
         SELECT
           id,
-          user_id as "userId",
-          graph_id as "graphId",
-          title,
-          metadata,
+          props,
           created_at as "createdAt",
           updated_at as "updatedAt"
-        FROM public."Conversations"
-        WHERE id = $1 AND user_id = $2
+        FROM nodes
+        WHERE id = $1
+          AND node_type_id = $2
+          AND props->>'userId' = $3
         `,
-        [conversationId, userId]
+        [conversationId, conversationTypeId, userId]
       );
 
       if (result.rows.length === 0) {
@@ -605,9 +686,16 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
       }
 
       const row = result.rows[0];
+      const props = parseProps(row.props);
+
       return {
-        ...row,
-        metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+        id: row.id,
+        userId: props.userId || userId,
+        graphId: props.graphId,
+        title: props.title,
+        metadata: props.metadata,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
       };
     } catch (error) {
       console.error('Error retrieving conversation:', error);
@@ -616,7 +704,7 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
   }
 
   /**
-   * Create new conversation
+   * Create new conversation as a node
    */
   private async createConversation(
     pool: Pool,
@@ -624,44 +712,40 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
     graphId?: string
   ): Promise<Conversation> {
     try {
+      const conversationTypeId = await this.getNodeTypeId(pool, 'Conversation');
+      if (!conversationTypeId) {
+        throw new Error('Conversation node type not found. Run migrations.');
+      }
+
+      const props = {
+        userId,
+        graphId: graphId || null,
+        title: 'New Conversation',
+        contextType: graphId ? 'graph' : 'general',
+        contextId: graphId || null,
+        status: 'active',
+        metadata: { source: 'ConversationalAIService' },
+      };
+
       const result = await pool.query(
         `
-        INSERT INTO public."Conversations" (
-          id,
-          user_id,
-          graph_id,
-          title,
-          metadata,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          uuid_generate_v4(),
-          $1,
-          $2,
-          $3,
-          $4,
-          NOW(),
-          NOW()
-        )
-        RETURNING
-          id,
-          user_id as "userId",
-          graph_id as "graphId",
-          title,
-          metadata,
-          created_at as "createdAt",
-          updated_at as "updatedAt"
+        INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
+        RETURNING id, props, created_at as "createdAt", updated_at as "updatedAt"
         `,
-        [
-          userId,
-          graphId || null,
-          'New Conversation',
-          JSON.stringify({ source: 'ConversationalAIService' }),
-        ]
+        [conversationTypeId, JSON.stringify(props)]
       );
 
-      return result.rows[0];
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId,
+        graphId,
+        title: 'New Conversation',
+        metadata: props.metadata,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
     } catch (error) {
       console.error('Error creating conversation:', error);
       throw new Error('Failed to create conversation');
@@ -669,7 +753,7 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
   }
 
   /**
-   * Save message to database
+   * Save message to database as a node, linked via HAS_MESSAGE edge
    */
   private async saveMessage(
     pool: Pool,
@@ -682,38 +766,54 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
     }
   ): Promise<string> {
     try {
-      const result = await pool.query(
+      const messageTypeId = await this.getNodeTypeId(pool, 'ConversationMessage');
+      const edgeTypeId = await this.getEdgeTypeId(pool, 'HAS_MESSAGE');
+
+      if (!messageTypeId || !edgeTypeId) {
+        throw new Error('ConversationMessage or HAS_MESSAGE type not found. Run migrations.');
+      }
+
+      // Get message order for this conversation
+      const countResult = await pool.query(
         `
-        INSERT INTO public."ConversationMessages" (
-          id,
-          conversation_id,
-          user_id,
-          role,
-          content,
-          metadata,
-          created_at
-        )
-        VALUES (
-          uuid_generate_v4(),
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          NOW()
-        )
+        SELECT COUNT(*) as count
+        FROM edges e
+        WHERE e.edge_type_id = $1 AND e.source_node_id = $2
+        `,
+        [edgeTypeId, message.conversationId]
+      );
+      const messageOrder = parseInt(countResult.rows[0].count, 10);
+
+      const props = {
+        conversationId: message.conversationId,
+        userId: message.userId,
+        role: message.role,
+        content: message.content,
+        metadata: message.metadata || {},
+        tokenCount: message.content.length, // Approximate
+      };
+
+      // Create message node
+      const nodeResult = await pool.query(
+        `
+        INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
         RETURNING id
         `,
-        [
-          message.conversationId,
-          message.userId,
-          message.role,
-          message.content,
-          JSON.stringify(message.metadata || {}),
-        ]
+        [messageTypeId, JSON.stringify(props)]
+      );
+      const messageId = nodeResult.rows[0].id;
+
+      // Create HAS_MESSAGE edge from conversation to message
+      await pool.query(
+        `
+        INSERT INTO edges (edge_type_id, source_node_id, target_node_id, props, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        `,
+        [edgeTypeId, message.conversationId, messageId, JSON.stringify({ order: messageOrder })]
       );
 
-      return result.rows[0].id;
+      return messageId;
     } catch (error) {
       console.error('Error saving message:', error);
       throw new Error('Failed to save message');
@@ -727,7 +827,7 @@ Use these nodes to provide context-aware responses. Reference nodes by their tit
     try {
       await pool.query(
         `
-        UPDATE public."Conversations"
+        UPDATE nodes
         SET updated_at = NOW()
         WHERE id = $1
         `,

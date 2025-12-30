@@ -37,6 +37,22 @@ export interface FileStorageProvider {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
+// ============================================================================
 // S3 STORAGE PROVIDER
 // ============================================================================
 
@@ -288,12 +304,23 @@ export class LocalStorageProvider implements FileStorageProvider {
 // FILE STORAGE SERVICE
 // ============================================================================
 
+/**
+ * FileStorageService
+ *
+ * Handles file uploads, downloads, and storage management for evidence files.
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * Files are stored as File NodeType nodes with metadata in JSONB props.
+ */
 export class FileStorageService {
   private provider: FileStorageProvider;
   private pool: Pool;
   private storageProviderName: string;
   private storageBucket?: string;
   private storageRegion?: string;
+
+  // Cache for node type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
 
   constructor(pool: Pool) {
     this.pool = pool;
@@ -334,6 +361,22 @@ export class FileStorageService {
   }
 
   /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+    const result = await this.pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
    * Calculate SHA256 hash of buffer
    */
   private calculateHash(buffer: Buffer): string {
@@ -355,15 +398,23 @@ export class FileStorageService {
 
   /**
    * Check if file with same hash already exists for deduplication
+   * Uses File NodeType from nodes table
    */
   async deduplicateFile(hash: string, evidenceId: string): Promise<string | null> {
+    const fileTypeId = await this.getNodeTypeId('File');
+    if (!fileTypeId) {
+      console.warn('File node type not found');
+      return null;
+    }
+
     const result = await this.pool.query(
-      `SELECT storage_key FROM public."EvidenceFiles"
-       WHERE file_hash = $1
-       AND evidence_id != $2
-       AND deleted_at IS NULL
+      `SELECT props->>'storagePath' as storage_key FROM nodes
+       WHERE node_type_id = $1
+       AND props->>'fileHash' = $2
+       AND props->>'evidenceId' != $3
+       AND (props->>'deletedAt') IS NULL
        LIMIT 1`,
-      [hash, evidenceId]
+      [fileTypeId, hash, evidenceId]
     );
 
     if (result.rows.length > 0) {
@@ -564,71 +615,94 @@ export class FileStorageService {
 
   /**
    * Get signed URL for file download
+   * Uses File NodeType from nodes table
    */
   async getFileUrl(fileId: string, expiresIn: number = 3600): Promise<string> {
+    const fileTypeId = await this.getNodeTypeId('File');
+    if (!fileTypeId) {
+      throw new Error('File node type not found');
+    }
+
     const result = await this.pool.query(
-      `SELECT storage_key, storage_provider, virus_scan_status
-       FROM public."EvidenceFiles"
-       WHERE id = $1 AND deleted_at IS NULL`,
-      [fileId]
+      `SELECT props FROM nodes
+       WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+      [fileId, fileTypeId]
     );
 
     if (result.rows.length === 0) {
       throw new Error('File not found');
     }
 
-    const file = result.rows[0];
+    const props = parseProps(result.rows[0].props);
 
     // Security check: Don't allow download of infected files
-    if (file.virus_scan_status === 'infected') {
+    if (props.virusScanStatus === 'infected') {
       throw new Error('File is quarantined due to security concerns');
     }
 
     // Update access count
     await this.pool.query(
-      `UPDATE public."EvidenceFiles"
-       SET access_count = access_count + 1, last_accessed_at = NOW()
-       WHERE id = $1`,
-      [fileId]
+      `UPDATE nodes
+       SET props = props || $1::jsonb, updated_at = NOW()
+       WHERE id = $2`,
+      [
+        JSON.stringify({
+          accessCount: (props.accessCount || 0) + 1,
+          lastAccessedAt: new Date().toISOString()
+        }),
+        fileId
+      ]
     );
 
-    return await this.provider.getSignedUrl(file.storage_key, expiresIn);
+    return await this.provider.getSignedUrl(props.storagePath, expiresIn);
   }
 
   /**
    * Delete file from storage and database
+   * Uses File NodeType from nodes table
    */
   async deleteFile(fileId: string, userId: string, reason?: string): Promise<void> {
+    const fileTypeId = await this.getNodeTypeId('File');
+    if (!fileTypeId) {
+      throw new Error('File node type not found');
+    }
+
     const result = await this.pool.query(
-      `SELECT storage_key, thumbnail_storage_key
-       FROM public."EvidenceFiles"
-       WHERE id = $1 AND deleted_at IS NULL`,
-      [fileId]
+      `SELECT props FROM nodes
+       WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+      [fileId, fileTypeId]
     );
 
     if (result.rows.length === 0) {
       throw new Error('File not found or already deleted');
     }
 
-    const file = result.rows[0];
+    const props = parseProps(result.rows[0].props);
 
     // Soft delete in database
     await this.pool.query(
-      `UPDATE public."EvidenceFiles"
-       SET deleted_at = NOW(), deleted_by = $1, deletion_reason = $2
-       WHERE id = $3`,
-      [userId, reason, fileId]
+      `UPDATE nodes
+       SET props = props || $1::jsonb, updated_at = NOW()
+       WHERE id = $2`,
+      [
+        JSON.stringify({
+          deletedAt: new Date().toISOString(),
+          deletedBy: userId,
+          deletionReason: reason
+        }),
+        fileId
+      ]
     );
 
     // Delete from storage provider (can be made async/background job)
     try {
-      await this.provider.delete(file.storage_key);
+      await this.provider.delete(props.storagePath);
 
-      if (file.thumbnail_storage_key) {
-        await this.provider.delete(file.thumbnail_storage_key);
+      if (props.thumbnailStoragePath) {
+        await this.provider.delete(props.thumbnailStoragePath);
       }
 
-      console.log(`File deleted: ${file.storage_key}`);
+      console.log(`File deleted: ${props.storagePath}`);
     } catch (error) {
       console.error('Error deleting file from storage:', error);
       // Don't throw - soft delete in DB is more important

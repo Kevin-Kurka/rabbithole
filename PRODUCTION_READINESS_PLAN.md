@@ -2,25 +2,33 @@
 
 ## Implementation Status
 
-### ✅ Completed
+### ✅ Completed (Phase 1-3)
+
+#### Migrations
 - [x] Migration 016: Add missing NodeTypes (SystemConfiguration, EvidenceType, CredibilityThreshold, Conversation, ConversationMessage, GraphLock, PresenceSession, File)
 - [x] Migration 017: Remove column violations and migrate data to JSONB props
-- [x] CredibilityCalculationService: Rewritten to use node/edge queries
+
+#### Services Rewritten to Node/Edge Pattern
+- [x] CredibilityCalculationService: Complete rewrite with node type caching
 - [x] FormalInquiryService: Fixed to update consensusScore in props
 - [x] ThresholdFilteringService: Rewritten to use node/edge pattern
-- [x] AdminConfigurationResolver: Rewritten to use node/edge pattern
+- [x] ConversationalAIService: Rewritten to use Conversation and ConversationMessage NodeTypes
+- [x] InquiryDeduplicationService: Rewritten to use Inquiry NodeType
+- [x] AmendmentService: Rewritten to use Amendment NodeType (stored as nodes)
+- [x] FileStorageService: Rewritten to use File NodeType
+
+#### Resolvers Rewritten to Node/Edge Pattern
+- [x] AdminConfigurationResolver: Rewritten to use SystemConfiguration NodeType
+- [x] ConversationalAIResolver: Rewritten to use Conversation and ConversationMessage NodeTypes
+- [x] ActivityResolver: Rewritten to use ActivityPost NodeType and proper lowercase table names
+- [x] CollaborativePresenceResolver: Rewritten to use GraphLock and PresenceSession NodeTypes
 
 ### 🔄 Remaining Work
-- [ ] ConversationalAIResolver - References ConversationMessages table
-- [ ] ActivityResolver - References Users table
-- [ ] CollaborativePresenceResolver - References Users and GraphLocks tables
-- [ ] FileStorageService - References EvidenceFiles table
-- [ ] InquiryDeduplicationService - References Inquiries table
-- [ ] AmendmentService - References InquiryPositions table
-- [ ] Various other services/resolvers
 - [ ] Update tests to work with new architecture
 - [ ] Enable CI tests
 - [ ] Fix security vulnerabilities
+- [ ] Add Amendment NodeType to migrations (currently service handles missing type gracefully)
+- [ ] Add ActivityPost NodeType to migrations if not present
 
 ---
 

@@ -7,6 +7,45 @@ import {
 } from '../types/GraphTypes';
 import { Context } from '../types/context';
 
+/**
+ * Parse props that could be string or object
+ */
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
+// Cache for node type IDs
+const nodeTypeCache: Map<string, string> = new Map();
+
+async function getNodeTypeId(pool: any, name: string): Promise<string | null> {
+  if (nodeTypeCache.has(name)) {
+    return nodeTypeCache.get(name)!;
+  }
+  const result = await pool.query(
+    `SELECT id FROM node_types WHERE name = $1`,
+    [name]
+  );
+  if (result.rows.length === 0) return null;
+  nodeTypeCache.set(name, result.rows[0].id);
+  return result.rows[0].id;
+}
+
+/**
+ * PostActivityResolver
+ *
+ * GraphQL resolver for activity posts/timeline features
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
+ */
 @Resolver(() => ActivityPost)
 export class PostActivityResolver {
   // ============================================================================
@@ -24,28 +63,35 @@ export class PostActivityResolver {
     @Ctx() { pool, userId }: Context
   ): Promise<ActivityPost[]> {
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!activityPostTypeId) {
+        console.warn('ActivityPost node type not found');
+        return [];
+      }
+
       const sql = `
         SELECT
           n.id,
           n.props,
           n.created_at,
           n.updated_at,
-          u.username as author_username,
-          u.email as author_email,
-          tn.title as node_title
-        FROM public."Nodes" n
-        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
-        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
-        WHERE nt.name = 'ActivityPost'
-        AND n.props->>'nodeId' = $1
+          u.props->>'username' as author_username,
+          u.props->>'email' as author_email,
+          tn.props->>'title' as node_title
+        FROM nodes n
+        LEFT JOIN nodes u ON (n.props->>'authorId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+        LEFT JOIN nodes tn ON (n.props->>'nodeId')::uuid = tn.id
+        WHERE n.node_type_id = $1
+        AND n.props->>'nodeId' = $2
         AND (n.props->>'deletedAt') IS NULL
         AND (n.props->>'isReply')::boolean IS NOT TRUE
         ORDER BY n.created_at DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $3 OFFSET $4
       `;
 
-      const params = [nodeId, limit, offset];
+      const params = [activityPostTypeId, nodeId, limit, offset];
       const result = await pool.query(sql, params);
 
       return result.rows.map(row => this.mapRowToActivityPost(row, userId));
@@ -64,25 +110,31 @@ export class PostActivityResolver {
     @Ctx() { pool, userId }: Context
   ): Promise<ActivityPost | null> {
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!activityPostTypeId) {
+        return null;
+      }
+
       const sql = `
         SELECT
           n.id,
           n.props,
           n.created_at,
           n.updated_at,
-          u.username as author_username,
-          u.email as author_email,
-          tn.title as node_title
-        FROM public."Nodes" n
-        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
-        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
+          u.props->>'username' as author_username,
+          u.props->>'email' as author_email,
+          tn.props->>'title' as node_title
+        FROM nodes n
+        LEFT JOIN nodes u ON (n.props->>'authorId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+        LEFT JOIN nodes tn ON (n.props->>'nodeId')::uuid = tn.id
         WHERE n.id = $1
-        AND nt.name = 'ActivityPost'
+        AND n.node_type_id = $2
         AND (n.props->>'deletedAt') IS NULL
       `;
 
-      const result = await pool.query(sql, [postId]);
+      const result = await pool.query(sql, [postId, activityPostTypeId]);
 
       if (result.rows.length === 0) {
         return null;
@@ -105,27 +157,33 @@ export class PostActivityResolver {
     @Ctx() { pool, userId }: Context
   ): Promise<ActivityPost[]> {
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!activityPostTypeId) {
+        return [];
+      }
+
       const sql = `
         SELECT
           n.id,
           n.props,
           n.created_at,
           n.updated_at,
-          u.username as author_username,
-          u.email as author_email,
-          tn.title as node_title
-        FROM public."Nodes" n
-        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
-        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
-        WHERE nt.name = 'ActivityPost'
-        AND n.props->>'parentPostId' = $1
+          u.props->>'username' as author_username,
+          u.props->>'email' as author_email,
+          tn.props->>'title' as node_title
+        FROM nodes n
+        LEFT JOIN nodes u ON (n.props->>'authorId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+        LEFT JOIN nodes tn ON (n.props->>'nodeId')::uuid = tn.id
+        WHERE n.node_type_id = $1
+        AND n.props->>'parentPostId' = $2
         AND (n.props->>'deletedAt') IS NULL
         ORDER BY n.created_at ASC
-        LIMIT $2
+        LIMIT $3
       `;
 
-      const result = await pool.query(sql, [postId, limit]);
+      const result = await pool.query(sql, [activityPostTypeId, postId, limit]);
 
       return result.rows.map(row => this.mapRowToActivityPost(row, userId));
     } catch (error) {
@@ -150,33 +208,36 @@ export class PostActivityResolver {
     }
 
     try {
-      // This query is a bit complex with JSONB.
-      // We want posts where authorId = feedUserId OR feedUserId is in mentionedNodeIds
-      // Note: mentionedNodeIds in props is a JSON array of strings.
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!activityPostTypeId) {
+        return [];
+      }
+
       const sql = `
         SELECT
           n.id,
           n.props,
           n.created_at,
           n.updated_at,
-          u.username as author_username,
-          u.email as author_email,
-          tn.title as node_title
-        FROM public."Nodes" n
-        JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-        LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
-        LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
-        WHERE nt.name = 'ActivityPost'
+          u.props->>'username' as author_username,
+          u.props->>'email' as author_email,
+          tn.props->>'title' as node_title
+        FROM nodes n
+        LEFT JOIN nodes u ON (n.props->>'authorId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+        LEFT JOIN nodes tn ON (n.props->>'nodeId')::uuid = tn.id
+        WHERE n.node_type_id = $1
         AND (n.props->>'deletedAt') IS NULL
         AND (
-          n.props->>'authorId' = $1
-          OR n.props->'mentionedNodeIds' @> to_jsonb($1::text)
+          n.props->>'authorId' = $2
+          OR n.props->'mentionedNodeIds' @> to_jsonb($2::text)
         )
         ORDER BY n.created_at DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $3 OFFSET $4
       `;
 
-      const result = await pool.query(sql, [feedUserId, limit, offset]);
+      const result = await pool.query(sql, [activityPostTypeId, feedUserId, limit, offset]);
 
       return result.rows.map(row => this.mapRowToActivityPost(row, userId));
     } catch (error) {
@@ -206,15 +267,14 @@ export class PostActivityResolver {
       await client.query('BEGIN');
 
       // Get ActivityPost node type id
-      const typeRes = await client.query(`SELECT id FROM public."NodeTypes" WHERE name = 'ActivityPost'`);
-      if (typeRes.rows.length === 0) {
+      const nodeTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      if (!nodeTypeId) {
         throw new Error('ActivityPost node type not found');
       }
-      const nodeTypeId = typeRes.rows[0].id;
 
       // Validate node exists (the timeline node)
       const nodeCheck = await client.query(
-        'SELECT id FROM public."Nodes" WHERE id = $1',
+        'SELECT id FROM nodes WHERE id = $1',
         [input.nodeId]
       );
       if (nodeCheck.rows.length === 0) {
@@ -236,7 +296,7 @@ export class PostActivityResolver {
       };
 
       const insertSql = `
-        INSERT INTO public."Nodes" (
+        INSERT INTO nodes (
           node_type_id, props, created_at, updated_at
         )
         VALUES ($1, $2, NOW(), NOW())
@@ -279,18 +339,20 @@ export class PostActivityResolver {
       await client.query('BEGIN');
 
       // Get ActivityPost node type id
-      const typeRes = await client.query(`SELECT id FROM public."NodeTypes" WHERE name = 'ActivityPost'`);
-      const nodeTypeId = typeRes.rows[0].id;
+      const nodeTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      if (!nodeTypeId) {
+        throw new Error('ActivityPost node type not found');
+      }
 
       // Validate parent post exists
       const parentCheck = await client.query(
-        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
-        [input.parentPostId]
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+        [input.parentPostId, nodeTypeId]
       );
       if (parentCheck.rows.length === 0) {
         throw new Error('Parent post not found');
       }
-      const parentProps = parentCheck.rows[0].props;
+      const parentProps = parseProps(parentCheck.rows[0].props);
       const nodeId = parentProps.nodeId; // Same timeline as parent
 
       // Construct props
@@ -309,7 +371,7 @@ export class PostActivityResolver {
       };
 
       const insertSql = `
-        INSERT INTO public."Nodes" (
+        INSERT INTO nodes (
           node_type_id, props, created_at, updated_at
         )
         VALUES ($1, $2, NOW(), NOW())
@@ -321,12 +383,10 @@ export class PostActivityResolver {
         JSON.stringify(props)
       ]);
 
-      // Update parent reply count (optional, but good for perf if we store it)
-      // For now, we calculate it on read or we can increment it here.
-      // Let's increment it in props for the parent.
+      // Update parent reply count
       const parentPropsUpdated = { ...parentProps, replyCount: (parentProps.replyCount || 0) + 1 };
       await client.query(
-        `UPDATE public."Nodes" SET props = $1 WHERE id = $2`,
+        `UPDATE nodes SET props = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(parentPropsUpdated), input.parentPostId]
       );
 
@@ -358,18 +418,20 @@ export class PostActivityResolver {
     try {
       await client.query('BEGIN');
 
-      const typeRes = await client.query(`SELECT id FROM public."NodeTypes" WHERE name = 'ActivityPost'`);
-      const nodeTypeId = typeRes.rows[0].id;
+      const nodeTypeId = await getNodeTypeId(pool, 'ActivityPost');
+      if (!nodeTypeId) {
+        throw new Error('ActivityPost node type not found');
+      }
 
       // Validate original post
       const postCheck = await client.query(
-        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
-        [input.postId]
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+        [input.postId, nodeTypeId]
       );
       if (postCheck.rows.length === 0) {
         throw new Error('Post not found');
       }
-      const originalProps = postCheck.rows[0].props;
+      const originalProps = parseProps(postCheck.rows[0].props);
       const nodeId = originalProps.nodeId;
 
       const props = {
@@ -387,7 +449,7 @@ export class PostActivityResolver {
       };
 
       const insertSql = `
-        INSERT INTO public."Nodes" (
+        INSERT INTO nodes (
           node_type_id, props, created_at, updated_at
         )
         VALUES ($1, $2, NOW(), NOW())
@@ -402,7 +464,7 @@ export class PostActivityResolver {
       // Update original post share count
       const originalPropsUpdated = { ...originalProps, shareCount: (originalProps.shareCount || 0) + 1 };
       await client.query(
-        `UPDATE public."Nodes" SET props = $1 WHERE id = $2`,
+        `UPDATE nodes SET props = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(originalPropsUpdated), input.postId]
       );
 
@@ -432,22 +494,24 @@ export class PostActivityResolver {
     }
 
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+
       const result = await pool.query(
-        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
-        [postId]
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+        [postId, activityPostTypeId]
       );
       if (result.rows.length === 0) {
         throw new Error('Post not found');
       }
 
       const node = result.rows[0];
-      const props = node.props;
+      const props = parseProps(node.props);
 
       if (!props.reactions) props.reactions = {};
       props.reactions[userId] = reactionType;
 
       await pool.query(
-        `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2`,
+        `UPDATE nodes SET props = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(props), postId]
       );
 
@@ -472,21 +536,23 @@ export class PostActivityResolver {
     }
 
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+
       const result = await pool.query(
-        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
-        [postId]
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+        [postId, activityPostTypeId]
       );
       if (result.rows.length === 0) {
         throw new Error('Post not found');
       }
 
       const node = result.rows[0];
-      const props = node.props;
+      const props = parseProps(node.props);
 
       if (props.reactions && props.reactions[userId] === reactionType) {
         delete props.reactions[userId];
         await pool.query(
-          `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2`,
+          `UPDATE nodes SET props = $1, updated_at = NOW() WHERE id = $2`,
           [JSON.stringify(props), postId]
         );
       }
@@ -511,16 +577,18 @@ export class PostActivityResolver {
     }
 
     try {
+      const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+
       const result = await pool.query(
-        `SELECT id, props FROM public."Nodes" WHERE id = $1 AND (props->>'deletedAt') IS NULL`,
-        [postId]
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2 AND (props->>'deletedAt') IS NULL`,
+        [postId, activityPostTypeId]
       );
       if (result.rows.length === 0) {
         throw new Error('Post not found');
       }
 
       const node = result.rows[0];
-      const props = node.props;
+      const props = parseProps(node.props);
 
       if (props.authorId !== userId) {
         throw new Error('Only the author can delete this post');
@@ -529,7 +597,7 @@ export class PostActivityResolver {
       props.deletedAt = new Date().toISOString();
 
       await pool.query(
-        `UPDATE public."Nodes" SET props = $1, updated_at = NOW() WHERE id = $2`,
+        `UPDATE nodes SET props = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(props), postId]
       );
 
@@ -545,7 +613,7 @@ export class PostActivityResolver {
   // ============================================================================
 
   private mapRowToActivityPost(row: any, currentUserId?: string): ActivityPost {
-    const props = typeof row.props === 'string' ? JSON.parse(row.props) : row.props;
+    const props = parseProps(row.props);
 
     // Calculate reaction counts
     const reactions = props.reactions || {};
@@ -594,23 +662,25 @@ export class PostActivityResolver {
   }
 
   private async enrichPost(postId: string, pool: any, userId?: string): Promise<ActivityPost> {
+    const activityPostTypeId = await getNodeTypeId(pool, 'ActivityPost');
+    const userTypeId = await getNodeTypeId(pool, 'User');
+
     const sql = `
       SELECT
         n.id,
         n.props,
         n.created_at,
         n.updated_at,
-        u.username as author_username,
-        u.email as author_email,
-        tn.title as node_title
-      FROM public."Nodes" n
-      JOIN public."NodeTypes" nt ON n.node_type_id = nt.id
-      LEFT JOIN public."Users" u ON (n.props->>'authorId')::uuid = u.id
-      LEFT JOIN public."Nodes" tn ON (n.props->>'nodeId')::uuid = tn.id
-      WHERE n.id = $1
+        u.props->>'username' as author_username,
+        u.props->>'email' as author_email,
+        tn.props->>'title' as node_title
+      FROM nodes n
+      LEFT JOIN nodes u ON (n.props->>'authorId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+      LEFT JOIN nodes tn ON (n.props->>'nodeId')::uuid = tn.id
+      WHERE n.id = $1 AND n.node_type_id = $2
     `;
 
-    const result = await pool.query(sql, [postId]);
+    const result = await pool.query(sql, [postId, activityPostTypeId]);
     return this.mapRowToActivityPost(result.rows[0], userId);
   }
 }

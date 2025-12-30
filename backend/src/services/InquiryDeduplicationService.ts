@@ -24,6 +24,22 @@ interface SimilarityFactors {
   finalScore: number; // Weighted combination
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
 /**
  * InquiryDeduplicationService
  *
@@ -36,15 +52,55 @@ interface SimilarityFactors {
  * - Description text overlap (15% weight)
  * - Merge threshold: 0.85 similarity
  * - Prevents creation of similar inquiries to manipulate scores
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
  */
 export class InquiryDeduplicationService {
+  // Cache for node type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
+  private edgeTypeCache: Map<string, string> = new Map();
+
   constructor(
     private pool: Pool,
     private embeddingService: EmbeddingService
   ) {}
 
   /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+    const result = await this.pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
+   * Get edge type ID by name (cached)
+   */
+  private async getEdgeTypeId(name: string): Promise<string | null> {
+    if (this.edgeTypeCache.has(name)) {
+      return this.edgeTypeCache.get(name)!;
+    }
+    const result = await this.pool.query(
+      `SELECT id FROM edge_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.edgeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
    * Check for duplicate inquiries on the same node
+   * Uses Inquiry NodeType from nodes table
    *
    * @param title - Inquiry title
    * @param description - Inquiry description
@@ -59,6 +115,12 @@ export class InquiryDeduplicationService {
     inquiryType?: string
   ): Promise<InquiryMatch[]> {
     try {
+      const inquiryTypeId = await this.getNodeTypeId('Inquiry');
+      if (!inquiryTypeId) {
+        console.warn('Inquiry node type not found');
+        return [];
+      }
+
       // 1. Generate embedding for new inquiry
       const combinedText = `${title} ${description}`;
       const newEmbedding = await this.embeddingService.generateEmbedding(combinedText);
@@ -69,52 +131,51 @@ export class InquiryDeduplicationService {
         ? `
           SELECT
             i.id,
-            i.title,
-            i.description,
-            i.created_by_user_id,
+            i.props,
             i.created_at,
-            i.embedding <=> $1::vector AS distance,
-            1 - (i.embedding <=> $1::vector) AS semantic_similarity
-          FROM public."Inquiries" i
-          WHERE i.node_id = $2
-            AND i.inquiry_type = $3
-            AND i.status != 'merged'
-            AND i.embedding IS NOT NULL
-            AND (i.embedding <=> $1::vector) < 0.15
+            i.ai <=> $1::vector AS distance,
+            1 - (i.ai <=> $1::vector) AS semantic_similarity
+          FROM nodes i
+          WHERE i.node_type_id = $2
+            AND i.props->>'nodeId' = $3
+            AND i.props->>'inquiryType' = $4
+            AND i.props->>'status' != 'merged'
+            AND i.ai IS NOT NULL
+            AND (i.ai <=> $1::vector) < 0.15
           ORDER BY distance ASC
           LIMIT 10
         `
         : `
           SELECT
             i.id,
-            i.title,
-            i.description,
-            i.created_by_user_id,
+            i.props,
             i.created_at,
-            i.embedding <=> $1::vector AS distance,
-            1 - (i.embedding <=> $1::vector) AS semantic_similarity
-          FROM public."Inquiries" i
-          WHERE i.node_id = $2
-            AND i.status != 'merged'
-            AND i.embedding IS NOT NULL
-            AND (i.embedding <=> $1::vector) < 0.15
+            i.ai <=> $1::vector AS distance,
+            1 - (i.ai <=> $1::vector) AS semantic_similarity
+          FROM nodes i
+          WHERE i.node_type_id = $2
+            AND i.props->>'nodeId' = $3
+            AND i.props->>'status' != 'merged'
+            AND i.ai IS NOT NULL
+            AND (i.ai <=> $1::vector) < 0.15
           ORDER BY distance ASC
           LIMIT 10
         `;
 
       const params = inquiryType
-        ? [JSON.stringify(newEmbedding), nodeId, inquiryType]
-        : [JSON.stringify(newEmbedding), nodeId];
+        ? [JSON.stringify(newEmbedding), inquiryTypeId, nodeId, inquiryType]
+        : [JSON.stringify(newEmbedding), inquiryTypeId, nodeId];
 
       const result = await this.pool.query(query, params);
 
       // 3. Calculate multi-factor similarity for each match
       const matches: InquiryMatch[] = result.rows.map(row => {
+        const props = parseProps(row.props);
         const factors = this.calculateMultiFactorSimilarity(
           {
             semanticSimilarity: parseFloat(row.semantic_similarity),
-            title: row.title,
-            description: row.description
+            title: props.title || '',
+            description: props.description || ''
           },
           title,
           description
@@ -122,11 +183,11 @@ export class InquiryDeduplicationService {
 
         return {
           existingInquiryId: row.id,
-          title: row.title,
-          description: row.description,
+          title: props.title || '',
+          description: props.description || '',
           similarity: factors.finalScore,
           mergeRecommended: factors.finalScore > 0.85,
-          createdBy: row.created_by_user_id,
+          createdBy: props.createdByUserId || props.createdBy || '',
           createdAt: new Date(row.created_at)
         };
       });
@@ -302,6 +363,7 @@ export class InquiryDeduplicationService {
 
   /**
    * Merge an inquiry into another (mark as merged)
+   * Uses Inquiry and Position NodeTypes from nodes table
    *
    * @param sourceInquiryId - Inquiry to be merged (will be marked as merged)
    * @param targetInquiryId - Inquiry to merge into (will remain active)
@@ -319,30 +381,60 @@ export class InquiryDeduplicationService {
     try {
       await client.query('BEGIN');
 
-      // Update source inquiry to merged status
+      const inquiryTypeId = await this.getNodeTypeId('Inquiry');
+      const positionTypeId = await this.getNodeTypeId('Position');
+      const hasPositionEdgeTypeId = await this.getEdgeTypeId('HAS_POSITION');
+
+      if (!inquiryTypeId) {
+        throw new Error('Inquiry node type not found. Run migrations.');
+      }
+
+      // Update source inquiry to merged status in props
       await client.query(
         `
-        UPDATE public."Inquiries"
+        UPDATE nodes
         SET
-          status = 'merged',
-          merged_into_id = $1,
-          merge_justification = $2,
-          is_merged = true,
+          props = props || $1::jsonb,
           updated_at = NOW()
-        WHERE id = $3
+        WHERE id = $2 AND node_type_id = $3
         `,
-        [targetInquiryId, justification, sourceInquiryId]
+        [
+          JSON.stringify({
+            status: 'merged',
+            mergedIntoId: targetInquiryId,
+            mergeJustification: justification,
+            isMerged: true
+          }),
+          sourceInquiryId,
+          inquiryTypeId
+        ]
       );
 
       // Transfer positions from source to target inquiry
-      await client.query(
-        `
-        UPDATE public."InquiryPositions"
-        SET inquiry_id = $1, updated_at = NOW()
-        WHERE inquiry_id = $2
-        `,
-        [targetInquiryId, sourceInquiryId]
-      );
+      // Update HAS_POSITION edges to point to target inquiry
+      if (hasPositionEdgeTypeId) {
+        await client.query(
+          `
+          UPDATE edges
+          SET source_node_id = $1, updated_at = NOW()
+          WHERE source_node_id = $2 AND edge_type_id = $3
+          `,
+          [targetInquiryId, sourceInquiryId, hasPositionEdgeTypeId]
+        );
+      }
+
+      // Also update inquiryId in position node props
+      if (positionTypeId) {
+        await client.query(
+          `
+          UPDATE nodes
+          SET props = props || jsonb_build_object('inquiryId', $1::text), updated_at = NOW()
+          WHERE node_type_id = $2
+            AND props->>'inquiryId' = $3
+          `,
+          [targetInquiryId, positionTypeId, sourceInquiryId]
+        );
+      }
 
       await client.query('COMMIT');
 

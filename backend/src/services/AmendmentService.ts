@@ -49,6 +49,22 @@ export interface NodeWithAmendments {
   lastAmendedAt?: Date;
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
 /**
  * AmendmentService
  *
@@ -58,17 +74,41 @@ export interface NodeWithAmendments {
  *
  * Key Features:
  * - Automatic amendment proposals when positions reach auto-amend threshold
- * - Version control with original → amended value tracking
+ * - Version control with original -> amended value tracking
  * - JSON path support for nested field amendments
  * - Inline tooltip data for UI (strikethrough original, show explanation)
  * - Amendment history and rollback capability
- * - Status workflow: proposed → applied/rejected/superseded
+ * - Status workflow: proposed -> applied/rejected/superseded
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
+ * Amendments are stored as Amendment NodeType nodes.
  */
 export class AmendmentService {
+  // Cache for node type IDs
+  private nodeTypeCache: Map<string, string> = new Map();
+
   constructor(private pool: Pool) {}
 
   /**
+   * Get node type ID by name (cached)
+   */
+  private async getNodeTypeId(name: string): Promise<string | null> {
+    if (this.nodeTypeCache.has(name)) {
+      return this.nodeTypeCache.get(name)!;
+    }
+    const result = await this.pool.query(
+      `SELECT id FROM node_types WHERE name = $1`,
+      [name]
+    );
+    if (result.rows.length === 0) return null;
+    this.nodeTypeCache.set(name, result.rows[0].id);
+    return result.rows[0].id;
+  }
+
+  /**
    * Propose an amendment to a node field
+   * Creates an Amendment node in the nodes table
    *
    * Called automatically when a position reaches the auto-amend threshold.
    * Stores the proposed change but doesn't apply it until reviewed.
@@ -92,6 +132,14 @@ export class AmendmentService {
     userId: string
   ): Promise<string> {
     try {
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      if (!amendmentTypeId) {
+        // If Amendment type doesn't exist, we need to create it dynamically
+        // For now, just log and return empty
+        console.warn('Amendment node type not found. Run migrations to add it.');
+        return '';
+      }
+
       // 1. Get current value from node
       const currentValue = await this.getFieldValue(nodeId, fieldPath);
 
@@ -104,52 +152,47 @@ export class AmendmentService {
       // 3. Check for existing pending amendments on this field
       const existing = await this.pool.query(
         `
-        SELECT id FROM public."NodeAmendments"
-        WHERE node_id = $1
-          AND field_path = $2
-          AND status = 'proposed'
+        SELECT id FROM nodes
+        WHERE node_type_id = $1
+          AND props->>'nodeId' = $2
+          AND props->>'fieldPath' = $3
+          AND props->>'status' = 'proposed'
         `,
-        [nodeId, fieldPath]
+        [amendmentTypeId, nodeId, fieldPath]
       );
 
       if (existing.rows.length > 0) {
         // Supersede existing proposal
         await this.pool.query(
           `
-          UPDATE public."NodeAmendments"
-          SET status = 'superseded', updated_at = NOW()
+          UPDATE nodes
+          SET props = props || '{"status": "superseded"}'::jsonb, updated_at = NOW()
           WHERE id = $1
           `,
           [existing.rows[0].id]
         );
       }
 
-      // 4. Create amendment proposal
+      // 4. Create amendment proposal as a node
+      const props = {
+        nodeId,
+        fieldPath,
+        originalValue: currentValue,
+        amendedValue: newValue,
+        explanation,
+        inquiryId,
+        positionId,
+        proposedByUserId: userId,
+        status: 'proposed'
+      };
+
       const result = await this.pool.query(
         `
-        INSERT INTO public."NodeAmendments" (
-          node_id,
-          field_path,
-          original_value,
-          amended_value,
-          explanation,
-          inquiry_id,
-          position_id,
-          proposed_by_user_id,
-          status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'proposed')
+        INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
         RETURNING id
         `,
-        [
-          nodeId,
-          fieldPath,
-          JSON.stringify(currentValue),
-          JSON.stringify(newValue),
-          explanation,
-          inquiryId,
-          positionId,
-          userId
-        ]
+        [amendmentTypeId, JSON.stringify(props)]
       );
 
       const amendmentId = result.rows[0].id;
@@ -176,63 +219,67 @@ export class AmendmentService {
     try {
       await client.query('BEGIN');
 
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      if (!amendmentTypeId) {
+        throw new Error('Amendment node type not found');
+      }
+
       // 1. Get amendment details
       const amendmentResult = await client.query(
         `
-        SELECT
-          node_id,
-          field_path,
-          amended_value,
-          status
-        FROM public."NodeAmendments"
-        WHERE id = $1
+        SELECT id, props
+        FROM nodes
+        WHERE id = $1 AND node_type_id = $2
         `,
-        [amendmentId]
+        [amendmentId, amendmentTypeId]
       );
 
       if (amendmentResult.rows.length === 0) {
         throw new Error(`Amendment not found: ${amendmentId}`);
       }
 
-      const amendment = amendmentResult.rows[0];
+      const amendmentProps = parseProps(amendmentResult.rows[0].props);
 
-      if (amendment.status !== 'proposed') {
-        throw new Error(`Amendment cannot be applied (status: ${amendment.status})`);
+      if (amendmentProps.status !== 'proposed') {
+        throw new Error(`Amendment cannot be applied (status: ${amendmentProps.status})`);
       }
 
       // 2. Update node field
-      const newValue = JSON.parse(amendment.amended_value);
       await this.setFieldValue(
         client,
-        amendment.node_id,
-        amendment.field_path,
-        newValue
+        amendmentProps.nodeId,
+        amendmentProps.fieldPath,
+        amendmentProps.amendedValue
       );
 
       // 3. Mark amendment as applied
       await client.query(
         `
-        UPDATE public."NodeAmendments"
-        SET
-          status = 'applied',
-          applied_by_user_id = $1,
-          applied_at = NOW(),
-          updated_at = NOW()
+        UPDATE nodes
+        SET props = props || $1::jsonb, updated_at = NOW()
         WHERE id = $2
         `,
-        [userId, amendmentId]
+        [
+          JSON.stringify({
+            status: 'applied',
+            appliedByUserId: userId,
+            appliedAt: new Date().toISOString()
+          }),
+          amendmentId
+        ]
       );
 
-      // 4. Update node's last_amendment timestamp
+      // 4. Update node's lastAmendmentAt in props
       await client.query(
         `
-        UPDATE public."Nodes"
-        SET
-          last_amendment_at = NOW(),
-          updated_at = NOW()
-        WHERE id = $1
+        UPDATE nodes
+        SET props = props || $1::jsonb, updated_at = NOW()
+        WHERE id = $2
         `,
-        [amendment.node_id]
+        [
+          JSON.stringify({ lastAmendmentAt: new Date().toISOString() }),
+          amendmentProps.nodeId
+        ]
       );
 
       await client.query('COMMIT');
@@ -259,18 +306,29 @@ export class AmendmentService {
     userId: string
   ): Promise<void> {
     try {
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      if (!amendmentTypeId) {
+        throw new Error('Amendment node type not found');
+      }
+
       const result = await this.pool.query(
         `
-        UPDATE public."NodeAmendments"
-        SET
-          status = 'rejected',
-          rejection_reason = $1,
-          applied_by_user_id = $2,
-          updated_at = NOW()
-        WHERE id = $3 AND status = 'proposed'
+        UPDATE nodes
+        SET props = props || $1::jsonb, updated_at = NOW()
+        WHERE id = $2
+          AND node_type_id = $3
+          AND props->>'status' = 'proposed'
         RETURNING id
         `,
-        [reason, userId, amendmentId]
+        [
+          JSON.stringify({
+            status: 'rejected',
+            rejectionReason: reason,
+            appliedByUserId: userId
+          }),
+          amendmentId,
+          amendmentTypeId
+        ]
       );
 
       if (result.rows.length === 0) {
@@ -296,56 +354,53 @@ export class AmendmentService {
     fieldPath?: string
   ): Promise<Amendment[]> {
     try {
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      if (!amendmentTypeId) {
+        return [];
+      }
+
       const query = fieldPath
         ? `
-          SELECT
-            id,
-            node_id as "nodeId",
-            field_path as "fieldPath",
-            original_value as "originalValue",
-            amended_value as "amendedValue",
-            explanation,
-            inquiry_id as "inquiryId",
-            position_id as "positionId",
-            proposed_by_user_id as "proposedBy",
-            proposed_at as "proposedAt",
-            status,
-            applied_by_user_id as "appliedBy",
-            applied_at as "appliedAt",
-            rejection_reason as "rejectionReason"
-          FROM public."NodeAmendments"
-          WHERE node_id = $1 AND field_path = $2
-          ORDER BY proposed_at DESC
+          SELECT id, props, created_at
+          FROM nodes
+          WHERE node_type_id = $1
+            AND props->>'nodeId' = $2
+            AND props->>'fieldPath' = $3
+          ORDER BY created_at DESC
         `
         : `
-          SELECT
-            id,
-            node_id as "nodeId",
-            field_path as "fieldPath",
-            original_value as "originalValue",
-            amended_value as "amendedValue",
-            explanation,
-            inquiry_id as "inquiryId",
-            position_id as "positionId",
-            proposed_by_user_id as "proposedBy",
-            proposed_at as "proposedAt",
-            status,
-            applied_by_user_id as "appliedBy",
-            applied_at as "appliedAt",
-            rejection_reason as "rejectionReason"
-          FROM public."NodeAmendments"
-          WHERE node_id = $1
-          ORDER BY proposed_at DESC
+          SELECT id, props, created_at
+          FROM nodes
+          WHERE node_type_id = $1
+            AND props->>'nodeId' = $2
+          ORDER BY created_at DESC
         `;
 
-      const params = fieldPath ? [nodeId, fieldPath] : [nodeId];
+      const params = fieldPath
+        ? [amendmentTypeId, nodeId, fieldPath]
+        : [amendmentTypeId, nodeId];
+
       const result = await this.pool.query(query, params);
 
-      return result.rows.map(row => ({
-        ...row,
-        originalValue: JSON.parse(row.originalValue),
-        amendedValue: JSON.parse(row.amendedValue)
-      }));
+      return result.rows.map(row => {
+        const props = parseProps(row.props);
+        return {
+          id: row.id,
+          nodeId: props.nodeId,
+          fieldPath: props.fieldPath,
+          originalValue: props.originalValue,
+          amendedValue: props.amendedValue,
+          explanation: props.explanation,
+          inquiryId: props.inquiryId,
+          positionId: props.positionId,
+          proposedBy: props.proposedByUserId,
+          proposedAt: new Date(row.created_at),
+          status: props.status,
+          appliedBy: props.appliedByUserId,
+          appliedAt: props.appliedAt ? new Date(props.appliedAt) : undefined,
+          rejectionReason: props.rejectionReason
+        };
+      });
     } catch (error) {
       console.error('Error fetching amendment history:', error);
       throw error;
@@ -366,13 +421,8 @@ export class AmendmentService {
       // 1. Get node data
       const nodeResult = await this.pool.query(
         `
-        SELECT
-          id,
-          title,
-          content,
-          props,
-          last_amendment_at
-        FROM public."Nodes"
+        SELECT id, props
+        FROM nodes
         WHERE id = $1
         `,
         [nodeId]
@@ -382,47 +432,49 @@ export class AmendmentService {
         throw new Error(`Node not found: ${nodeId}`);
       }
 
-      const node = nodeResult.rows[0];
+      const nodeProps = parseProps(nodeResult.rows[0].props);
 
       // 2. Get all applied amendments
-      const amendments = await this.pool.query(
-        `
-        SELECT
-          field_path,
-          original_value,
-          amended_value,
-          explanation,
-          inquiry_id,
-          position_id,
-          applied_at
-        FROM public."NodeAmendments"
-        WHERE node_id = $1 AND status = 'applied'
-        ORDER BY applied_at DESC
-        `,
-        [nodeId]
-      );
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      let amendments: any[] = [];
+
+      if (amendmentTypeId) {
+        const amendmentResult = await this.pool.query(
+          `
+          SELECT id, props
+          FROM nodes
+          WHERE node_type_id = $1
+            AND props->>'nodeId' = $2
+            AND props->>'status' = 'applied'
+          ORDER BY (props->>'appliedAt')::timestamp DESC
+          `,
+          [amendmentTypeId, nodeId]
+        );
+        amendments = amendmentResult.rows;
+      }
 
       // 3. Build amendment map
       const amendmentMap: Record<string, any> = {};
-      for (const amendment of amendments.rows) {
-        amendmentMap[amendment.field_path] = {
-          originalValue: JSON.parse(amendment.original_value),
-          amendedValue: JSON.parse(amendment.amended_value),
-          explanation: amendment.explanation,
-          inquiryId: amendment.inquiry_id,
-          positionId: amendment.position_id,
-          appliedAt: amendment.applied_at
+      for (const row of amendments) {
+        const props = parseProps(row.props);
+        amendmentMap[props.fieldPath] = {
+          originalValue: props.originalValue,
+          amendedValue: props.amendedValue,
+          explanation: props.explanation,
+          inquiryId: props.inquiryId,
+          positionId: props.positionId,
+          appliedAt: props.appliedAt ? new Date(props.appliedAt) : null
         };
       }
 
       // 4. Build response with amendment markers
       const result: NodeWithAmendments = {
-        id: node.id,
-        title: this.buildAmendedField('title', node.title, amendmentMap),
-        content: this.buildAmendedField('content', node.content, amendmentMap),
-        props: this.buildAmendedProps(node.props, amendmentMap),
-        amendmentCount: amendments.rows.length,
-        lastAmendedAt: node.last_amendment_at
+        id: nodeResult.rows[0].id,
+        title: this.buildAmendedField('title', nodeProps.title, amendmentMap),
+        content: this.buildAmendedField('content', nodeProps.content, amendmentMap),
+        props: this.buildAmendedProps(nodeProps, amendmentMap),
+        amendmentCount: amendments.length,
+        lastAmendedAt: nodeProps.lastAmendmentAt ? new Date(nodeProps.lastAmendmentAt) : undefined
       };
 
       return result;
@@ -441,33 +493,53 @@ export class AmendmentService {
    */
   async checkAmendmentTriggers(positionId: string): Promise<void> {
     try {
-      // Get position details with threshold
-      const result = await this.pool.query(
-        `
-        SELECT
-          p.id,
-          p.inquiry_id,
-          p.credibility_score,
-          p.created_by_user_id,
-          i.node_id,
-          i.inquiry_type,
-          t.auto_amend_threshold
-        FROM public."InquiryPositions" p
-        JOIN public."Inquiries" i ON p.inquiry_id = i.id
-        LEFT JOIN public."CredibilityThresholds" t ON i.inquiry_type = t.inquiry_type
-        WHERE p.id = $1
-        `,
-        [positionId]
+      const positionTypeId = await this.getNodeTypeId('Position');
+      const inquiryTypeId = await this.getNodeTypeId('Inquiry');
+      const thresholdTypeId = await this.getNodeTypeId('CredibilityThreshold');
+
+      if (!positionTypeId || !inquiryTypeId) {
+        console.warn('Position or Inquiry node type not found');
+        return;
+      }
+
+      // Get position details
+      const positionResult = await this.pool.query(
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2`,
+        [positionId, positionTypeId]
       );
 
-      if (result.rows.length === 0) return;
+      if (positionResult.rows.length === 0) return;
 
-      const position = result.rows[0];
-      const threshold = position.auto_amend_threshold || 0.85;
+      const positionProps = parseProps(positionResult.rows[0].props);
+
+      // Get inquiry details
+      const inquiryResult = await this.pool.query(
+        `SELECT id, props FROM nodes WHERE id = $1 AND node_type_id = $2`,
+        [positionProps.inquiryId, inquiryTypeId]
+      );
+
+      if (inquiryResult.rows.length === 0) return;
+
+      const inquiryProps = parseProps(inquiryResult.rows[0].props);
+
+      // Get threshold if available
+      let threshold = 0.85; // Default
+      if (thresholdTypeId && inquiryProps.inquiryType) {
+        const thresholdResult = await this.pool.query(
+          `SELECT props FROM nodes WHERE node_type_id = $1 AND props->>'inquiryType' = $2`,
+          [thresholdTypeId, inquiryProps.inquiryType]
+        );
+        if (thresholdResult.rows.length > 0) {
+          const thresholdProps = parseProps(thresholdResult.rows[0].props);
+          threshold = thresholdProps.autoAmendThreshold || 0.85;
+        }
+      }
+
+      const credibilityScore = positionProps.credibilityScore || 0;
 
       // Check if position reached threshold
-      if (position.credibility_score >= threshold) {
-        console.log(`Position ${positionId} reached auto-amend threshold (${position.credibility_score} >= ${threshold})`);
+      if (credibilityScore >= threshold) {
+        console.log(`Position ${positionId} reached auto-amend threshold (${credibilityScore} >= ${threshold})`);
 
         // TODO: Implement automatic amendment proposal logic
         // This would require analyzing the position's argument and evidence
@@ -486,7 +558,7 @@ export class AmendmentService {
    */
   private async getFieldValue(nodeId: string, fieldPath: string): Promise<any> {
     const result = await this.pool.query(
-      `SELECT id, title, content, props FROM public."Nodes" WHERE id = $1`,
+      `SELECT id, props FROM nodes WHERE id = $1`,
       [nodeId]
     );
 
@@ -494,8 +566,8 @@ export class AmendmentService {
       throw new Error(`Node not found: ${nodeId}`);
     }
 
-    const node = result.rows[0];
-    return this.resolveFieldPath(node, fieldPath);
+    const nodeProps = parseProps(result.rows[0].props);
+    return this.resolveFieldPath(nodeProps, fieldPath);
   }
 
   /**
@@ -509,11 +581,11 @@ export class AmendmentService {
     fieldPath: string,
     value: any
   ): Promise<void> {
-    // Handle top-level fields
+    // Handle top-level fields stored in props
     if (fieldPath === 'title' || fieldPath === 'content') {
       await client.query(
-        `UPDATE public."Nodes" SET ${fieldPath} = $1, updated_at = NOW() WHERE id = $2`,
-        [value, nodeId]
+        `UPDATE nodes SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+        [JSON.stringify({ [fieldPath]: value }), nodeId]
       );
       return;
     }
@@ -528,7 +600,7 @@ export class AmendmentService {
 
       await client.query(
         `
-        UPDATE public."Nodes"
+        UPDATE nodes
         SET
           props = jsonb_set(props, $1, $2, true),
           updated_at = NOW()
@@ -539,7 +611,11 @@ export class AmendmentService {
       return;
     }
 
-    throw new Error(`Unsupported field path: ${fieldPath}`);
+    // For simple field paths, update directly in props
+    await client.query(
+      `UPDATE nodes SET props = props || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify({ [fieldPath]: value }), nodeId]
+    );
   }
 
   /**
@@ -635,32 +711,39 @@ export class AmendmentService {
    */
   async getPendingAmendments(nodeId: string): Promise<Amendment[]> {
     try {
+      const amendmentTypeId = await this.getNodeTypeId('Amendment');
+      if (!amendmentTypeId) {
+        return [];
+      }
+
       const result = await this.pool.query(
         `
-        SELECT
-          id,
-          node_id as "nodeId",
-          field_path as "fieldPath",
-          original_value as "originalValue",
-          amended_value as "amendedValue",
-          explanation,
-          inquiry_id as "inquiryId",
-          position_id as "positionId",
-          proposed_by_user_id as "proposedBy",
-          proposed_at as "proposedAt",
-          status
-        FROM public."NodeAmendments"
-        WHERE node_id = $1 AND status = 'proposed'
-        ORDER BY proposed_at DESC
+        SELECT id, props, created_at
+        FROM nodes
+        WHERE node_type_id = $1
+          AND props->>'nodeId' = $2
+          AND props->>'status' = 'proposed'
+        ORDER BY created_at DESC
         `,
-        [nodeId]
+        [amendmentTypeId, nodeId]
       );
 
-      return result.rows.map(row => ({
-        ...row,
-        originalValue: JSON.parse(row.originalValue),
-        amendedValue: JSON.parse(row.amendedValue)
-      }));
+      return result.rows.map(row => {
+        const props = parseProps(row.props);
+        return {
+          id: row.id,
+          nodeId: props.nodeId,
+          fieldPath: props.fieldPath,
+          originalValue: props.originalValue,
+          amendedValue: props.amendedValue,
+          explanation: props.explanation,
+          inquiryId: props.inquiryId,
+          positionId: props.positionId,
+          proposedBy: props.proposedByUserId,
+          proposedAt: new Date(row.created_at),
+          status: props.status as 'proposed'
+        };
+      });
     } catch (error) {
       console.error('Error fetching pending amendments:', error);
       throw error;

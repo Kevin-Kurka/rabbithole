@@ -28,11 +28,61 @@ interface Context {
   isAuthenticated: boolean;
 }
 
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Parse props that could be string or object
+ */
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
+// Cache for node/edge type IDs
+const nodeTypeCache: Map<string, string> = new Map();
+const edgeTypeCache: Map<string, string> = new Map();
+
+async function getNodeTypeId(pool: Pool, name: string): Promise<string | null> {
+  if (nodeTypeCache.has(name)) {
+    return nodeTypeCache.get(name)!;
+  }
+  const result = await pool.query(
+    `SELECT id FROM node_types WHERE name = $1`,
+    [name]
+  );
+  if (result.rows.length === 0) return null;
+  nodeTypeCache.set(name, result.rows[0].id);
+  return result.rows[0].id;
+}
+
+async function getEdgeTypeId(pool: Pool, name: string): Promise<string | null> {
+  if (edgeTypeCache.has(name)) {
+    return edgeTypeCache.get(name)!;
+  }
+  const result = await pool.query(
+    `SELECT id FROM edge_types WHERE name = $1`,
+    [name]
+  );
+  if (result.rows.length === 0) return null;
+  edgeTypeCache.set(name, result.rows[0].id);
+  return result.rows[0].id;
+}
+
 /**
  * ConversationalAIResolver
  *
  * GraphQL resolver for conversational AI features
  * Provides queries and mutations for chat interactions with semantic search
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
  */
 @Resolver()
 export class ConversationalAIResolver {
@@ -95,6 +145,7 @@ export class ConversationalAIResolver {
 
   /**
    * Get conversation by ID
+   * Queries nodes table with Conversation node type
    *
    * @param id - Conversation ID
    * @param ctx - GraphQL context
@@ -109,31 +160,48 @@ export class ConversationalAIResolver {
       throw new Error('Authentication required');
     }
 
+    const conversationTypeId = await getNodeTypeId(ctx.pool, 'Conversation');
+    if (!conversationTypeId) {
+      console.warn('Conversation node type not found');
+      return null;
+    }
+
     const result = await ctx.pool.query(
       `
       SELECT
         id,
-        user_id as "userId",
-        graph_id as "graphId",
-        title,
-        metadata,
+        props,
         created_at as "createdAt",
         updated_at as "updatedAt"
-      FROM public."Conversations"
-      WHERE id = $1 AND user_id = $2
+      FROM nodes
+      WHERE id = $1
+        AND node_type_id = $2
+        AND props->>'userId' = $3
       `,
-      [id, ctx.userId]
+      [id, conversationTypeId, ctx.userId]
     );
 
     if (result.rows.length === 0) {
       return null;
     }
 
-    return result.rows[0];
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      userId: props.userId,
+      graphId: props.graphId || props.contextId,
+      title: props.title,
+      metadata: props.metadata,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 
   /**
    * Get user's conversations
+   * Queries nodes table with Conversation node type
    *
    * @param graphId - Optional filter by graph
    * @param limit - Max conversations to return
@@ -152,52 +220,80 @@ export class ConversationalAIResolver {
       throw new Error('Authentication required');
     }
 
+    const conversationTypeId = await getNodeTypeId(ctx.pool, 'Conversation');
+    const messageTypeId = await getNodeTypeId(ctx.pool, 'ConversationMessage');
+    const edgeTypeId = await getEdgeTypeId(ctx.pool, 'HAS_MESSAGE');
+
+    if (!conversationTypeId) {
+      console.warn('Conversation node type not found');
+      return [];
+    }
+
     const query = graphId
       ? `
         SELECT
           c.id,
-          c.user_id as "userId",
-          c.graph_id as "graphId",
-          c.title,
-          c.metadata,
+          c.props,
           c.created_at as "createdAt",
           c.updated_at as "updatedAt",
-          COUNT(cm.id) as "messageCount"
-        FROM public."Conversations" c
-        LEFT JOIN public."ConversationMessages" cm ON c.id = cm.conversation_id
-        WHERE c.user_id = $1 AND c.graph_id = $2
-        GROUP BY c.id
+          COALESCE(msg_count.count, 0) as "messageCount"
+        FROM nodes c
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as count
+          FROM edges e
+          WHERE e.source_node_id = c.id
+            AND e.edge_type_id = $4
+        ) msg_count ON true
+        WHERE c.node_type_id = $1
+          AND c.props->>'userId' = $2
+          AND (c.props->>'graphId' = $3 OR c.props->>'contextId' = $3)
         ORDER BY c.updated_at DESC
-        LIMIT $3 OFFSET $4
+        LIMIT $5 OFFSET $6
       `
       : `
         SELECT
           c.id,
-          c.user_id as "userId",
-          c.graph_id as "graphId",
-          c.title,
-          c.metadata,
+          c.props,
           c.created_at as "createdAt",
           c.updated_at as "updatedAt",
-          COUNT(cm.id) as "messageCount"
-        FROM public."Conversations" c
-        LEFT JOIN public."ConversationMessages" cm ON c.id = cm.conversation_id
-        WHERE c.user_id = $1
-        GROUP BY c.id
+          COALESCE(msg_count.count, 0) as "messageCount"
+        FROM nodes c
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as count
+          FROM edges e
+          WHERE e.source_node_id = c.id
+            AND e.edge_type_id = $3
+        ) msg_count ON true
+        WHERE c.node_type_id = $1
+          AND c.props->>'userId' = $2
         ORDER BY c.updated_at DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $4 OFFSET $5
       `;
 
     const params = graphId
-      ? [ctx.userId, graphId, limit, offset]
-      : [ctx.userId, limit, offset];
+      ? [conversationTypeId, ctx.userId, graphId, edgeTypeId, limit, offset]
+      : [conversationTypeId, ctx.userId, edgeTypeId, limit, offset];
 
     const result = await ctx.pool.query(query, params);
-    return result.rows;
+
+    return result.rows.map(row => {
+      const props = parseProps(row.props);
+      return {
+        id: row.id,
+        userId: props.userId,
+        graphId: props.graphId || props.contextId,
+        title: props.title,
+        metadata: props.metadata,
+        messageCount: parseInt(row.messageCount, 10),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
+    });
   }
 
   /**
    * Get messages for a conversation
+   * Uses HAS_MESSAGE edges to find messages belonging to a conversation
    *
    * @param conversationId - Conversation ID
    * @param limit - Max messages to return
@@ -216,35 +312,55 @@ export class ConversationalAIResolver {
       throw new Error('Authentication required');
     }
 
+    const conversationTypeId = await getNodeTypeId(ctx.pool, 'Conversation');
+    const messageTypeId = await getNodeTypeId(ctx.pool, 'ConversationMessage');
+    const edgeTypeId = await getEdgeTypeId(ctx.pool, 'HAS_MESSAGE');
+
+    if (!conversationTypeId || !messageTypeId || !edgeTypeId) {
+      throw new Error('Required node/edge types not found');
+    }
+
     // Verify user owns this conversation
     const conversationCheck = await ctx.pool.query(
-      `SELECT id FROM public."Conversations" WHERE id = $1 AND user_id = $2`,
-      [conversationId, ctx.userId]
+      `SELECT id FROM nodes WHERE id = $1 AND node_type_id = $2 AND props->>'userId' = $3`,
+      [conversationId, conversationTypeId, ctx.userId]
     );
 
     if (conversationCheck.rows.length === 0) {
       throw new Error('Conversation not found or access denied');
     }
 
+    // Query messages via HAS_MESSAGE edges
     const result = await ctx.pool.query(
       `
       SELECT
-        id,
-        conversation_id as "conversationId",
-        user_id as "userId",
-        role,
-        content,
-        metadata,
-        created_at as "createdAt"
-      FROM public."ConversationMessages"
-      WHERE conversation_id = $1
-      ORDER BY created_at ASC
-      LIMIT $2 OFFSET $3
+        m.id,
+        m.props,
+        m.created_at as "createdAt",
+        COALESCE((e.props->>'order')::int, 0) as message_order
+      FROM nodes m
+      JOIN edges e ON e.target_node_id = m.id
+      WHERE m.node_type_id = $1
+        AND e.edge_type_id = $2
+        AND e.source_node_id = $3
+      ORDER BY message_order ASC, m.created_at ASC
+      LIMIT $4 OFFSET $5
       `,
-      [conversationId, limit, offset]
+      [messageTypeId, edgeTypeId, conversationId, limit, offset]
     );
 
-    return result.rows;
+    return result.rows.map(row => {
+      const props = parseProps(row.props);
+      return {
+        id: row.id,
+        conversationId: props.conversationId || conversationId,
+        userId: props.userId,
+        role: props.role,
+        content: props.content,
+        metadata: props.metadata,
+        createdAt: row.createdAt,
+      };
+    });
   }
 
   /**
@@ -289,6 +405,7 @@ export class ConversationalAIResolver {
 
   /**
    * Update conversation title
+   * Updates node's props.title
    *
    * @param id - Conversation ID
    * @param title - New title
@@ -313,32 +430,42 @@ export class ConversationalAIResolver {
       throw new Error('Title is too long (max 200 characters)');
     }
 
+    const conversationTypeId = await getNodeTypeId(ctx.pool, 'Conversation');
+    if (!conversationTypeId) {
+      throw new Error('Conversation node type not found');
+    }
+
     const result = await ctx.pool.query(
       `
-      UPDATE public."Conversations"
-      SET title = $1, updated_at = NOW()
-      WHERE id = $2 AND user_id = $3
-      RETURNING
-        id,
-        user_id as "userId",
-        graph_id as "graphId",
-        title,
-        metadata,
-        created_at as "createdAt",
-        updated_at as "updatedAt"
+      UPDATE nodes
+      SET props = props || $1::jsonb, updated_at = NOW()
+      WHERE id = $2 AND node_type_id = $3 AND props->>'userId' = $4
+      RETURNING id, props, created_at as "createdAt", updated_at as "updatedAt"
       `,
-      [title, id, ctx.userId]
+      [JSON.stringify({ title }), id, conversationTypeId, ctx.userId]
     );
 
     if (result.rows.length === 0) {
       throw new Error('Conversation not found or access denied');
     }
 
-    return result.rows[0];
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      userId: props.userId,
+      graphId: props.graphId || props.contextId,
+      title: props.title,
+      metadata: props.metadata,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 
   /**
    * Delete conversation
+   * Deletes conversation node and associated message nodes via cascade or explicit delete
    *
    * @param id - Conversation ID
    * @param ctx - GraphQL context
@@ -353,9 +480,32 @@ export class ConversationalAIResolver {
       throw new Error('Authentication required');
     }
 
+    const conversationTypeId = await getNodeTypeId(ctx.pool, 'Conversation');
+    const messageTypeId = await getNodeTypeId(ctx.pool, 'ConversationMessage');
+    const edgeTypeId = await getEdgeTypeId(ctx.pool, 'HAS_MESSAGE');
+
+    if (!conversationTypeId) {
+      throw new Error('Conversation node type not found');
+    }
+
+    // First, delete all message nodes connected via HAS_MESSAGE edges
+    if (messageTypeId && edgeTypeId) {
+      await ctx.pool.query(
+        `
+        DELETE FROM nodes
+        WHERE id IN (
+          SELECT target_node_id FROM edges
+          WHERE source_node_id = $1 AND edge_type_id = $2
+        )
+        `,
+        [id, edgeTypeId]
+      );
+    }
+
+    // Delete the conversation node (edges will cascade or be deleted by FK)
     const result = await ctx.pool.query(
-      `DELETE FROM public."Conversations" WHERE id = $1 AND user_id = $2`,
-      [id, ctx.userId]
+      `DELETE FROM nodes WHERE id = $1 AND node_type_id = $2 AND props->>'userId' = $3`,
+      [id, conversationTypeId, ctx.userId]
     );
 
     return result.rowCount !== null && result.rowCount > 0;
@@ -372,13 +522,26 @@ export class ConversationFieldResolver {
     @Root() conversation: Conversation,
     @Ctx() { pool }: Context
   ): Promise<User | null> {
+    const userTypeId = await getNodeTypeId(pool, 'User');
+    if (!userTypeId) return null;
+
     const result = await pool.query(
-      `SELECT id, username, email, created_at as "createdAt"
-       FROM public."Users" WHERE id = $1`,
-      [conversation.userId]
+      `SELECT id, props, created_at as "createdAt"
+       FROM nodes WHERE id = $1 AND node_type_id = $2`,
+      [conversation.userId, userTypeId]
     );
 
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      username: props.username,
+      email: props.email,
+      createdAt: row.createdAt,
+    };
   }
 
   @FieldResolver(() => Graph, { nullable: true })
@@ -390,15 +553,32 @@ export class ConversationFieldResolver {
       return null;
     }
 
+    // Query nodes table for Graph node type
+    const graphTypeId = await getNodeTypeId(pool, 'Graph');
+    if (!graphTypeId) return null;
+
     const result = await pool.query(
-      `SELECT id, name, description, level, methodology, privacy,
-              created_by as "createdBy", created_at as "createdAt",
-              updated_at as "updatedAt"
-       FROM public."Graphs" WHERE id = $1`,
-      [conversation.graphId]
+      `SELECT id, props, created_at as "createdAt", updated_at as "updatedAt"
+       FROM nodes WHERE id = $1 AND node_type_id = $2`,
+      [conversation.graphId, graphTypeId]
     );
 
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      name: props.name,
+      description: props.description,
+      level: props.level,
+      methodology: props.methodology,
+      privacy: props.privacy,
+      createdBy: props.createdBy,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 
   @FieldResolver(() => [ConversationMessage])
@@ -407,25 +587,43 @@ export class ConversationFieldResolver {
     @Ctx() { pool }: Context,
     @Arg('limit', () => Int, { nullable: true, defaultValue: 50 }) limit: number
   ): Promise<ConversationMessage[]> {
+    const messageTypeId = await getNodeTypeId(pool, 'ConversationMessage');
+    const edgeTypeId = await getEdgeTypeId(pool, 'HAS_MESSAGE');
+
+    if (!messageTypeId || !edgeTypeId) {
+      return [];
+    }
+
     const result = await pool.query(
       `
       SELECT
-        id,
-        conversation_id as "conversationId",
-        user_id as "userId",
-        role,
-        content,
-        metadata,
-        created_at as "createdAt"
-      FROM public."ConversationMessages"
-      WHERE conversation_id = $1
-      ORDER BY created_at ASC
-      LIMIT $2
+        m.id,
+        m.props,
+        m.created_at as "createdAt",
+        COALESCE((e.props->>'order')::int, 0) as message_order
+      FROM nodes m
+      JOIN edges e ON e.target_node_id = m.id
+      WHERE m.node_type_id = $1
+        AND e.edge_type_id = $2
+        AND e.source_node_id = $3
+      ORDER BY message_order ASC, m.created_at ASC
+      LIMIT $4
       `,
-      [conversation.id, limit]
+      [messageTypeId, edgeTypeId, conversation.id, limit]
     );
 
-    return result.rows;
+    return result.rows.map(row => {
+      const props = parseProps(row.props);
+      return {
+        id: row.id,
+        conversationId: props.conversationId || conversation.id,
+        userId: props.userId,
+        role: props.role,
+        content: props.content,
+        metadata: props.metadata,
+        createdAt: row.createdAt,
+      };
+    });
   }
 
   @FieldResolver(() => Int)
@@ -438,10 +636,13 @@ export class ConversationFieldResolver {
       return conversation.messageCount;
     }
 
+    const edgeTypeId = await getEdgeTypeId(pool, 'HAS_MESSAGE');
+    if (!edgeTypeId) return 0;
+
     const result = await pool.query(
-      `SELECT COUNT(*) as count FROM public."ConversationMessages"
-       WHERE conversation_id = $1`,
-      [conversation.id]
+      `SELECT COUNT(*) as count FROM edges
+       WHERE source_node_id = $1 AND edge_type_id = $2`,
+      [conversation.id, edgeTypeId]
     );
 
     return parseInt(result.rows[0].count, 10);
@@ -458,13 +659,26 @@ export class ConversationMessageFieldResolver {
     @Root() message: ConversationMessage,
     @Ctx() { pool }: Context
   ): Promise<User | null> {
+    const userTypeId = await getNodeTypeId(pool, 'User');
+    if (!userTypeId) return null;
+
     const result = await pool.query(
-      `SELECT id, username, email, created_at as "createdAt"
-       FROM public."Users" WHERE id = $1`,
-      [message.userId]
+      `SELECT id, props, created_at as "createdAt"
+       FROM nodes WHERE id = $1 AND node_type_id = $2`,
+      [message.userId, userTypeId]
     );
 
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      username: props.username,
+      email: props.email,
+      createdAt: row.createdAt,
+    };
   }
 
   @FieldResolver(() => Conversation, { nullable: true })
@@ -472,14 +686,29 @@ export class ConversationMessageFieldResolver {
     @Root() message: ConversationMessage,
     @Ctx() { pool }: Context
   ): Promise<Conversation | null> {
+    const conversationTypeId = await getNodeTypeId(pool, 'Conversation');
+    if (!conversationTypeId) return null;
+
     const result = await pool.query(
-      `SELECT id, user_id as "userId", graph_id as "graphId", title,
-              metadata, created_at as "createdAt", updated_at as "updatedAt"
-       FROM public."Conversations" WHERE id = $1`,
-      [message.conversationId]
+      `SELECT id, props, created_at as "createdAt", updated_at as "updatedAt"
+       FROM nodes WHERE id = $1 AND node_type_id = $2`,
+      [message.conversationId, conversationTypeId]
     );
 
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      userId: props.userId,
+      graphId: props.graphId || props.contextId,
+      title: props.title,
+      metadata: props.metadata,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 }
 
@@ -493,13 +722,28 @@ export class ConversationalAIResponseFieldResolver {
     @Root() response: ConversationalAIResponse,
     @Ctx() { pool }: Context
   ): Promise<Conversation | null> {
+    const conversationTypeId = await getNodeTypeId(pool, 'Conversation');
+    if (!conversationTypeId) return null;
+
     const result = await pool.query(
-      `SELECT id, user_id as "userId", graph_id as "graphId", title,
-              metadata, created_at as "createdAt", updated_at as "updatedAt"
-       FROM public."Conversations" WHERE id = $1`,
-      [response.conversationId]
+      `SELECT id, props, created_at as "createdAt", updated_at as "updatedAt"
+       FROM nodes WHERE id = $1 AND node_type_id = $2`,
+      [response.conversationId, conversationTypeId]
     );
 
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    const props = parseProps(row.props);
+
+    return {
+      id: row.id,
+      userId: props.userId,
+      graphId: props.graphId || props.contextId,
+      title: props.title,
+      metadata: props.metadata,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 }

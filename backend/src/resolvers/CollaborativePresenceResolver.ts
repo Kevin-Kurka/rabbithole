@@ -30,6 +30,38 @@ const EDIT_LOCK_ACQUIRED = 'EDIT_LOCK_ACQUIRED';
 const EDIT_LOCK_RELEASED = 'EDIT_LOCK_RELEASED';
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function parseProps(props: any): Record<string, any> {
+  if (!props) return {};
+  if (typeof props === 'string') {
+    try {
+      return JSON.parse(props);
+    } catch {
+      return {};
+    }
+  }
+  return props;
+}
+
+// Cache for node type IDs
+const nodeTypeCache: Map<string, string> = new Map();
+
+async function getNodeTypeId(pool: any, name: string): Promise<string | null> {
+  if (nodeTypeCache.has(name)) {
+    return nodeTypeCache.get(name)!;
+  }
+  const result = await pool.query(
+    `SELECT id FROM node_types WHERE name = $1`,
+    [name]
+  );
+  if (result.rows.length === 0) return null;
+  nodeTypeCache.set(name, result.rows[0].id);
+  return result.rows[0].id;
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -171,6 +203,14 @@ class AcquireEditLockInput {
 // RESOLVER
 // ============================================================================
 
+/**
+ * CollaborativePresenceResolver
+ *
+ * GraphQL resolver for real-time collaboration features
+ *
+ * ARCHITECTURE: Uses strict 4-table graph database (node_types, edge_types, nodes, edges)
+ * All data stored in JSONB props field - no standalone tables.
+ */
 @Resolver()
 export class CollaborativePresenceResolver {
   /**
@@ -214,6 +254,7 @@ export class CollaborativePresenceResolver {
 
   /**
    * Get active edit locks for a graph
+   * Uses GraphLock NodeType from nodes table
    */
   @Query(() => [EditLock])
   async getActiveEditLocks(
@@ -221,33 +262,42 @@ export class CollaborativePresenceResolver {
     @Ctx() { pool }: Context
   ): Promise<EditLock[]> {
     try {
+      const graphLockTypeId = await getNodeTypeId(pool, 'GraphLock');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!graphLockTypeId) {
+        console.warn('GraphLock node type not found');
+        return [];
+      }
+
       const sql = `
         SELECT
           l.id as lock_id,
-          l.user_id,
-          u.username as user_name,
-          l.entity_id,
-          l.entity_type,
-          l.acquired_at,
-          l.expires_at
-        FROM public."GraphLocks" l
-        INNER JOIN public."Users" u ON l.user_id = u.id
-        WHERE l.graph_id = $1
-        AND l.released_at IS NULL
-        AND l.expires_at > NOW()
+          l.props,
+          l.created_at as acquired_at,
+          u.props->>'username' as user_name
+        FROM nodes l
+        LEFT JOIN nodes u ON (l.props->>'userId')::uuid = u.id ${userTypeId ? `AND u.node_type_id = '${userTypeId}'` : ''}
+        WHERE l.node_type_id = $1
+        AND l.props->>'graphId' = $2
+        AND (l.props->>'releasedAt') IS NULL
+        AND (l.props->>'expiresAt')::timestamp > NOW()
       `;
 
-      const result = await pool.query(sql, [graphId]);
+      const result = await pool.query(sql, [graphLockTypeId, graphId]);
 
-      return result.rows.map((row) => ({
-        lockId: row.lock_id,
-        userId: row.user_id,
-        userName: row.user_name,
-        entityId: row.entity_id,
-        entityType: row.entity_type,
-        acquiredAt: row.acquired_at,
-        expiresAt: row.expires_at,
-      }));
+      return result.rows.map((row) => {
+        const props = parseProps(row.props);
+        return {
+          lockId: row.lock_id,
+          userId: props.userId,
+          userName: row.user_name || 'Anonymous',
+          entityId: props.entityId,
+          entityType: props.entityType || props.lockType,
+          acquiredAt: row.acquired_at,
+          expiresAt: new Date(props.expiresAt),
+        };
+      });
     } catch (error) {
       console.error('Error fetching edit locks:', error);
       return [];
@@ -301,6 +351,7 @@ export class CollaborativePresenceResolver {
 
   /**
    * Update user presence
+   * Uses User NodeType from nodes table
    */
   @Mutation(() => Boolean)
   async updatePresence(
@@ -311,14 +362,23 @@ export class CollaborativePresenceResolver {
     if (!userId) return false;
 
     try {
-      // Get user info
-      const userResult = await pool.query(
-        'SELECT username, avatar_url FROM public."Users" WHERE id = $1',
-        [userId]
-      );
+      // Get user info from User node
+      const userTypeId = await getNodeTypeId(pool, 'User');
+      let userName = 'Anonymous';
+      let userAvatar: string | undefined;
 
-      const userName = userResult.rows[0]?.username || 'Anonymous';
-      const userAvatar = userResult.rows[0]?.avatar_url;
+      if (userTypeId) {
+        const userResult = await pool.query(
+          'SELECT props FROM nodes WHERE id = $1 AND node_type_id = $2',
+          [userId, userTypeId]
+        );
+
+        if (userResult.rows.length > 0) {
+          const userProps = parseProps(userResult.rows[0].props);
+          userName = userProps.username || 'Anonymous';
+          userAvatar = userProps.avatarUrl;
+        }
+      }
 
       const presence: InternalUserPresence = {
         userId,
@@ -363,12 +423,19 @@ export class CollaborativePresenceResolver {
     if (!userId) return false;
 
     try {
-      const userResult = await pool.query(
-        'SELECT username FROM public."Users" WHERE id = $1',
-        [userId]
-      );
+      const userTypeId = await getNodeTypeId(pool, 'User');
+      let userName = 'Anonymous';
 
-      const userName = userResult.rows[0]?.username || 'Anonymous';
+      if (userTypeId) {
+        const userResult = await pool.query(
+          'SELECT props FROM nodes WHERE id = $1 AND node_type_id = $2',
+          [userId, userTypeId]
+        );
+        if (userResult.rows.length > 0) {
+          const userProps = parseProps(userResult.rows[0].props);
+          userName = userProps.username || 'Anonymous';
+        }
+      }
 
       const selection: NodeSelection = {
         userId,
@@ -400,12 +467,19 @@ export class CollaborativePresenceResolver {
     if (!userId) return false;
 
     try {
-      const userResult = await pool.query(
-        'SELECT username FROM public."Users" WHERE id = $1',
-        [userId]
-      );
+      const userTypeId = await getNodeTypeId(pool, 'User');
+      let userName = 'Anonymous';
 
-      const userName = userResult.rows[0]?.username || 'Anonymous';
+      if (userTypeId) {
+        const userResult = await pool.query(
+          'SELECT props FROM nodes WHERE id = $1 AND node_type_id = $2',
+          [userId, userTypeId]
+        );
+        if (userResult.rows.length > 0) {
+          const userProps = parseProps(userResult.rows[0].props);
+          userName = userProps.username || 'Anonymous';
+        }
+      }
 
       const indicator: TypingIndicator = {
         userId,
@@ -427,6 +501,7 @@ export class CollaborativePresenceResolver {
 
   /**
    * Acquire edit lock
+   * Creates a GraphLock node instead of using standalone table
    */
   @Mutation(() => EditLock, { nullable: true })
   async acquireEditLock(
@@ -440,12 +515,22 @@ export class CollaborativePresenceResolver {
     try {
       await client.query('BEGIN');
 
+      const graphLockTypeId = await getNodeTypeId(pool, 'GraphLock');
+      const userTypeId = await getNodeTypeId(pool, 'User');
+
+      if (!graphLockTypeId) {
+        throw new Error('GraphLock node type not found. Run migrations.');
+      }
+
       // Check if lock already exists and is not expired
       const existingLock = await client.query(
-        `SELECT * FROM public."GraphLocks"
-         WHERE entity_id = $1 AND entity_type = $2
-         AND released_at IS NULL AND expires_at > NOW()`,
-        [input.entityId, input.entityType]
+        `SELECT id FROM nodes
+         WHERE node_type_id = $1
+         AND props->>'entityId' = $2
+         AND props->>'entityType' = $3
+         AND (props->>'releasedAt') IS NULL
+         AND (props->>'expiresAt')::timestamp > NOW()`,
+        [graphLockTypeId, input.entityId, input.entityType]
       );
 
       if (existingLock.rows.length > 0) {
@@ -453,34 +538,48 @@ export class CollaborativePresenceResolver {
         throw new Error('Entity is already locked by another user');
       }
 
-      // Get graph_id from entity
-      let graphId: string;
+      // Get graphId from entity (node or edge)
+      let graphId: string | null = null;
       if (input.entityType === 'node') {
         const nodeResult = await client.query(
-          'SELECT graph_id FROM public."Nodes" WHERE id = $1',
+          `SELECT props->>'graphId' as graph_id FROM nodes WHERE id = $1`,
           [input.entityId]
         );
         graphId = nodeResult.rows[0]?.graph_id;
       } else {
+        // For edges, we need to get graphId from props or source node
         const edgeResult = await client.query(
-          'SELECT graph_id FROM public."Edges" WHERE id = $1',
+          `SELECT e.props->>'graphId' as graph_id, n.props->>'graphId' as source_graph_id
+           FROM edges e
+           LEFT JOIN nodes n ON e.source_node_id = n.id
+           WHERE e.id = $1`,
           [input.entityId]
         );
-        graphId = edgeResult.rows[0]?.graph_id;
+        graphId = edgeResult.rows[0]?.graph_id || edgeResult.rows[0]?.source_graph_id;
       }
 
       if (!graphId) {
         await client.query('ROLLBACK');
-        throw new Error('Entity not found');
+        throw new Error('Entity not found or missing graphId');
       }
 
-      // Create lock (30 second expiry)
+      // Create lock as a GraphLock node (30 second expiry)
+      const expiresAt = new Date(Date.now() + 30 * 1000);
+      const lockProps = {
+        graphId,
+        userId,
+        lockType: 'exclusive',
+        entityType: input.entityType,
+        entityId: input.entityId,
+        expiresAt: expiresAt.toISOString(),
+        reason: 'edit',
+      };
+
       const lockResult = await client.query(
-        `INSERT INTO public."GraphLocks" (
-          graph_id, user_id, lock_type, entity_type, entity_id, expires_at
-        ) VALUES ($1, $2, 'write', $3, $4, NOW() + INTERVAL '30 seconds')
-        RETURNING *`,
-        [graphId, userId, input.entityType, input.entityId]
+        `INSERT INTO nodes (node_type_id, props, created_at, updated_at)
+         VALUES ($1, $2, NOW(), NOW())
+         RETURNING id, created_at`,
+        [graphLockTypeId, JSON.stringify(lockProps)]
       );
 
       await client.query('COMMIT');
@@ -488,19 +587,26 @@ export class CollaborativePresenceResolver {
       const lock = lockResult.rows[0];
 
       // Get user info
-      const userResult = await pool.query(
-        'SELECT username FROM public."Users" WHERE id = $1',
-        [userId]
-      );
+      let userName = 'Anonymous';
+      if (userTypeId) {
+        const userResult = await pool.query(
+          'SELECT props FROM nodes WHERE id = $1 AND node_type_id = $2',
+          [userId, userTypeId]
+        );
+        if (userResult.rows.length > 0) {
+          const userProps = parseProps(userResult.rows[0].props);
+          userName = userProps.username || 'Anonymous';
+        }
+      }
 
       const lockData: EditLock = {
         lockId: lock.id,
-        userId: lock.user_id,
-        userName: userResult.rows[0]?.username || 'Anonymous',
-        entityId: lock.entity_id,
-        entityType: lock.entity_type,
-        acquiredAt: lock.acquired_at,
-        expiresAt: lock.expires_at,
+        userId,
+        userName,
+        entityId: input.entityId,
+        entityType: input.entityType,
+        acquiredAt: lock.created_at,
+        expiresAt,
       };
 
       // Publish lock acquisition
@@ -518,6 +624,7 @@ export class CollaborativePresenceResolver {
 
   /**
    * Release edit lock
+   * Updates GraphLock node instead of standalone table
    */
   @Mutation(() => Boolean)
   async releaseEditLock(
@@ -528,26 +635,40 @@ export class CollaborativePresenceResolver {
     if (!userId) return false;
 
     try {
-      const result = await pool.query(
-        `UPDATE public."GraphLocks"
-         SET released_at = NOW()
-         WHERE id = $1 AND user_id = $2
-         RETURNING graph_id, entity_id, entity_type`,
-        [lockId, userId]
+      const graphLockTypeId = await getNodeTypeId(pool, 'GraphLock');
+      if (!graphLockTypeId) return false;
+
+      // Get lock and verify ownership
+      const lockResult = await pool.query(
+        `SELECT id, props FROM nodes
+         WHERE id = $1 AND node_type_id = $2 AND props->>'userId' = $3`,
+        [lockId, graphLockTypeId, userId]
       );
 
-      if (result.rows.length > 0) {
-        const graphId = result.rows[0].graph_id;
-        await pubSubEngine.publish(`${EDIT_LOCK_RELEASED}:${graphId}`, {
-          lockId,
-          userId,
-          entityId: result.rows[0].entity_id,
-          entityType: result.rows[0].entity_type,
-        });
-        return true;
+      if (lockResult.rows.length === 0) {
+        return false;
       }
 
-      return false;
+      const lockProps = parseProps(lockResult.rows[0].props);
+      const graphId = lockProps.graphId;
+
+      // Update lock with released timestamp
+      await pool.query(
+        `UPDATE nodes
+         SET props = props || $1::jsonb, updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify({ releasedAt: new Date().toISOString() }), lockId]
+      );
+
+      // Publish lock release
+      await pubSubEngine.publish(`${EDIT_LOCK_RELEASED}:${graphId}`, {
+        lockId,
+        userId,
+        entityId: lockProps.entityId,
+        entityType: lockProps.entityType,
+      });
+
+      return true;
     } catch (error) {
       console.error('Error releasing edit lock:', error);
       return false;
