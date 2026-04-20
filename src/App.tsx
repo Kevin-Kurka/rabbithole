@@ -32,6 +32,7 @@ export default function App() {
           <Route path="/article/:id" element={<ArticlePage />} />
           <Route path="/write" element={<WritePage />} />
           <Route path="/challenge/:id" element={<ChallengePage />} />
+          <Route path="/theory/new" element={<TheoryPage />} />
           <Route path="/theory/:id" element={<TheoryPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/profile" element={<ProfilePage />} />

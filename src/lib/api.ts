@@ -131,3 +131,85 @@ export async function chatWithAI(messages: { role: string; content: string }[]):
     body: JSON.stringify({ messages }),
   });
 }
+
+// ---- Content Helpers ----
+
+export async function getArticleWithContext(articleId: string): Promise<any> {
+  const article = await getNode(articleId);
+  const traversed = await traverse(articleId, 2);
+
+  // Extract claims and sources from traversed data
+  const claims = traversed.filter((n: any) => n.type === 'CLAIM');
+  const sources = traversed.filter((n: any) => n.type === 'SOURCE');
+
+  return { article, claims, sources };
+}
+
+export async function getChallengeWithContext(challengeId: string): Promise<any> {
+  const challenge = await getNode(challengeId);
+  const traversed = await traverse(challengeId, 3);
+
+  const evidence = traversed.filter((n: any) => n.type === 'EVIDENCE');
+  const votes = traversed.filter((n: any) => n.type === 'VOTE');
+  const targetClaim = traversed.find((n: any) => n.type === 'CLAIM');
+
+  return { challenge, evidence, votes, targetClaim };
+}
+
+export async function submitVote(
+  challengeId: string,
+  userId: string,
+  side: 'for' | 'against',
+  tenantId?: string
+) {
+  const vote = await createNode('VOTE', { side, cast_at: new Date().toISOString() }, tenantId);
+  await createEdge(challengeId, vote.id, 'VOTED_ON', {}, tenantId);
+  await createEdge(userId, vote.id, 'CAST_BY', {}, tenantId);
+  return vote;
+}
+
+export async function requestAIAnalysis(
+  challengeId: string,
+  evidenceSummary: string
+): Promise<{ ai_score: number; ai_analysis: string }> {
+  const response = await chatWithAI([
+    {
+      role: 'system',
+      content: 'You are an expert fact-checker. Analyze the provided evidence and provide a score (0-100) and brief verdict.',
+    },
+    {
+      role: 'user',
+      content: `Based on this evidence for and against a claim, provide a JSON response with "score" (0-100) and "analysis" (brief summary):\n\n${evidenceSummary}`,
+    },
+  ]);
+
+  try {
+    const parsed = JSON.parse(response.content || response);
+    return {
+      ai_score: parsed.score || 50,
+      ai_analysis: parsed.analysis || 'Unable to determine verdict.',
+    };
+  } catch {
+    return {
+      ai_score: 50,
+      ai_analysis: 'Unable to analyze evidence at this time.',
+    };
+  }
+}
+
+export async function getUserVote(
+  challengeId: string,
+  userId: string
+): Promise<'for' | 'against' | null> {
+  try {
+    const traversed = await traverse(challengeId, 2);
+    const votes = traversed.filter(
+      v => v.type === 'VOTE' && v.properties.cast_by === userId
+    );
+
+    if (votes.length === 0) return null;
+    return votes[0].properties.side;
+  } catch {
+    return null;
+  }
+}
