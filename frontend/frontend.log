@@ -1,0 +1,2835 @@
+
+> frontend@0.1.0 dev
+> next dev -p 3001
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/kmk/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/kmk/rabbithole/frontend/package-lock.json
+   * /Users/kmk/rabbithole/package-lock.json
+
+   ▲ Next.js 16.0.1 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.5.103:3001
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ webpackBuildWorker
+
+ ✓ Starting...
+ ✓ Ready in 545ms
+ GET / 200 in 2.4s (compile: 2.2s, render: 194ms)
+ HEAD / 200 in 20ms (compile: 1526µs, render: 19ms)
+ GET /sw.js 404 in 681ms (compile: 648ms, render: 32ms)
+ GET /sw.js 404 in 25ms (compile: 3ms, render: 22ms)
+ GET / 200 in 27ms (compile: 4ms, render: 23ms)
+ GET /sw.js 404 in 19ms (compile: 2ms, render: 16ms)
+ GET /sw.js 404 in 23ms (compile: 3ms, render: 20ms)
+ GET / 200 in 33ms (compile: 3ms, render: 30ms)
+ GET /sw.js 404 in 22ms (compile: 1998µs, render: 20ms)
+ GET / 200 in 21ms (compile: 3ms, render: 18ms)
+ GET /sw.js 404 in 18ms (compile: 1827µs, render: 16ms)
+ GET /sw.js 404 in 20ms (compile: 1782µs, render: 18ms)
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/j3/tdg9hqnn3_ldqk997xq9h24r0000gn/T/next-panic-b490305d66f1fd019ceef09c93402b74.log.
+
+To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Invariant%3A%20Expected%20to%20inject%20all%20injections%2C%20found%20%2F%2F%20INJECT%3Apages&body=Turbopack%20version%3A%20%60v16.0.1-canary.5-10-g406721415%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0AInvariant%3A%20Expected%20to%20inject%20all%20injections%2C%20found%20%2F%2F%20INJECT%3Apages%0A%0ADebug%20info%3A%0A-%20Execution%20of%20subscribe_issues_and_diags_operation%20failed%0A-%20Execution%20of%20%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aserver_changed%20failed%0A-%20Execution%20of%20%2AProject%3A%3Aserver_changed%20failed%0A-%20Execution%20of%20%2AAppEndpointOutput%3A%3Aserver_assets%20failed%0A-%20Execution%20of%20AppEndpoint%3A%3Aoutput%20failed%0A-%20Execution%20of%20get_app_page_entry%20failed%0A-%20Invariant%3A%20Expected%20to%20inject%20all%20injections%2C%20found%20%2F%2F%20INJECT%3Apages%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
+-----
+
+Error [TurbopackInternalError]: Failed to write app endpoint /page
+
+Caused by:
+- Invariant: Expected to inject all injections, found // INJECT:pages
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <AppEndpoint as Endpoint>::output failed
+- Failed to write app endpoint /page
+- Execution of AppEndpoint::output failed
+- Execution of get_app_page_entry failed
+- Invariant: Expected to inject all injections, found // INJECT:pages
+    at <unknown> (TurbopackInternalError: Failed to write app endpoint /page) {
+  location: undefined
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/compiled/react-is/index.js:6:20
+Module not found: Can't resolve './cjs/react-is.development.js'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/compiled/react-is/index.js
+    ./node_modules/next/dist/client/index.js
+    ./node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ✓ Compiled in 1796ms
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:28:17
+Module not found: Can't resolve '../../../client/router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:38:38
+Module not found: Can't resolve '../../next-devtools/userspace/app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:64:68
+Module not found: Can't resolve '../../report-hmr-latency'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:63:30
+Module not found: Can't resolve '../../runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js:24:18
+Module not found: Can't resolve '../../segment'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js:11:19
+Module not found: Can't resolve '../../utils/warn-once'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:29:24
+Module not found: Can't resolve '../app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:12:1
+Module not found: Can't resolve '../lib/require-instrumentation-client'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:12:58
+Module not found: Can't resolve '../router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:62:17
+Module not found: Can't resolve '../shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:43:37
+Module not found: Can't resolve '../shared/lib/router-context.shared-runtime'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js:11:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js
+    ./rabbithole/frontend/node_modules/next/dist/client/add-locale.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:18:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:47:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:65:37
+Module not found: Can't resolve '../turbopack-hot-reloader-common'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/compiled/react-is/index.js:6:20
+Module not found: Can't resolve './cjs/react-is.development.js'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/compiled/react-is/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:20:17
+Module not found: Can't resolve './dev/hot-reloader/shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:19:30
+Module not found: Can't resolve './dev/runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:35:24
+Module not found: Can't resolve './errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js:12:24
+Module not found: Can't resolve './redirect-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:55:25
+Module not found: Can't resolve './remove-base-path'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:27:28
+Module not found: Can't resolve './report-global-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:51:25
+Module not found: Can't resolve './route-announcer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:19:22
+Module not found: Can't resolve './route-loader'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:11:23
+Module not found: Can't resolve './route-matcher'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:12:21
+Module not found: Can't resolve './route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:52:17
+Module not found: Can't resolve './router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:176:38
+Module not found: Can't resolve './script'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js:23:33
+Module not found: Can't resolve './set-attributes-from-props'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js:27:23
+Module not found: Can't resolve './sorted-routes'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js:28:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:37:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:136:35
+Module not found: Can't resolve './tracing/report-to-socket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:61:58
+Module not found: Can't resolve './tracing/tracer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js:37:21
+Module not found: Can't resolve './utils/route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/static/development/_buildManifest.js.tmp.rlsl6saaux'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/static/development/_buildManifest.js.tmp.rlsl6saaux'
+}
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:28:17
+Module not found: Can't resolve '../../../client/router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:38:38
+Module not found: Can't resolve '../../next-devtools/userspace/app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:64:68
+Module not found: Can't resolve '../../report-hmr-latency'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:63:30
+Module not found: Can't resolve '../../runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js:24:18
+Module not found: Can't resolve '../../segment'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js:11:19
+Module not found: Can't resolve '../../utils/warn-once'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:29:24
+Module not found: Can't resolve '../app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:12:1
+Module not found: Can't resolve '../lib/require-instrumentation-client'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:12:58
+Module not found: Can't resolve '../router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:62:17
+Module not found: Can't resolve '../shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:43:37
+Module not found: Can't resolve '../shared/lib/router-context.shared-runtime'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js:11:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js
+    ./rabbithole/frontend/node_modules/next/dist/client/add-locale.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:18:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:47:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:65:37
+Module not found: Can't resolve '../turbopack-hot-reloader-common'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:20:17
+Module not found: Can't resolve './dev/hot-reloader/shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:19:30
+Module not found: Can't resolve './dev/runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:35:24
+Module not found: Can't resolve './errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js:12:24
+Module not found: Can't resolve './redirect-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:55:25
+Module not found: Can't resolve './remove-base-path'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:27:28
+Module not found: Can't resolve './report-global-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:51:25
+Module not found: Can't resolve './route-announcer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:19:22
+Module not found: Can't resolve './route-loader'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:11:23
+Module not found: Can't resolve './route-matcher'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:12:21
+Module not found: Can't resolve './route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:52:17
+Module not found: Can't resolve './router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:176:38
+Module not found: Can't resolve './script'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js:23:33
+Module not found: Can't resolve './set-attributes-from-props'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js:27:23
+Module not found: Can't resolve './sorted-routes'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js:28:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:37:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:136:35
+Module not found: Can't resolve './tracing/report-to-socket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:61:58
+Module not found: Can't resolve './tracing/tracer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js:37:21
+Module not found: Can't resolve './utils/route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:28:17
+Module not found: Can't resolve '../../../client/router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:38:38
+Module not found: Can't resolve '../../next-devtools/userspace/app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:64:68
+Module not found: Can't resolve '../../report-hmr-latency'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:63:30
+Module not found: Can't resolve '../../runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js:24:18
+Module not found: Can't resolve '../../segment'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js:11:19
+Module not found: Can't resolve '../../utils/warn-once'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:29:24
+Module not found: Can't resolve '../app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:12:1
+Module not found: Can't resolve '../lib/require-instrumentation-client'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:12:58
+Module not found: Can't resolve '../router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:62:17
+Module not found: Can't resolve '../shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:43:37
+Module not found: Can't resolve '../shared/lib/router-context.shared-runtime'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js:11:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/normalize-trailing-slash.js
+    ./rabbithole/frontend/node_modules/next/dist/client/add-locale.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:18:30
+Module not found: Can't resolve '../shared/lib/router/utils/remove-trailing-slash'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:47:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:65:37
+Module not found: Can't resolve '../turbopack-hot-reloader-common'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:20:17
+Module not found: Can't resolve './dev/hot-reloader/shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:19:30
+Module not found: Can't resolve './dev/runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:35:24
+Module not found: Can't resolve './errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js:12:24
+Module not found: Can't resolve './redirect-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/components/is-next-router-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:55:25
+Module not found: Can't resolve './remove-base-path'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:27:28
+Module not found: Can't resolve './report-global-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:51:25
+Module not found: Can't resolve './route-announcer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:19:22
+Module not found: Can't resolve './route-loader'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:11:23
+Module not found: Can't resolve './route-matcher'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:12:21
+Module not found: Can't resolve './route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:52:17
+Module not found: Can't resolve './router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:176:38
+Module not found: Can't resolve './script'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js:23:33
+Module not found: Can't resolve './set-attributes-from-props'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js:27:23
+Module not found: Can't resolve './sorted-routes'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js:28:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:37:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:136:35
+Module not found: Can't resolve './tracing/report-to-socket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:61:58
+Module not found: Can't resolve './tracing/tracer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js:37:21
+Module not found: Can't resolve './utils/route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ✓ Compiled in 29ms
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:28:17
+Module not found: Can't resolve '../../../client/router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js:38:38
+Module not found: Can't resolve '../../next-devtools/userspace/app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/react-client-callbacks/on-recoverable-error.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:63:30
+Module not found: Can't resolve '../../runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js:24:18
+Module not found: Can't resolve '../../segment'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js:11:19
+Module not found: Can't resolve '../../utils/warn-once'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:29:24
+Module not found: Can't resolve '../app/errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js:11:20
+Module not found: Can't resolve '../dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:12:58
+Module not found: Can't resolve '../router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:62:17
+Module not found: Can't resolve '../shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:43:37
+Module not found: Can't resolve '../shared/lib/router-context.shared-runtime'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:47:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:65:37
+Module not found: Can't resolve '../turbopack-hot-reloader-common'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:20:17
+Module not found: Can't resolve './dev/hot-reloader/shared'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:19:30
+Module not found: Can't resolve './dev/runtime-error-handler'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:35:24
+Module not found: Can't resolve './errors/stitched-error'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:51:25
+Module not found: Can't resolve './route-announcer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js:19:22
+Module not found: Can't resolve './route-loader'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:11:23
+Module not found: Can't resolve './route-matcher'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js:12:21
+Module not found: Can't resolve './route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/interpolate-as.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:52:17
+Module not found: Can't resolve './router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:176:38
+Module not found: Can't resolve './script'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js:23:33
+Module not found: Can't resolve './set-attributes-from-props'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/head-manager.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js:27:23
+Module not found: Can't resolve './sorted-routes'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/index.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js:28:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs-utils.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js:37:32
+Module not found: Can't resolve './terminal-logging-config'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/app/forward-logs.js
+    ./rabbithole/frontend/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:61:58
+Module not found: Can't resolve './tracing/tracer'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js:37:21
+Module not found: Can't resolve './utils/route-regex'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/adapters.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ✓ Compiled in 37ms
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-local-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/is-local-url.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/parse-relative-url.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-loader.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/route-matcher.js:11:16
+Module not found: Can't resolve '../../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/route-matcher.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js:11:19
+Module not found: Can't resolve '../../utils/warn-once'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/utils/disable-smooth-scroll.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js:11:20
+Module not found: Can't resolve '../dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/index.js:47:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/resolve-href.js:14:16
+Module not found: Can't resolve '../shared/lib/utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/resolve-href.js
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/router.js:36:16
+Module not found: Can't resolve '../utils'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/shared/lib/router/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/router.js:45:62
+Module not found: Can't resolve './with-router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Error [TurbopackInternalError]: Failed to write app endpoint /page
+
+Caused by:
+- Invariant: Expected to inject all injections, found // INJECT:pages
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <AppEndpoint as Endpoint>::output failed
+- Failed to write app endpoint /page
+- Execution of AppEndpoint::output failed
+- Execution of get_app_page_entry failed
+- Invariant: Expected to inject all injections, found // INJECT:pages
+    at <unknown> (TurbopackInternalError: Failed to write app endpoint /page) {
+  location: undefined
+}
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js:11:20
+Module not found: Can't resolve '../dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/router.js:45:62
+Module not found: Can't resolve './with-router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js:11:20
+Module not found: Can't resolve '../dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/tracing/report-to-socket.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js:16:20
+Module not found: Can't resolve './dev/hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js:14:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-middleware-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js:13:20
+Module not found: Can't resolve './hot-reloader/pages/websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/on-demand-entries-client.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:59:20
+Module not found: Can't resolve './websocket'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js
+    ./rabbithole/frontend/node_modules/next/dist/client/page-bootstrap.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./rabbithole/frontend/node_modules/next/dist/client/router.js:45:62
+Module not found: Can't resolve './with-router'
+
+
+Import trace:
+  Browser:
+    ./rabbithole/frontend/node_modules/next/dist/client/router.js
+    ./rabbithole/frontend/node_modules/next/dist/client/index.js
+    ./rabbithole/frontend/node_modules/next/dist/client/next-dev-turbopack.js
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/j3/tdg9hqnn3_ldqk997xq9h24r0000gn/T/next-panic-b490305d66f1fd019ceef09c93402b74.log.
+
+To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fpage&body=Turbopack%20version%3A%20%60v16.0.1-canary.5-10-g406721415%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0AFailed%20to%20write%20app%20endpoint%20%2Fpage%0A%0ACaused%20by%3A%0A-%20Invariant%3A%20Expected%20to%20inject%20all%20injections%2C%20found%20%2F%2F%20INJECT%3Apages%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_written_endpoint_with_issues_operation%20failed%0A-%20Execution%20of%20endpoint_write_to_disk%20failed%0A-%20Execution%20of%20%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aoutput%20failed%0A-%20Failed%20to%20write%20app%20endpoint%20%2Fpage%0A-%20Execution%20of%20AppEndpoint%3A%3Aoutput%20failed%0A-%20Execution%20of%20get_app_page_entry%20failed%0A-%20Invariant%3A%20Expected%20to%20inject%20all%20injections%2C%20found%20%2F%2F%20INJECT%3Apages%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
+-----
+
+ ✓ Compiled in 172ms
+Error [TurbopackInternalError]: Failed to write app endpoint /page
+
+Caused by:
+- Invariant: Expected to inject all injections, found // INJECT:pages
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <AppEndpoint as Endpoint>::output failed
+- Failed to write app endpoint /page
+- Execution of AppEndpoint::output failed
+- Execution of get_app_page_entry failed
+- Invariant: Expected to inject all injections, found // INJECT:pages
+    at <unknown> (TurbopackInternalError: Failed to write app endpoint /page) {
+  location: undefined
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ✓ Compiled in 55ms
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/_not-found/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/_not-found/page/server-reference-manifest.json'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload when [turbopack]/browser/dev/hmr-client/hmr-client.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ✓ Compiled in 1824ms
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/_not-found/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/_not-found/page/server-reference-manifest.json'
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: ENOENT: no such file or directory, open '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kmk/rabbithole/frontend/.next/dev/server/app/page/server-reference-manifest.json'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/j3/tdg9hqnn3_ldqk997xq9h24r0000gn/T/next-panic-b490305d66f1fd019ceef09c93402b74.log.
+
+To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20%5Bproject%5D%2Frabbithole%2Ffrontend%2Fsrc%2Fapp%2Fglobals.css%20%5Bapp-client%5D%20%28css%29&body=Turbopack%20version%3A%20%60v16.0.1-canary.5-10-g406721415%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0A%5Bproject%5D%2Frabbithole%2Ffrontend%2Fsrc%2Fapp%2Fglobals.css%20%5Bapp-client%5D%20%28css%29%0A%0ACaused%20by%3A%0A-%20creating%20new%20process%0A-%20node%20process%20exited%20before%20we%20could%20connect%20to%20it%20with%20exit%20status%3A%201%0A%0ADebug%20info%3A%0A-%20Execution%20of%20subscribe_issues_and_diags_operation%20failed%0A-%20Execution%20of%20%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aserver_changed%20failed%0A-%20Execution%20of%20%2AProject%3A%3Aserver_changed%20failed%0A-%20Execution%20of%20%2AAppEndpointOutput%3A%3Aserver_assets%20failed%0A-%20Execution%20of%20AppEndpoint%3A%3Aoutput%20failed%0A-%20Execution%20of%20AppProject%3A%3Aapp_module_graphs%20failed%0A-%20Execution%20of%20%2A%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aadditional_entries%20failed%0A-%20Execution%20of%20%2AModuleGraph%3A%3Afrom_graphs%20failed%0A-%20Execution%20of%20SingleModuleGraph%3A%3Anew_with_entries_visited_intern%20failed%0A-%20%5Bproject%5D%2Frabbithole%2Ffrontend%2Fsrc%2Fapp%2Fglobals.css%20%5Bapp-client%5D%20%28css%29%0A-%20Execution%20of%20primary_chunkable_referenced_modules%20failed%0A-%20Execution%20of%20%3CCssModuleAsset%20as%20Module%3E%3A%3Areferences%20failed%0A-%20Execution%20of%20parse_css%20failed%0A-%20Execution%20of%20%3CPostCssTransformedAsset%20as%20Asset%3E%3A%3Acontent%20failed%0A-%20Execution%20of%20PostCssTransformedAsset%3A%3Aprocess%20failed%0A-%20creating%20new%20process%0A-%20node%20process%20exited%20before%20we%20could%20connect%20to%20it%20with%20exit%20status%3A%201%0A%20%20Process%20output%3A%0A%20%20%0A%20%20Process%20error%20output%3A%0A%20%20node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A1413%0A%20%20%20%20throw%20err%3B%0A%20%20%20%20%5E%0A%20%20%0A%20%20Error%3A%20Cannot%20find%20module%20%27%2FUsers%2Fkmk%2Frabbithole%2Ffrontend%2F.next%2Fdev%2Fbuild%2Fpostcss.js%27%0A%20%20%20%20%20%20at%20Module._resolveFilename%20%28node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A1410%3A15%29%0A%20%20%20%20%20%20at%20defaultResolveImpl%20%28node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A1051%3A19%29%0A%20%20%20%20%20%20at%20resolveForCJSWithHooks%20%28node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A1056%3A22%29%0A%20%20%20%20%20%20at%20Module._load%20%28node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A1219%3A37%29%0A%20%20%20%20%20%20at%20TracingChannel.traceSync%20%28node%3Adiagnostics_channel%3A322%3A14%29%0A%20%20%20%20%20%20at%20wrapModuleLoad%20%28node%3Ainternal%2Fmodules%2Fcjs%2Floader%3A238%3A24%29%0A%20%20%20%20%20%20at%20Module.executeUserEntryPoint%20%5Bas%20runMain%5D%20%28node%3Ainternal%2Fmodules%2Frun_main%3A154%3A5%29%0A%20%20%20%20%20%20at%20node%3Ainternal%2Fmain%2Frun_main_module%3A33%3A47%20%7B%0A%20%20%20%20code%3A%20%27MODULE_NOT_FOUND%27%2C%0A%20%20%7D%0A%20%20%0A%20%20Node.js%20v24.5.0%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
+-----
+
+ ⨯ Error [TurbopackInternalError]: Failed to write app endpoint /_not-found/page
+
+Caused by:
+- [project]/rabbithole/frontend/src/app/globals.css [app-client] (css)
+- creating new process
+- node process exited before we could connect to it with exit status: 1
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <AppEndpoint as Endpoint>::output failed
+- Failed to write app endpoint /_not-found/page
+- Execution of AppEndpoint::output failed
+- Execution of AppProject::app_module_graphs failed
+- Execution of *<AppEndpoint as Endpoint>::additional_entries failed
+- Execution of *ModuleGraph::from_graphs failed
+- Execution of SingleModuleGraph::new_with_entries_visited_intern failed
+- [project]/rabbithole/frontend/src/app/globals.css [app-client] (css)
+- Execution of primary_chunkable_referenced_modules failed
+- Execution of <CssModuleAsset as Module>::references failed
+- Execution of parse_css failed
+- Execution of <PostCssTransformedAsset as Asset>::content failed
+- Execution of PostCssTransformedAsset::process failed
+- creating new process
+- node process exited before we could connect to it with exit status: 1
+  Process output:
+  
+  Process error output:
+  node:internal/modules/cjs/loader:1413
+    throw err;
+    ^
+  
+  Error: Cannot find module '/Users/kmk/rabbithole/frontend/.next/dev/build/postcss.js'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1410:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1051:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1056:22)
+      at Module._load (node:internal/modules/cjs/loader:1219:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:238:24)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+  }
+  
+  Node.js v24.5.0
+    at <unknown> (TurbopackInternalError: Failed to write app endpoint /_not-found/page) {
+  location: undefined
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames
+ ✓ Compiled in 16.6s
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- /Users/kmk/rabbithole/frontend/.next/dev/server/pages/_document.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/require.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/load-components.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/utils.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/config.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/next.js
+- /Users/kmk/rabbithole/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Object.<anonymous> (.next/dev/server/pages/_document.js:1:7) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Error: Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:
+  - react:      19.1.0
+  - react-dom:  19.2.1
+Learn more: https://react.dev/warnings/version-mismatch
+    at ignore-listed frames

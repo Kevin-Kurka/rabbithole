@@ -1,25 +1,28 @@
 {
   "name": "rabbithole",
-  "version": "1.0.0",
-  "description": "Collaborative knowledge graph platform for evidence-based inquiry",
+  "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report",
-    "playwright:install": "playwright install --with-deps chromium"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@playwright/test": "^1.49.1",
-    "@types/node": "^20.12.12",
-    "typescript": "^5.4.5"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "graphql-type-json": "^0.3.2"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "react-markdown": "^9.0.0",
+    "@uiw/react-md-editor": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.2.0"
   }
 }

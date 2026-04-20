@@ -1,0 +1,885 @@
+
+> rabbithole@1.0.0 test:e2e
+> playwright test
+
+
+Running 39 tests using 1 worker
+
+Page 2 closed
+Page 1 closed
+  ✘   1 [chromium] › e2e/collaboration.spec.ts:3:5 › collaboration test (30.0s)
+  ✘   2 [chromium] › e2e/login.spec.ts:3:5 › login test (2.0s)
+Page loaded, checking for layout elements...
+  ✓   3 [chromium] › e2e/vscode-layout-basic.spec.ts:10:7 › VS Code Layout - Basic Tests › should render VS Code layout on graph page (2.3s)
+Page has content: [33mtrue[39m
+  ✘   4 [chromium] › e2e/vscode-layout-basic.spec.ts:24:7 › VS Code Layout - Basic Tests › should have main menu at top (2.3s)
+Page body has text: ((a,b,c,d,e,f,g,h)=>{let i=document.documentElement,j=["light","dark"];function k(b){var c;(Array.is
+  ✓   5 [chromium] › e2e/vscode-layout-basic.spec.ts:38:7 › VS Code Layout - Basic Tests › should have left panel with icon navigation (2.3s)
+Keyboard shortcut executed
+  ✓   6 [chromium] › e2e/vscode-layout-basic.spec.ts:51:7 › VS Code Layout - Basic Tests › should toggle panel with keyboard shortcut (3.3s)
+Viewport size: { width: [33m1280[39m, height: [33m720[39m }
+  ✓   7 [chromium] › e2e/vscode-layout-basic.spec.ts:68:7 › VS Code Layout - Basic Tests › should have status bar at bottom (2.3s)
+Has graph-related content: [33mtrue[39m
+  ✓   8 [chromium] › e2e/vscode-layout-basic.spec.ts:81:7 › VS Code Layout - Basic Tests › should display graph canvas or empty state (3.3s)
+Console errors: [33m1[39m
+Errors found: [
+  [32m'Failed to load resource: the server responded with a status of 404 (Not Found)'[39m
+]
+  ✓   9 [chromium] › e2e/vscode-layout-basic.spec.ts:99:7 › VS Code Layout - Basic Tests › should render without console errors (3.3s)
+  ✘  10 [chromium] › e2e/vscode-layout.spec.ts:27:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should render main menu with all elements (6.4s)
+  ✘  11 [chromium] › e2e/vscode-layout.spec.ts:41:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should focus search on Cmd/Ctrl+P (6.4s)
+  ✘  12 [chromium] › e2e/vscode-layout.spec.ts:52:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should show user menu on click (31.3s)
+  ✘  13 [chromium] › e2e/vscode-layout.spec.ts:63:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should render status bar with graph info (6.4s)
+  ✘  14 [chromium] › e2e/vscode-layout.spec.ts:69:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should display connection status (6.4s)
+  ✘  15 [chromium] › e2e/vscode-layout.spec.ts:77:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with button (31.3s)
+  ✘  16 [chromium] › e2e/vscode-layout.spec.ts:96:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with Cmd/Ctrl+B (7.0s)
+  ✘  17 [chromium] › e2e/vscode-layout.spec.ts:115:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle bottom panel with Cmd/Ctrl+J (7.0s)
+  ✘  18 [chromium] › e2e/vscode-layout.spec.ts:127:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle right panel with Cmd/Ctrl+K (7.0s)
+  ✘  19 [chromium] › e2e/vscode-layout.spec.ts:141:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should render all navigation icons (6.4s)
+  ✘  20 [chromium] › e2e/vscode-layout.spec.ts:150:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should switch content when clicking navigation icons (31.3s)
+  ✘  21 [chromium] › e2e/vscode-layout.spec.ts:162:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should display graph list panel (6.4s)
+  ✘  22 [chromium] › e2e/vscode-layout.spec.ts:172:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should show "New Graph" button (6.4s)
+  ✘  23 [chromium] › e2e/vscode-layout.spec.ts:178:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should open create graph modal (32.0s)
+  ✓  24 [chromium] › e2e/vscode-layout.spec.ts:195:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should filter graphs with search (1.2s)
+  ✘  25 [chromium] › e2e/vscode-layout.spec.ts:208:9 › VS Code Layout - Complete Test Suite › SearchPanel › should display search panel when selected (6.5s)
+  ✘  26 [chromium] › e2e/vscode-layout.spec.ts:217:9 › VS Code Layout - Complete Test Suite › RightPanel Tabs › should render right panel with tabs (6.9s)
+  ✓  27 [chromium] › e2e/vscode-layout.spec.ts:228:9 › VS Code Layout - Complete Test Suite › RightPanel Tabs › should switch between tabs (1.8s)
+  ✘  28 [chromium] › e2e/vscode-layout.spec.ts:248:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should render bottom panel with tabs (7.0s)
+  ✘  29 [chromium] › e2e/vscode-layout.spec.ts:259:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display console panel content (31.2s)
+  ✘  30 [chromium] › e2e/vscode-layout.spec.ts:275:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display output panel content (31.3s)
+  ✓  31 [chromium] › e2e/vscode-layout.spec.ts:293:9 › VS Code Layout - Complete Test Suite › Panel Resizing › should resize left panel (1.2s)
+  ✓  32 [chromium] › e2e/vscode-layout.spec.ts:314:9 › VS Code Layout - Complete Test Suite › LocalStorage Persistence › should persist panel states across reloads (3.3s)
+  ✘  33 [chromium] › e2e/vscode-layout.spec.ts:331:9 › VS Code Layout - Complete Test Suite › PropertiesPanel › should show empty state when no node selected (31.3s)
+  ✘  34 [chromium] › e2e/vscode-layout.spec.ts:349:9 › VS Code Layout - Complete Test Suite › ConsolePanel › should display console initialization message (7.0s)
+  ✓  35 [chromium] › e2e/vscode-layout.spec.ts:360:9 › VS Code Layout - Complete Test Suite › ConsolePanel › should have clear button (1.7s)
+  ✓  36 [chromium] › e2e/vscode-layout.spec.ts:375:9 › VS Code Layout - Complete Test Suite › Graph Canvas Integration › should render graph canvas in main content area (2.3s)
+  ✘  37 [chromium] › e2e/vscode-layout.spec.ts:391:9 › VS Code Layout - Complete Test Suite › Responsive Layout › should handle window resize (7.0s)
+  ✘  38 [chromium] › e2e/vscode-layout.spec.ts:410:9 › VS Code Layout - Complete Test Suite › Overall Layout Structure › should have all major layout sections (6.4s)
+  ✓  39 [chromium] › e2e/vscode-layout.spec.ts:423:9 › VS Code Layout - Complete Test Suite › Overall Layout Structure › should maintain z-index hierarchy (2.4s)
+
+
+  1) [chromium] › e2e/collaboration.spec.ts:3:5 › collaboration test ───────────────────────────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test ended.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Create Node")')[22m
+
+
+      33 |
+      34 |   // 3. Create a node in the first window
+    > 35 |   await page1.click('button:has-text("Create Node")');
+         |               ^
+      36 |
+      37 |   // 4. Assert that the new node is visible in both windows
+      38 |   const node1 = await page1.waitForSelector('.react-flow__node:has-text("New Node")', { timeout: 5000 });
+        at /Users/kmk/rabbithole/e2e/collaboration.spec.ts:35:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/collaboration-collaboration-test-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/collaboration-collaboration-test-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/collaboration-collaboration-test-chromium/error-context.md
+
+  2) [chromium] › e2e/login.spec.ts:3:5 › login test ───────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      22 |     return document.cookie.includes('next-auth.session-token');
+      23 |   });
+    > 24 |   expect(isAuthenticated).toBeTruthy();
+         |                           ^
+      25 |
+      26 |   // 6. Test logout functionality
+      27 |   // Look for user menu or sign out button
+        at /Users/kmk/rabbithole/e2e/login.spec.ts:24:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/login-login-test-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/login-login-test-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/login-login-test-chromium/error-context.md
+
+  3) [chromium] › e2e/vscode-layout-basic.spec.ts:24:7 › VS Code Layout - Basic Tests › should have main menu at top 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      33 |     // Check if there's a top navigation element
+      34 |     const hasTopElement = await page.locator('div').first().isVisible();
+    > 35 |     expect(hasTopElement).toBeTruthy();
+         |                           ^
+      36 |   });
+      37 |
+      38 |   test('should have left panel with icon navigation', async ({ page }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout-basic.spec.ts:35:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-basic-VS-Cod-1e60d-hould-have-main-menu-at-top-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-basic-VS-Cod-1e60d-hould-have-main-menu-at-top-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-basic-VS-Cod-1e60d-hould-have-main-menu-at-top-chromium/error-context.md
+
+  4) [chromium] › e2e/vscode-layout.spec.ts:27:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should render main menu with all elements 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('div').filter({ hasText: 'Rabbit Hole' }).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('div').filter({ hasText: 'Rabbit Hole' }).first()[22m
+
+
+      28 |       // Check main menu exists
+      29 |       const mainMenu = authenticatedPage.locator('div').filter({ hasText: 'Rabbit Hole' }).first();
+    > 30 |       await expect(mainMenu).toBeVisible();
+         |                              ^
+      31 |
+      32 |       // Check search input
+      33 |       const searchInput = authenticatedPage.locator('input[placeholder*="Search"]');
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:30:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-d108b-main-menu-with-all-elements-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-d108b-main-menu-with-all-elements-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-d108b-main-menu-with-all-elements-chromium/error-context.md
+
+  5) [chromium] › e2e/vscode-layout.spec.ts:41:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should focus search on Cmd/Ctrl+P 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeFocused[2m([22m[2m)[22m failed
+
+    Locator: locator('input[placeholder*="Search"]')
+    Expected: focused
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeFocused" with timeout 5000ms[22m
+    [2m  - waiting for locator('input[placeholder*="Search"]')[22m
+
+
+      47 |
+      48 |       // Check search input is focused
+    > 49 |       await expect(searchInput).toBeFocused();
+         |                                 ^
+      50 |     });
+      51 |
+      52 |     test('should show user menu on click', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:49:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5bb64--focus-search-on-Cmd-Ctrl-P-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5bb64--focus-search-on-Cmd-Ctrl-P-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-5bb64--focus-search-on-Cmd-Ctrl-P-chromium/error-context.md
+
+  6) [chromium] › e2e/vscode-layout.spec.ts:52:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should show user menu on click 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').last()[22m
+
+
+      53 |       // Find and click user menu button (last button in main menu)
+      54 |       const userMenuButton = authenticatedPage.locator('button').last();
+    > 55 |       await userMenuButton.click();
+         |                            ^
+      56 |
+      57 |       // Check for dropdown menu items
+      58 |       await authenticatedPage.waitForTimeout(300); // Wait for dropdown animation
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:55:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-32b34-uld-show-user-menu-on-click-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-32b34-uld-show-user-menu-on-click-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-32b34-uld-show-user-menu-on-click-chromium/error-context.md
+
+  7) [chromium] › e2e/vscode-layout.spec.ts:63:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should render status bar with graph info 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('div').filter({ hasText: /Connected|Disconnected/i }).last()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('div').filter({ hasText: /Connected|Disconnected/i }).last()[22m
+
+
+      64 |       // Check status bar exists at bottom
+      65 |       const statusBar = authenticatedPage.locator('div').filter({ hasText: /Connected|Disconnected/i }).last();
+    > 66 |       await expect(statusBar).toBeVisible();
+         |                               ^
+      67 |     });
+      68 |
+      69 |     test('should display connection status', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:66:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-29f78--status-bar-with-graph-info-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-29f78--status-bar-with-graph-info-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-29f78--status-bar-with-graph-info-chromium/error-context.md
+
+  8) [chromium] › e2e/vscode-layout.spec.ts:69:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should display connection status 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Connected|Disconnected/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Connected|Disconnected/i')[22m
+
+
+      70 |       // Look for WiFi icon or connection text
+      71 |       const connectionStatus = authenticatedPage.locator('text=/Connected|Disconnected/i');
+    > 72 |       await expect(connectionStatus).toBeVisible();
+         |                                      ^
+      73 |     });
+      74 |   });
+      75 |
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:72:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-ca485-d-display-connection-status-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-ca485-d-display-connection-status-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-ca485-d-display-connection-status-chromium/error-context.md
+
+  9) [chromium] › e2e/vscode-layout.spec.ts:77:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with button 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[title*="left" i], button').filter({ hasText: /panel.*left/i }).first()[22m
+
+
+      82 |       // Click left panel toggle button
+      83 |       const toggleButton = authenticatedPage.locator('button[title*="left" i], button').filter({ hasText: /panel.*left/i }).first();
+    > 84 |       await toggleButton.click();
+         |                          ^
+      85 |
+      86 |       await authenticatedPage.waitForTimeout(500); // Wait for animation
+      87 |
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:84:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5e245-ggle-left-panel-with-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5e245-ggle-left-panel-with-button-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-5e245-ggle-left-panel-with-button-chromium/error-context.md
+
+  10) [chromium] › e2e/vscode-layout.spec.ts:96:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with Cmd/Ctrl+B 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Graphs/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Graphs/i').first()[22m
+
+
+      109 |         await expect(leftPanel).not.toBeVisible();
+      110 |       } else {
+    > 111 |         await expect(leftPanel).toBeVisible();
+          |                                 ^
+      112 |       }
+      113 |     });
+      114 |
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:111:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-b876f--left-panel-with-Cmd-Ctrl-B-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-b876f--left-panel-with-Cmd-Ctrl-B-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-b876f--left-panel-with-Cmd-Ctrl-B-chromium/error-context.md
+
+  11) [chromium] › e2e/vscode-layout.spec.ts:115:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle bottom panel with Cmd/Ctrl+J 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Console|Output/i').last()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Console|Output/i').last()[22m
+
+
+      122 |       // Check for bottom panel (Console tab)
+      123 |       const bottomPanel = authenticatedPage.locator('text=/Console|Output/i').last();
+    > 124 |       await expect(bottomPanel).toBeVisible();
+          |                                 ^
+      125 |     });
+      126 |
+      127 |     test('should toggle right panel with Cmd/Ctrl+K', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:124:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-c9ace-ottom-panel-with-Cmd-Ctrl-J-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-c9ace-ottom-panel-with-Cmd-Ctrl-J-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-c9ace-ottom-panel-with-Cmd-Ctrl-J-chromium/error-context.md
+
+  12) [chromium] › e2e/vscode-layout.spec.ts:127:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle right panel with Cmd/Ctrl+K 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Properties|Collaboration/i').last()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Properties|Collaboration/i').last()[22m
+
+
+      134 |       // Check for right panel (Properties tab)
+      135 |       const rightPanel = authenticatedPage.locator('text=/Properties|Collaboration/i').last();
+    > 136 |       await expect(rightPanel).toBeVisible();
+          |                                ^
+      137 |     });
+      138 |   });
+      139 |
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:136:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-58dd9-right-panel-with-Cmd-Ctrl-K-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-58dd9-right-panel-with-Cmd-Ctrl-K-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-58dd9-right-panel-with-Cmd-Ctrl-K-chromium/error-context.md
+
+  13) [chromium] › e2e/vscode-layout.spec.ts:141:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should render all navigation icons 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=/Graphs/i') to be visible[22m
+
+
+      141 |     test('should render all navigation icons', async ({ authenticatedPage }) => {
+      142 |       // Wait for left panel to be visible
+    > 143 |       await authenticatedPage.waitForSelector('text=/Graphs/i', { timeout: 5000 });
+          |                               ^
+      144 |
+      145 |       // Look for icon buttons (they should have tooltips or aria-labels)
+      146 |       const iconBar = authenticatedPage.locator('div').filter({ hasText: /Graphs|Search|Structure/i }).first();
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:143:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-9bb8a-render-all-navigation-icons-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-9bb8a-render-all-navigation-icons-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-9bb8a-render-all-navigation-icons-chromium/error-context.md
+
+  14) [chromium] › e2e/vscode-layout.spec.ts:150:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should switch content when clicking navigation icons 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForSelector: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=/Graphs/i') to be visible[22m
+
+
+      150 |     test('should switch content when clicking navigation icons', async ({ authenticatedPage }) => {
+      151 |       // Ensure left panel is open
+    > 152 |       await authenticatedPage.waitForSelector('text=/Graphs/i');
+          |                               ^
+      153 |
+      154 |       // Click on different navigation items and check content changes
+      155 |       // This is a basic test - actual navigation items depend on layout
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:152:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-7c93a-n-clicking-navigation-icons-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-7c93a-n-clicking-navigation-icons-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-7c93a-n-clicking-navigation-icons-chromium/error-context.md
+
+  15) [chromium] › e2e/vscode-layout.spec.ts:162:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should display graph list panel 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Graphs/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Graphs/i').first()[22m
+
+
+      163 |       // Check for "Graphs" heading
+      164 |       const graphsHeading = authenticatedPage.locator('text=/Graphs/i').first();
+    > 165 |       await expect(graphsHeading).toBeVisible();
+          |                                   ^
+      166 |
+      167 |       // Check for search input
+      168 |       const searchInput = authenticatedPage.locator('input[placeholder*="Search"]').first();
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:165:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-38063-ld-display-graph-list-panel-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-38063-ld-display-graph-list-panel-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-38063-ld-display-graph-list-panel-chromium/error-context.md
+
+  16) [chromium] › e2e/vscode-layout.spec.ts:172:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should show "New Graph" button 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button').filter({ hasText: /New Graph/i })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('button').filter({ hasText: /New Graph/i })[22m
+
+
+      173 |       // Look for New Graph button
+      174 |       const newGraphButton = authenticatedPage.locator('button', { hasText: /New Graph/i });
+    > 175 |       await expect(newGraphButton).toBeVisible();
+          |                                    ^
+      176 |     });
+      177 |
+      178 |     test('should open create graph modal', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:175:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-d6f58-hould-show-New-Graph-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-d6f58-hould-show-New-Graph-button-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-d6f58-hould-show-New-Graph-button-chromium/error-context.md
+
+  17) [chromium] › e2e/vscode-layout.spec.ts:178:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should open create graph modal 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /New Graph/i }).first()[22m
+
+
+      179 |       // Click New Graph button
+      180 |       const newGraphButton = authenticatedPage.locator('button').filter({ hasText: /New Graph/i }).first();
+    > 181 |       await newGraphButton.click();
+          |                            ^
+      182 |
+      183 |       // Wait for modal
+      184 |       await authenticatedPage.waitForTimeout(300);
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:181:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-6196b-uld-open-create-graph-modal-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-6196b-uld-open-create-graph-modal-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-6196b-uld-open-create-graph-modal-chromium/error-context.md
+
+  18) [chromium] › e2e/vscode-layout.spec.ts:208:9 › VS Code Layout - Complete Test Suite › SearchPanel › should display search panel when selected 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Search/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Search/i')[22m
+
+
+      210 |       // For now, just check if the layout supports it
+      211 |       const searchText = authenticatedPage.locator('text=/Search/i');
+    > 212 |       await expect(searchText).toBeVisible();
+          |                                ^
+      213 |     });
+      214 |   });
+      215 |
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:212:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-63a10--search-panel-when-selected-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-63a10--search-panel-when-selected-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-63a10--search-panel-when-selected-chromium/error-context.md
+
+  19) [chromium] › e2e/vscode-layout.spec.ts:217:9 › VS Code Layout - Complete Test Suite › RightPanel Tabs › should render right panel with tabs 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Properties|Collaboration|AI Chat|History/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Properties|Collaboration|AI Chat|History/i').first()[22m
+
+
+      223 |       // Check for tab names
+      224 |       const tabs = authenticatedPage.locator('text=/Properties|Collaboration|AI Chat|History/i');
+    > 225 |       await expect(tabs.first()).toBeVisible();
+          |                                  ^
+      226 |     });
+      227 |
+      228 |     test('should switch between tabs', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:225:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-9a889-ender-right-panel-with-tabs-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-9a889-ender-right-panel-with-tabs-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-9a889-ender-right-panel-with-tabs-chromium/error-context.md
+
+  20) [chromium] › e2e/vscode-layout.spec.ts:248:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should render bottom panel with tabs 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Console/i').last()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Console/i').last()[22m
+
+
+      254 |       // Check for tab names
+      255 |       const consolTab = authenticatedPage.locator('text=/Console/i').last();
+    > 256 |       await expect(consolTab).toBeVisible();
+          |                               ^
+      257 |     });
+      258 |
+      259 |     test('should display console panel content', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:256:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-02c14-nder-bottom-panel-with-tabs-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-02c14-nder-bottom-panel-with-tabs-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-02c14-nder-bottom-panel-with-tabs-chromium/error-context.md
+
+  21) [chromium] › e2e/vscode-layout.spec.ts:259:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display console panel content 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /Console/i }).last()[22m
+
+
+      265 |       // Click Console tab
+      266 |       const consoleTab = authenticatedPage.locator('button', { hasText: /Console/i }).last();
+    > 267 |       await consoleTab.click();
+          |                        ^
+      268 |       await authenticatedPage.waitForTimeout(300);
+      269 |
+      270 |       // Check for console content
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:267:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5c7ab-splay-console-panel-content-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-5c7ab-splay-console-panel-content-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-5c7ab-splay-console-panel-content-chromium/error-context.md
+
+  22) [chromium] › e2e/vscode-layout.spec.ts:275:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display output panel content 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /Output/i }).last()[22m
+
+
+      281 |       // Click Output tab
+      282 |       const outputTab = authenticatedPage.locator('button', { hasText: /Output/i }).last();
+    > 283 |       await outputTab.click();
+          |                       ^
+      284 |       await authenticatedPage.waitForTimeout(300);
+      285 |
+      286 |       // Check for output content
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:283:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-2a285-isplay-output-panel-content-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-2a285-isplay-output-panel-content-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-2a285-isplay-output-panel-content-chromium/error-context.md
+
+  23) [chromium] › e2e/vscode-layout.spec.ts:331:9 › VS Code Layout - Complete Test Suite › PropertiesPanel › should show empty state when no node selected 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /Properties/i }).first()[22m
+
+
+      337 |       // Click Properties tab
+      338 |       const propertiesTab = authenticatedPage.locator('button', { hasText: /Properties/i }).first();
+    > 339 |       await propertiesTab.click();
+          |                           ^
+      340 |       await authenticatedPage.waitForTimeout(300);
+      341 |
+      342 |       // Check for empty state message
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:339:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-71c6b-state-when-no-node-selected-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-71c6b-state-when-no-node-selected-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-71c6b-state-when-no-node-selected-chromium/error-context.md
+
+  24) [chromium] › e2e/vscode-layout.spec.ts:349:9 › VS Code Layout - Complete Test Suite › ConsolePanel › should display console initialization message 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Console initialized/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Console initialized/i')[22m
+
+
+      355 |       // Should show console initialized
+      356 |       const consoleMessage = authenticatedPage.locator('text=/Console initialized/i');
+    > 357 |       await expect(consoleMessage).toBeVisible();
+          |                                    ^
+      358 |     });
+      359 |
+      360 |     test('should have clear button', async ({ authenticatedPage }) => {
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:357:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-f1aaf-sole-initialization-message-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-f1aaf-sole-initialization-message-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-f1aaf-sole-initialization-message-chromium/error-context.md
+
+  25) [chromium] › e2e/vscode-layout.spec.ts:391:9 › VS Code Layout - Complete Test Suite › Responsive Layout › should handle window resize 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Rabbit Hole/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Rabbit Hole/i').first()[22m
+
+
+      396 |       // Check layout is visible
+      397 |       const mainMenu = authenticatedPage.locator('text=/Rabbit Hole/i').first();
+    > 398 |       await expect(mainMenu).toBeVisible();
+          |                              ^
+      399 |
+      400 |       // Resize to smaller viewport
+      401 |       await authenticatedPage.setViewportSize({ width: 1280, height: 720 });
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:398:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-8e272-should-handle-window-resize-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-8e272-should-handle-window-resize-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-8e272-should-handle-window-resize-chromium/error-context.md
+
+  26) [chromium] › e2e/vscode-layout.spec.ts:410:9 › VS Code Layout - Complete Test Suite › Overall Layout Structure › should have all major layout sections 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Rabbit Hole/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Rabbit Hole/i').first()[22m
+
+
+      411 |       // Main menu at top
+      412 |       const mainMenu = authenticatedPage.locator('text=/Rabbit Hole/i').first();
+    > 413 |       await expect(mainMenu).toBeVisible();
+          |                              ^
+      414 |
+      415 |       // Status bar at bottom
+      416 |       await authenticatedPage.waitForTimeout(1000);
+        at /Users/kmk/rabbithole/e2e/vscode-layout.spec.ts:413:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-6a6b6-e-all-major-layout-sections-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/vscode-layout-VS-Code-Layo-6a6b6-e-all-major-layout-sections-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/vscode-layout-VS-Code-Layo-6a6b6-e-all-major-layout-sections-chromium/error-context.md
+
+  26 failed
+    [chromium] › e2e/collaboration.spec.ts:3:5 › collaboration test ────────────────────────────────
+    [chromium] › e2e/login.spec.ts:3:5 › login test ────────────────────────────────────────────────
+    [chromium] › e2e/vscode-layout-basic.spec.ts:24:7 › VS Code Layout - Basic Tests › should have main menu at top 
+    [chromium] › e2e/vscode-layout.spec.ts:27:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should render main menu with all elements 
+    [chromium] › e2e/vscode-layout.spec.ts:41:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should focus search on Cmd/Ctrl+P 
+    [chromium] › e2e/vscode-layout.spec.ts:52:9 › VS Code Layout - Complete Test Suite › MainMenu Component › should show user menu on click 
+    [chromium] › e2e/vscode-layout.spec.ts:63:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should render status bar with graph info 
+    [chromium] › e2e/vscode-layout.spec.ts:69:9 › VS Code Layout - Complete Test Suite › StatusBar Component › should display connection status 
+    [chromium] › e2e/vscode-layout.spec.ts:77:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with button 
+    [chromium] › e2e/vscode-layout.spec.ts:96:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle left panel with Cmd/Ctrl+B 
+    [chromium] › e2e/vscode-layout.spec.ts:115:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle bottom panel with Cmd/Ctrl+J 
+    [chromium] › e2e/vscode-layout.spec.ts:127:9 › VS Code Layout - Complete Test Suite › Panel Toggling › should toggle right panel with Cmd/Ctrl+K 
+    [chromium] › e2e/vscode-layout.spec.ts:141:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should render all navigation icons 
+    [chromium] › e2e/vscode-layout.spec.ts:150:9 › VS Code Layout - Complete Test Suite › Icon Navigation Bar › should switch content when clicking navigation icons 
+    [chromium] › e2e/vscode-layout.spec.ts:162:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should display graph list panel 
+    [chromium] › e2e/vscode-layout.spec.ts:172:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should show "New Graph" button 
+    [chromium] › e2e/vscode-layout.spec.ts:178:9 › VS Code Layout - Complete Test Suite › GraphListPanel › should open create graph modal 
+    [chromium] › e2e/vscode-layout.spec.ts:208:9 › VS Code Layout - Complete Test Suite › SearchPanel › should display search panel when selected 
+    [chromium] › e2e/vscode-layout.spec.ts:217:9 › VS Code Layout - Complete Test Suite › RightPanel Tabs › should render right panel with tabs 
+    [chromium] › e2e/vscode-layout.spec.ts:248:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should render bottom panel with tabs 
+    [chromium] › e2e/vscode-layout.spec.ts:259:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display console panel content 
+    [chromium] › e2e/vscode-layout.spec.ts:275:9 › VS Code Layout - Complete Test Suite › BottomPanel Tabs › should display output panel content 
+    [chromium] › e2e/vscode-layout.spec.ts:331:9 › VS Code Layout - Complete Test Suite › PropertiesPanel › should show empty state when no node selected 
+    [chromium] › e2e/vscode-layout.spec.ts:349:9 › VS Code Layout - Complete Test Suite › ConsolePanel › should display console initialization message 
+    [chromium] › e2e/vscode-layout.spec.ts:391:9 › VS Code Layout - Complete Test Suite › Responsive Layout › should handle window resize 
+    [chromium] › e2e/vscode-layout.spec.ts:410:9 › VS Code Layout - Complete Test Suite › Overall Layout Structure › should have all major layout sections 
+  13 passed (7.2m)
+
+  Serving HTML report at http://localhost:9323. Press Ctrl+C to quit.
