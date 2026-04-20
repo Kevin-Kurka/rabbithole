@@ -51,6 +51,14 @@ export function isLoggedIn(): boolean {
   return !!localStorage.getItem('sentient_token');
 }
 
+export async function getCurrentUser(): Promise<any> {
+  try {
+    return await request('/auth/me');
+  } catch (error) {
+    throw new Error('Failed to fetch current user');
+  }
+}
+
 // ---- Nodes ----
 
 export async function createNode<T>(type: string, properties: T, tenantId?: string): Promise<SentientNode<T>> {
