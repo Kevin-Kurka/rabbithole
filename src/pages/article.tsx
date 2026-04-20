@@ -1,12 +1,279 @@
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ClaimHighlighter } from '../components/claim-highlighter';
+import { StatusBadge } from '../components/status-badge';
+import { SourceCitation } from '../components/source-citation';
+import { getArticleWithContext, createNode, createEdge } from '../lib/api';
+import type { Article, Claim, Source } from '../lib/types';
 
 export function ArticlePage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [claims, setClaims] = useState<any[]>([]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedClaim, setSelectedClaim] = useState<string | null>(null);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengeForm, setChallengeForm] = useState({ title: '', rationale: '' });
+  const [challengeLoading, setChallengeLoading] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const load = async () => {
+      try {
+        const data = await getArticleWithContext(id);
+        setArticle(data.article);
+        // @ts-ignore
+        setClaims(data.claims);
+        // @ts-ignore
+        setSources(data.sources);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load article');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [id]);
+
+  const handleMarkClaim = async (text: string, start: number, end: number) => {
+    if (!id) return;
+
+    try {
+      const claimNode = await createNode('CLAIM', {
+        text,
+        highlight_start: start,
+        highlight_end: end,
+        status: 'unchallenged',
+      });
+
+      await createEdge(id, claimNode.id, 'CONTAINS_CLAIM');
+      setClaims([...claims, claimNode]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create claim');
+    }
+  };
+
+  const handleChallenge = async (claimId?: string) => {
+    if (!claimId) {
+      // Create claim first if no ID provided
+      setShowChallengeModal(true);
+      return;
+    }
+
+    setSelectedClaim(claimId);
+    setShowChallengeModal(true);
+  };
+
+  const submitChallenge = async () => {
+    if (!challengeForm.title || !challengeForm.rationale || !selectedClaim) {
+      setError('Title and rationale are required');
+      return;
+    }
+
+    setChallengeLoading(true);
+    try {
+      const challenge = await createNode('CHALLENGE', {
+        title: challengeForm.title,
+        rationale: challengeForm.rationale,
+        target_type: 'claim',
+        status: 'open',
+        community_score: 0,
+        ai_score: 0,
+        verdict: 'pending',
+        opened_at: new Date().toISOString(),
+      });
+
+      await createEdge(selectedClaim, challenge.id, 'CHALLENGES');
+
+      // Update claim status
+      const claim = claims.find(c => c.id === selectedClaim);
+      if (claim) {
+        claim.properties.status = 'challenged';
+      }
+
+      navigate(`/challenge/${challenge.id}`);
+      setShowChallengeModal(false);
+      setChallengeForm({ title: '', rationale: '' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create challenge');
+    } finally {
+      setChallengeLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-12">
+          <p className="text-gray-500">Loading article...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-12">
+          <p className="text-red-600">{error || 'Article not found'}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">Article</h1>
-      <p className="text-gray-500">Article ID: {id}</p>
-      <p className="text-gray-400 mt-4">Full article reader with claim highlighting coming in Phase 2.</p>
+    <div className="max-w-6xl mx-auto">
+      <div className="grid grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="col-span-2">
+          <article>
+            <h1 className="text-4xl font-bold mb-2">{article.properties.title}</h1>
+            <p className="text-gray-600 text-sm mb-6">
+              Published {new Date(article.properties.published_at || '').toLocaleDateString()}
+            </p>
+
+            <div className="prose prose-sm max-w-none">
+              <ClaimHighlighter
+                body={article.properties.body}
+                claims={claims}
+                onMarkClaim={handleMarkClaim}
+                onChallenge={handleChallenge}
+              />
+            </div>
+
+            {/* Sources section */}
+            {sources.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-gray-200">
+                <h2 className="text-xl font-bold mb-4">Sources</h2>
+                <div className="space-y-4">
+                  {sources.map((source, idx) => (
+                    <div key={source.id} className="flex gap-3">
+                      <div className="flex-shrink-0 text-gray-500">
+                        <SourceCitation source={source} index={idx + 1} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{source.properties.title}</p>
+                        {source.properties.publication && (
+                          <p className="text-sm text-gray-600">{source.properties.publication}</p>
+                        )}
+                        {source.properties.url && (
+                          <a
+                            href={source.properties.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-rabbit-600 hover:text-rabbit-700 underline"
+                          >
+                            Open source
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </article>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Claims list */}
+          <div>
+            <h3 className="font-bold text-lg mb-3">Claims ({claims.length})</h3>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {claims.length === 0 ? (
+                <p className="text-sm text-gray-500">No claims yet</p>
+              ) : (
+                claims.map(claim => (
+                  <div
+                    key={claim.id}
+                    className="bg-white border border-gray-200 rounded p-3 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => setSelectedClaim(claim.id)}
+                  >
+                    <p className="text-sm text-gray-900 mb-2 line-clamp-2">{claim.properties.text}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusBadge status={claim.properties.status} type="claim" className="text-xs" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChallenge(claim.id);
+                        }}
+                        className="text-xs text-rabbit-600 hover:text-rabbit-700 font-medium"
+                      >
+                        Challenge
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Challenge Modal */}
+      {showChallengeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold mb-4">Challenge This Claim</h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Challenge Title</label>
+                <input
+                  type="text"
+                  value={challengeForm.title}
+                  onChange={(e) => setChallengeForm({ ...challengeForm, title: e.target.value })}
+                  placeholder="What are you challenging?"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rationale</label>
+                <textarea
+                  value={challengeForm.rationale}
+                  onChange={(e) => setChallengeForm({ ...challengeForm, rationale: e.target.value })}
+                  placeholder="Why do you think this is incorrect?"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowChallengeModal(false);
+                  setChallengeForm({ title: '', rationale: '' });
+                  setError('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitChallenge}
+                disabled={challengeLoading}
+                className="flex-1 px-4 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+              >
+                {challengeLoading ? 'Creating...' : 'Create Challenge'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
