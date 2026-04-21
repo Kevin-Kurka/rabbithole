@@ -4,14 +4,15 @@ import { EvidenceCard } from '../components/evidence-card';
 import { VoteWidget } from '../components/vote-widget';
 import { StatusBadge } from '../components/status-badge';
 import {
-  getChallengeWithContext,
+  getNode,
+  traverse,
   createNode,
   createEdge,
   submitVote,
   requestAIAnalysis,
   getUserVote,
 } from '../lib/api';
-import type { Challenge, Evidence, Claim } from '../lib/types';
+import type { SentientNode } from '../lib/types';
 
 interface EvidenceForm {
   title: string;
@@ -23,10 +24,10 @@ interface EvidenceForm {
 export function ChallengePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [targetClaim, setTargetClaim] = useState<any | null>(null);
-  const [supportingEvidence, setSupportingEvidence] = useState<any[]>([]);
-  const [refutingEvidence, setRefutingEvidence] = useState<any[]>([]);
+  const [challenge, setChallenge] = useState<SentientNode<any> | null>(null);
+  const [targetClaim, setTargetClaim] = useState<SentientNode<any> | null>(null);
+  const [supportingEvidence, setSupportingEvidence] = useState<SentientNode<any>[]>([]);
+  const [refutingEvidence, setRefutingEvidence] = useState<SentientNode<any>[]>([]);
   const [userVote, setUserVote] = useState<'for' | 'against' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,19 +47,26 @@ export function ChallengePage() {
 
     const load = async () => {
       try {
-        const data = await getChallengeWithContext(id);
-        setChallenge(data.challenge);
-        // @ts-ignore
-        setTargetClaim(data.targetClaim);
+        // Fetch the challenge node
+        const challengeNode = await getNode(id);
+        setChallenge(challengeNode);
 
-        // @ts-ignore
-        const supporting = data.evidence.filter((e: any) => e.properties.side === 'for');
-        // @ts-ignore
-        const refuting = data.evidence.filter((e: any) => e.properties.side === 'against');
-        // @ts-ignore
+        // Traverse to find connected evidence and claims
+        const traversed = await traverse(id, 2);
+
+        // Extract evidence nodes (filter by type field, not node_type)
+        const evidence = traversed.filter((n: any) => n.type === 'EVIDENCE');
+        const supporting = evidence.filter((e: any) => e.properties.side === 'for');
+        const refuting = evidence.filter((e: any) => e.properties.side === 'against');
+
         setSupportingEvidence(supporting);
-        // @ts-ignore
         setRefutingEvidence(refuting);
+
+        // Extract target claim
+        const claim = traversed.find((n: any) => n.type === 'CLAIM');
+        if (claim) {
+          setTargetClaim(claim);
+        }
 
         // Get user's vote
         const vote = await getUserVote(id, ''); // TODO: Get actual user ID
@@ -81,9 +89,9 @@ export function ChallengePage() {
       await submitVote(id, '', side); // TODO: Get actual user ID
       setUserVote(side);
 
-      const newScore = challenge ? challenge.properties.community_score + (side === 'for' ? 1 : -1) : 0;
+      const newScore = challenge ? (challenge.properties as any).community_score + (side === 'for' ? 1 : -1) : 0;
       if (challenge) {
-        challenge.properties.community_score = newScore;
+        (challenge.properties as any).community_score = newScore;
         setChallenge({ ...challenge });
       }
     } catch (err) {
@@ -177,29 +185,29 @@ export function ChallengePage() {
   }
 
   const allEvidence = [...supportingEvidence, ...refutingEvidence];
-  const canRequestAI = allEvidence.length >= 3 && !challenge.properties.ai_score;
+  const canRequestAI = allEvidence.length >= 3 && !(challenge.properties as any).ai_score;
 
   return (<div className="max-w-6xl mx-auto font-mono">
       {/* Header */}
       <div className="bg-black  border border-crt-border p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{challenge.properties.title}</h1>
+            <h1 className="text-3xl font-bold mb-2">{(challenge.properties as any).title}</h1>
             {targetClaim && (
               <p className="text-crt-fg mb-2">
-                <span className="font-medium">Claim:</span> {targetClaim.properties.text}
+                <span className="font-medium">Claim:</span> {(targetClaim.properties as any).text}
               </p>
             )}
             <div className="flex items-center gap-3">
-              <StatusBadge status={challenge.properties.status} type="challenge" />
-              <StatusBadge status={challenge.properties.verdict} type="verdict" />
+              <StatusBadge status={(challenge.properties as any).status} type="challenge" />
+              <StatusBadge status={(challenge.properties as any).verdict} type="verdict" />
             </div>
           </div>
         </div>
 
         <div className="mt-6">
           <VoteWidget
-            communityScore={challenge.properties.community_score}
+            communityScore={(challenge.properties as any).community_score}
             userVote={userVote}
             onVote={handleVote}
             loading={votingLoading}
@@ -376,26 +384,26 @@ export function ChallengePage() {
       <div className="bg-black  border border-crt-border p-6">
         <h2 className="text-xl font-bold mb-4">AI Analysis</h2>
 
-        {challenge.properties.ai_score ? (
+        {(challenge.properties as any).ai_score ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-medium">Score</span>
-              <span className="text-2xl font-bold text-crt-fg">{challenge.properties.ai_score}/100</span>
+              <span className="text-2xl font-bold text-crt-fg">{(challenge.properties as any).ai_score}/100</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Verdict</span>
               <StatusBadge
                 status={
-                  challenge.properties.ai_score > 70
+                  (challenge.properties as any).ai_score > 70
                     ? 'verified'
-                    : challenge.properties.ai_score < 30
+                    : (challenge.properties as any).ai_score < 30
                     ? 'debunked'
                     : 'contested'
                 }
               />
             </div>
             <div className="bg-black  p-3">
-              <p className="text-sm text-crt-fg">{challenge.properties.ai_analysis}</p>
+              <p className="text-sm text-crt-fg">{(challenge.properties as any).ai_analysis}</p>
             </div>
           </div>
         ) : canRequestAI ? (

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { semanticSearch, listNodes } from '../lib/api';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { listNodes } from '../lib/api';
 import type { SentientNode } from '../lib/types';
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const query = searchParams.get('q') || '';
-  const [results, setResults] = useState<SentientNode[]>([]);
+  const [results, setResults] = useState<SentientNode<any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!query.trim()) {
+      setResults([]);
       setLoading(false);
       return;
     }
@@ -20,8 +22,27 @@ export function SearchPage() {
       setLoading(true);
       setError('');
       try {
-        const searchResults = await semanticSearch(query, 20);
-        setResults(searchResults);
+        const allNodes = await listNodes(undefined, 200);
+
+        // Filter nodes client-side by matching query against multiple fields
+        const queryLower = query.toLowerCase();
+        const filtered = allNodes.filter(node => {
+          const props = node.properties as any;
+          const searchFields = [
+            props.title,
+            props.text,
+            props.body,
+            props.summary,
+            props.rationale,
+            props.username,
+          ];
+
+          return searchFields.some(field =>
+            field && typeof field === 'string' && field.toLowerCase().includes(queryLower)
+          );
+        });
+
+        setResults(filtered);
       } catch (err) {
         console.error('Search failed:', err);
         setError('Failed to perform search');
@@ -63,7 +84,14 @@ export function SearchPage() {
       THEORY: '/theory',
       CHALLENGE: '/challenge',
     };
-    return routes[type] || null;
+    return routes[type];
+  };
+
+  const handleNodeClick = (type: string, nodeId: string) => {
+    const route = getRoute(type);
+    if (route) {
+      navigate(`${route}/${nodeId}`);
+    }
   };
 
   const groupedResults = results.reduce((acc, node) => {
@@ -123,20 +151,17 @@ export function SearchPage() {
                       (node.properties as any).text ||
                       (node.properties as any).username ||
                       'Untitled';
-                    const snippet =
+                    const fullExcerpt =
                       (node.properties as any).summary ||
-                      (node.properties as any).body?.substring(0, 150) ||
+                      (node.properties as any).body ||
                       '';
-
-                    const Element = route ? 'a' : 'div';
-                    const elementProps = route
-                      ? { href: `${route}/${node.id}` }
-                      : {};
+                    const snippet = fullExcerpt.substring(0, 80);
+                    const route = getRoute(type);
 
                     return (
-                      <Element
+                      <div
                         key={node.id}
-                        {...elementProps}
+                        onClick={() => route && handleNodeClick(type, node.id)}
                         className={`p-4 bg-black border border-crt-border ${
                           route ? 'hover:border-crt-fg cursor-pointer transition' : ''
                         }`}
@@ -159,7 +184,7 @@ export function SearchPage() {
                             [{type}]
                           </span>
                         </div>
-                      </Element>
+                      </div>
                     );
                   })}
                 </div>
