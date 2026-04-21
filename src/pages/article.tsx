@@ -8,7 +8,7 @@ import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import { AiPanel } from '../components/ai-panel';
 import { getNode, createNode, createEdge, traverse, listEdgesForNode } from '../lib/api';
 import { generateAutoEvidence } from '../lib/auto-evidence';
-import type { Article, SentientNode, SentientEdge } from '../lib/types';
+import type { Article, SentientNode, SentientEdge, ChallengeFramework } from '../lib/types';
 
 interface ExportState {
   isExporting: boolean;
@@ -55,7 +55,12 @@ export function ArticlePage() {
   }, [id]);
 
 
-  const handleCreateChallenge = async (title: string, rationale: string) => {
+  const handleCreateChallenge = async (
+    title: string,
+    rationale: string,
+    framework?: ChallengeFramework,
+    checkedCriteria?: string[]
+  ) => {
     if (!id) return;
 
     setAiGenerating(true);
@@ -68,6 +73,9 @@ export function ArticlePage() {
         community_score: 0,
         ai_score: null,
         ai_analysis: null,
+        framework,
+        checked_criteria: checkedCriteria,
+        verdict_scale: framework ? undefined : undefined, // Will be set via template on frontend
       });
 
       // Link challenge to article

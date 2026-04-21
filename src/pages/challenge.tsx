@@ -4,6 +4,7 @@ import { EvidenceCard } from '../components/evidence-card';
 import { EvidenceComparison } from '../components/evidence-comparison';
 import { VoteWidget } from '../components/vote-widget';
 import { StatusBadge } from '../components/status-badge';
+import { CHALLENGE_TEMPLATES } from '../lib/challenge-templates';
 import {
   getNode,
   traverse,
@@ -13,7 +14,7 @@ import {
   requestAIAnalysis,
   getUserVote,
 } from '../lib/api';
-import type { SentientNode, Evidence } from '../lib/types';
+import type { SentientNode, Evidence, ChallengeFramework } from '../lib/types';
 
 interface EvidenceForm {
   title: string;
@@ -191,33 +192,108 @@ export function ChallengePage() {
   const allEvidence = [...supportingEvidence, ...refutingEvidence];
   const canRequestAI = allEvidence.length >= 3 && !(challenge.properties as any).ai_score;
 
+  const challengeProps = challenge.properties as any;
+  const framework = challengeProps.framework as ChallengeFramework | undefined;
+  const template = framework ? CHALLENGE_TEMPLATES[framework] : null;
+  const checkedCriteria = challengeProps.checked_criteria as string[] | undefined;
+
   return (<div className="max-w-6xl mx-auto font-mono">
       {/* Header */}
       <div className="bg-black  border border-crt-border p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{(challenge.properties as any).title}</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold">{challengeProps.title}</h1>
+              {framework && (
+                <span className="px-3 py-1 bg-crt-border border border-crt-accent text-sm font-bold">
+                  [{template?.icon} {framework.toUpperCase()}]
+                </span>
+              )}
+            </div>
             {targetClaim && (
               <p className="text-crt-fg mb-2">
                 <span className="font-medium">Claim:</span> {(targetClaim.properties as any).text}
               </p>
             )}
             <div className="flex items-center gap-3">
-              <StatusBadge status={(challenge.properties as any).status} type="challenge" />
-              <StatusBadge status={(challenge.properties as any).verdict} type="verdict" />
+              <StatusBadge status={challengeProps.status} type="challenge" />
+              <StatusBadge status={challengeProps.verdict} type="verdict" />
             </div>
           </div>
         </div>
 
         <div className="mt-6">
           <VoteWidget
-            communityScore={(challenge.properties as any).community_score}
+            communityScore={challengeProps.community_score}
             userVote={userVote}
             onVote={handleVote}
             loading={votingLoading}
           />
         </div>
       </div>
+
+      {/* Framework Context Section */}
+      {template && (
+        <div className="bg-black border border-crt-border p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4 text-crt-fg">FRAMEWORK CONTEXT</h2>
+
+          {/* Evidence Standards */}
+          <div className="mb-4 p-3 bg-crt-border">
+            <p className="text-xs text-crt-muted mb-1">EVIDENCE STANDARDS ({template.label}):</p>
+            <p className="text-sm text-crt-fg">{template.evidenceStandards}</p>
+          </div>
+
+          {/* Evaluation Criteria */}
+          <div>
+            <p className="text-sm font-bold text-crt-fg mb-2">EVALUATION CRITERIA:</p>
+            <div className="space-y-2">
+              {template.criteria.map((criterion, idx) => {
+                const isChecked = checkedCriteria?.includes(criterion);
+                return (
+                  <div
+                    key={idx}
+                    className={`p-2 border border-crt-border ${
+                      isChecked ? 'bg-crt-border' : ''
+                    }`}
+                  >
+                    <span className={isChecked ? 'font-bold' : 'font-normal'}>
+                      {isChecked ? '✓ ' : '• '}
+                      {criterion}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {checkedCriteria && (
+              <p className="text-xs text-crt-muted mt-2">
+                {checkedCriteria.length} / {template.criteria.length} criteria selected
+              </p>
+            )}
+          </div>
+
+          {/* Verdict Scale */}
+          <div className="mt-4">
+            <p className="text-sm font-bold text-crt-fg mb-2">VERDICT SCALE:</p>
+            <div className="space-y-2">
+              {template.verdictScale.map((scale, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-2 text-xs"
+                >
+                  <div
+                    className="w-3 h-3 mt-1 border border-crt-border"
+                    style={{ backgroundColor: scale.color }}
+                  />
+                  <div>
+                    <p className="font-bold">{scale.label}</p>
+                    <p className="text-crt-muted">{scale.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-black border border-red-200  text-crt-error">

@@ -42,6 +42,26 @@ export interface ClaimProps {
   highlight_start?: number;
   highlight_end?: number;
   status: 'unchallenged' | 'challenged' | 'verified' | 'debunked' | 'contested';
+  tags?: string[];
+}
+
+export type ChallengeFramework = 'legal' | 'scientific' | 'journalistic' | 'logical' | 'intelligence';
+
+export interface VerdictLevel {
+  level: string;
+  label: string;
+  description: string;
+  color: string;
+}
+
+export interface ChallengeTemplate {
+  framework: ChallengeFramework;
+  label: string;
+  icon: string;
+  description: string;
+  criteria: string[];
+  evidenceStandards: string;
+  verdictScale: VerdictLevel[];
 }
 
 export interface ChallengeProps {
@@ -55,6 +75,9 @@ export interface ChallengeProps {
   verdict: 'pending' | 'verified' | 'debunked' | 'contested' | 'insufficient_evidence';
   opened_at: string;
   resolved_at?: string;
+  framework?: ChallengeFramework;
+  checked_criteria?: string[];
+  verdict_scale?: VerdictLevel[];
 }
 
 export interface EvidenceProps {
