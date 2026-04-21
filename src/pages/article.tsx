@@ -4,7 +4,7 @@ import { ClaimHighlighter } from '../components/claim-highlighter';
 import { ChallengeModal } from '../components/challenge-modal';
 import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
-import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
+import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import { AiPanel } from '../components/ai-panel';
 import { getNode, createNode, createEdge, traverse } from '../lib/api';
 import { generateAutoEvidence } from '../lib/auto-evidence';
@@ -18,9 +18,6 @@ export function ArticlePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'article' | 'challenges' | 'evidence' | 'explore'>('article');
-  const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
-  const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
-  const [graphLoading, setGraphLoading] = useState(false);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedClaimText, setSelectedClaimText] = useState('');
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -46,104 +43,6 @@ export function ArticlePage() {
     load();
   }, [id]);
 
-  // Load graph data when Explore tab is opened
-  useEffect(() => {
-    if (activeTab === 'explore' && id && graphNodes.length === 0 && !graphLoading) {
-      loadGraphData();
-    }
-  }, [activeTab, id]);
-
-  const loadGraphData = async () => {
-    if (!id) return;
-    setGraphLoading(true);
-    try {
-      const nodes: GraphNode[] = [];
-      const edges: GraphEdge[] = [];
-      const seenNodes = new Set<string>();
-      const seenEdges = new Set<string>();
-
-      // Add the article node itself
-      nodes.push({
-        id,
-        label: article?.properties.title || 'Article',
-        type: 'ARTICLE',
-      });
-      seenNodes.add(id);
-
-      // Process traversed nodes
-      for (const node of traversedNodes) {
-        if (!seenNodes.has(node.id)) {
-          const label =
-            (node.properties as any).text ||
-            (node.properties as any).title ||
-            (node.properties as any).username ||
-            node.node_type;
-          nodes.push({
-            id: node.id,
-            label: label.substring(0, 30),
-            type: node.node_type,
-          });
-          seenNodes.add(node.id);
-        }
-      }
-
-      // Connect article to related nodes
-      for (const node of traversedNodes) {
-        if (
-          node.node_type === 'CLAIM' ||
-          node.node_type === 'SOURCE' ||
-          node.node_type === 'ARTICLE' ||
-          node.node_type === 'THEORY' ||
-          node.node_type === 'CHALLENGE'
-        ) {
-          const edgeKey = [id, node.id].sort().join('-');
-          if (!seenEdges.has(edgeKey)) {
-            edges.push({
-              source: id,
-              target: node.id,
-            });
-            seenEdges.add(edgeKey);
-          }
-        }
-
-        // Connect challenges to evidence
-        if (node.node_type === 'EVIDENCE') {
-          for (const other of traversedNodes) {
-            if (other.node_type === 'CHALLENGE') {
-              const edgeKey = [other.id, node.id].sort().join('-');
-              if (!seenEdges.has(edgeKey)) {
-                edges.push({
-                  source: other.id,
-                  target: node.id,
-                });
-                seenEdges.add(edgeKey);
-              }
-            }
-          }
-        }
-      }
-
-      setGraphNodes(nodes);
-      setGraphEdges(edges);
-    } catch (err) {
-      console.error('Failed to load graph data:', err);
-    } finally {
-      setGraphLoading(false);
-    }
-  };
-
-  const handleGraphNodeClick = (node: GraphNode) => {
-    const routeMap: Record<string, string> = {
-      ARTICLE: '/article',
-      THEORY: '/theory',
-      CHALLENGE: '/challenge',
-    };
-
-    const route = routeMap[node.type];
-    if (route) {
-      navigate(`${route}/${node.id}`);
-    }
-  };
 
   const handleCreateChallenge = async (title: string, rationale: string) => {
     if (!id) return;
@@ -461,61 +360,19 @@ export function ArticlePage() {
 
       {/* Explore Tab */}
       {activeTab === 'explore' && (
-        <div className="w-full flex flex-col h-screen -m-6">
-          <div className="flex-1 flex flex-col px-6 pt-6">
-            <h2 className="text-2xl font-bold mb-4 text-crt-fg">KNOWLEDGE GRAPH</h2>
-            <div className="flex-1 border border-crt-border overflow-hidden bg-black rounded-none">
-              {graphLoading ? (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-crt-muted">Building connection graph...</p>
-                </div>
-              ) : graphNodes.length > 0 ? (
-                <GraphVisualizer
-                  nodes={graphNodes}
-                  edges={graphEdges}
-                  onNodeClick={handleGraphNodeClick}
-                  height={600}
-                  className="w-full"
-                  rootNodeId={id}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-crt-muted">No connected nodes found</p>
-                </div>
-              )}
+        <div className="w-full flex flex-col">
+          <h2 className="text-2xl font-bold mb-4 text-crt-fg">KNOWLEDGE GRAPH</h2>
+          {traversedNodes.length > 0 ? (
+            <KnowledgeGraph
+              traversedNodes={traversedNodes}
+              rootNodeId={id}
+              height={600}
+            />
+          ) : (
+            <div className="h-96 flex items-center justify-center border border-crt-border">
+              <p className="text-crt-muted">No connected nodes found</p>
             </div>
-          </div>
-
-          {/* Legend */}
-          <div className="px-6 py-4 border-t border-crt-border bg-black">
-            <p className="text-sm text-crt-fg font-bold mb-3">NODE TYPES:</p>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00a6b2' }}></div>
-                <span className="text-crt-muted">ARTICLE</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#e5e500' }}></div>
-                <span className="text-crt-muted">CLAIM</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#e50000' }}></div>
-                <span className="text-crt-muted">CHALLENGE</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00d900' }}></div>
-                <span className="text-crt-muted">EVIDENCE</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b200b2' }}></div>
-                <span className="text-crt-muted">THEORY</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#666666' }}></div>
-                <span className="text-crt-muted">SOURCE</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
       </div>

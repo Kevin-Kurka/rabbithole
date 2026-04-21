@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { semanticSearch, traverse, listNodes, listEdges } from '../lib/api';
-import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
+import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import type { SentientNode, SentientEdge } from '../lib/types';
+
+interface TraversedNode {
+  id: string;
+  node_type: string;
+  properties: Record<string, any>;
+  depth: number;
+  path: string[];
+}
 
 export function ExplorePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SentientNode[]>([]);
-  const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
-  const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
+  const [traversedNodes, setTraversedNodes] = useState<TraversedNode[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showGraph, setShowGraph] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Load all nodes and edges on mount
+  // Load all nodes on mount
   useEffect(() => {
     loadAllNodes();
   }, []);
@@ -23,22 +29,17 @@ export function ExplorePage() {
     setInitialLoading(true);
     try {
       const allNodes = await listNodes(undefined, 100);
-      const allEdges = await listEdges(undefined, 100);
 
-      const nodes: GraphNode[] = allNodes.map(n => ({
+      // Convert to traversed node format
+      const converted: TraversedNode[] = allNodes.map(n => ({
         id: n.id,
-        label: (n.properties as any).text || (n.properties as any).title || n.type,
-        type: n.type,
+        node_type: n.type,
+        properties: n.properties as Record<string, any>,
+        depth: 0,
+        path: [n.id],
       }));
 
-      const edges: GraphEdge[] = allEdges.map((e: any) => ({
-        source: e.source_node_id,
-        target: e.target_node_id,
-      }));
-
-      setGraphNodes(nodes);
-      setGraphEdges(edges);
-      setShowGraph(true);
+      setTraversedNodes(converted);
     } catch (err) {
       console.error('Failed to load all nodes:', err);
     } finally {
@@ -54,47 +55,52 @@ export function ExplorePage() {
       const data = await semanticSearch(query, 20);
       setResults(data);
 
-      // Build graph from search results
-      const nodes: GraphNode[] = data.map(n => ({
-        id: n.id,
-        label: (n.properties as any).text || (n.properties as any).title || n.type,
-        type: n.type,
-      }));
-
-      // Traverse each node to find connections
-      const edges: GraphEdge[] = [];
-      const seenEdges = new Set<string>();
+      // Convert search results to traversed node format and get connections
+      const converted: TraversedNode[] = [];
+      const seenIds = new Set<string>();
 
       for (const node of data) {
-        try {
-          const connected = await traverse(node.id, 1);
-          for (const target of connected) {
-            if (target.id !== node.id && data.find(n => n.id === target.id)) {
-              const edgeKey = [node.id, target.id].sort().join('-');
-              if (!seenEdges.has(edgeKey)) {
-                edges.push({ source: node.id, target: target.id });
-                seenEdges.add(edgeKey);
+        if (!seenIds.has(node.id)) {
+          converted.push({
+            id: node.id,
+            node_type: node.type,
+            properties: node.properties,
+            depth: 0,
+            path: [node.id],
+          });
+          seenIds.add(node.id);
+
+          // Traverse for connections
+          try {
+            const connected = await traverse(node.id, 1);
+            for (const target of connected) {
+              if (!seenIds.has(target.id) && data.find(n => n.id === target.id)) {
+                converted.push({
+                  id: target.id,
+                  node_type: target.node_type,
+                  properties: target.properties,
+                  depth: 1,
+                  path: [node.id, target.id],
+                });
+                seenIds.add(target.id);
               }
             }
+          } catch {
+            // Ignore traversal errors
           }
-        } catch {
-          // Ignore traversal errors
         }
       }
 
-      setGraphNodes(nodes);
-      setGraphEdges(edges);
-      setShowGraph(true);
+      setTraversedNodes(converted);
     } catch {
       setResults([]);
-      setGraphNodes([]);
-      setGraphEdges([]);
+      setTraversedNodes([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNodeClick = (node: GraphNode) => {
+  const handleNodeClick = (result: SentientNode) => {
     const routeMap: Record<string, string> = {
       ARTICLE: '/article',
       CLAIM: '/claim',
@@ -104,9 +110,9 @@ export function ExplorePage() {
       SOURCE: '/source',
     };
 
-    const route = routeMap[node.type];
+    const route = routeMap[result.type];
     if (route) {
-      navigate(`${route}/${node.id}`);
+      navigate(`${route}/${result.id}`);
     }
   };
 
@@ -160,7 +166,7 @@ export function ExplorePage() {
               {results.map(result => (
                 <button
                   key={result.id}
-                  onClick={() => handleNodeClick({ id: result.id, label: getNodeLabel(result), type: result.type })}
+                  onClick={() => handleNodeClick(result)}
                   className="w-full text-left p-3 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition-all"
                 >
                   <p className="font-medium text-crt-fg line-clamp-2">{getNodeLabel(result)}</p>
@@ -179,13 +185,10 @@ export function ExplorePage() {
             <div className="h-full flex items-center justify-center">
               <p className="text-crt-muted">Loading all connections...</p>
             </div>
-          ) : showGraph && graphNodes.length > 0 ? (
-            <GraphVisualizer
-              nodes={graphNodes}
-              edges={graphEdges}
-              onNodeClick={handleNodeClick}
+          ) : traversedNodes.length > 0 ? (
+            <KnowledgeGraph
+              traversedNodes={traversedNodes}
               height={typeof window !== 'undefined' ? window.innerHeight - 100 : 800}
-              className="flex-1"
             />
           ) : (
             <div className="h-full flex items-center justify-center">
