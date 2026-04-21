@@ -61,11 +61,11 @@ export function GraphVisualizer({
 
   useEffect(() => {
     if (fgRef.current) {
-      // Auto-center and zoom to fit
-      const canvas = fgRef.current.canvas;
-      if (canvas) {
-        fgRef.current.zoomToFit(400);
-      }
+      // Stronger repulsion to spread nodes apart
+      fgRef.current.d3Force('charge').strength(-300).distanceMax(500);
+      fgRef.current.d3Force('link').distance(120);
+      // Auto-center after settling
+      setTimeout(() => fgRef.current?.zoomToFit(400, 50), 500);
     }
   }, [nodes]);
 

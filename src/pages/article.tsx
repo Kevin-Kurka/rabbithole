@@ -427,7 +427,7 @@ export function ArticlePage() {
                   nodes={graphNodes}
                   edges={graphEdges}
                   onNodeClick={handleGraphNodeClick}
-                  height={400}
+                  height={600}
                   className="w-full"
                   rootNodeId={id}
                 />

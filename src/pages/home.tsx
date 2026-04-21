@@ -19,9 +19,9 @@ export function Home() {
       setError('');
       try {
         const [articlesData, theoriesData, challengesData] = await Promise.all([
-          listNodes<any>('ARTICLE', 4).catch(() => []),
-          listNodes<any>('THEORY', 4).catch(() => []),
-          listNodes<any>('CHALLENGE', 4).catch(() => []),
+          listNodes<any>('ARTICLE', 20).catch(() => []),
+          listNodes<any>('THEORY', 20).catch(() => []),
+          listNodes<any>('CHALLENGE', 20).catch(() => []),
         ]);
 
         setArticles(
