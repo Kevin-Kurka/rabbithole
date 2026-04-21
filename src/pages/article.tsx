@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ClaimHighlighter } from '../components/claim-highlighter';
+import { ChallengeModal } from '../components/challenge-modal';
 import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
 import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
 import { AiPanel } from '../components/ai-panel';
 import { getNode, createNode, createEdge, traverse } from '../lib/api';
+import { generateAutoEvidence } from '../lib/auto-evidence';
 import type { Article, SentientNode } from '../lib/types';
 
 export function ArticlePage() {
@@ -19,6 +21,9 @@ export function ArticlePage() {
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
   const [graphLoading, setGraphLoading] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [selectedClaimText, setSelectedClaimText] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // Load article and traverse graph on mount
   useEffect(() => {
@@ -140,6 +145,44 @@ export function ArticlePage() {
     }
   };
 
+  const handleCreateChallenge = async (title: string, rationale: string) => {
+    if (!id) return;
+
+    setAiGenerating(true);
+    try {
+      // Create the CHALLENGE node
+      const challengeNode = await createNode('CHALLENGE', {
+        title,
+        rationale,
+        status: 'open',
+        community_score: 0,
+        ai_score: null,
+        ai_analysis: null,
+      });
+
+      // Link challenge to article
+      await createEdge(id, challengeNode.id, 'CHALLENGES');
+
+      // Trigger auto-evidence generation in background
+      setShowChallengeModal(false);
+      try {
+        await generateAutoEvidence(
+          challengeNode.id,
+          selectedClaimText,
+          article?.properties.title || 'Article'
+        );
+      } catch (e) {
+        console.error('Auto-evidence generation failed (non-blocking):', e);
+      }
+
+      // Navigate to challenge page
+      navigate(`/challenge/${challengeNode.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create challenge');
+      setAiGenerating(false);
+    }
+  };
+
   // Filter traversed nodes by type
   const claims = traversedNodes.filter(n => n.node_type === 'CLAIM');
   const challenges = traversedNodes.filter(n => n.node_type === 'CHALLENGE');
@@ -213,8 +256,12 @@ export function ArticlePage() {
                   setError(err instanceof Error ? err.message : 'Failed to create claim');
                 }
               }}
-              onChallenge={() => {
-                // Placeholder for challenge action
+              onChallenge={(claimId?: string) => {
+                const selectedText = window.getSelection()?.toString() || '';
+                if (selectedText) {
+                  setSelectedClaimText(selectedText);
+                  setShowChallengeModal(true);
+                }
               }}
             />
           </div>
@@ -472,6 +519,29 @@ export function ArticlePage() {
         </div>
       )}
       </div>
+
+      {/* Challenge Modal */}
+      <ChallengeModal
+        isOpen={showChallengeModal}
+        claimText={selectedClaimText}
+        onSubmit={handleCreateChallenge}
+        onCancel={() => {
+          setShowChallengeModal(false);
+          setSelectedClaimText('');
+        }}
+        isLoading={aiGenerating}
+      />
+
+      {/* AI Generating Loading Overlay */}
+      {aiGenerating && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="text-crt-fg text-2xl mb-4 font-mono font-bold">analyzing claim...</div>
+            <div className="text-crt-muted font-mono text-sm mb-6">AI is searching the graph and generating evidence</div>
+            <div className="mt-4 text-crt-accent animate-pulse font-mono">▓▓▓▓▓▓▓▓░░░░</div>
+          </div>
+        </div>
+      )}
 
       {/* AI Panel */}
       <AiPanel articleId={id!} articleTitle={article?.properties.title || 'Article'} />
