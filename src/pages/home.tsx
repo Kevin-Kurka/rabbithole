@@ -28,21 +28,21 @@ export function Home() {
           articlesData
             .filter((a: any) => a.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 4)
+            .slice(0, 10)
         );
 
         setTheories(
           theoriesData
             .filter((t: any) => t.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 4)
+            .slice(0, 10)
         );
 
         setChallenges(
           challengesData
             .filter((c: any) => c.properties.status === 'open')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 4)
+            .slice(0, 10)
         );
       } catch (err) {
         console.error('Failed to load featured content:', err);
