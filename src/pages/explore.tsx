@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { semanticSearch, traverse } from '../lib/api';
+import { semanticSearch, traverse, listNodes, listEdges } from '../lib/api';
 import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
-import type { SentientNode } from '../lib/types';
+import type { SentientNode, SentientEdge } from '../lib/types';
 
 export function ExplorePage() {
   const navigate = useNavigate();
@@ -12,6 +12,39 @@ export function ExplorePage() {
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
   const [loading, setLoading] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Load all nodes and edges on mount
+  useEffect(() => {
+    loadAllNodes();
+  }, []);
+
+  const loadAllNodes = async () => {
+    setInitialLoading(true);
+    try {
+      const allNodes = await listNodes(undefined, 100);
+      const allEdges = await listEdges(undefined, 100);
+
+      const nodes: GraphNode[] = allNodes.map(n => ({
+        id: n.id,
+        label: (n.properties as any).text || (n.properties as any).title || n.type,
+        type: n.type,
+      }));
+
+      const edges: GraphEdge[] = allEdges.map((e: any) => ({
+        source: e.source_node_id,
+        target: e.target_node_id,
+      }));
+
+      setGraphNodes(nodes);
+      setGraphEdges(edges);
+      setShowGraph(true);
+    } catch (err) {
+      console.error('Failed to load all nodes:', err);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -95,9 +128,9 @@ export function ExplorePage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto h-screen flex flex-col">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header with search */}
+      <div className="bg-white border-b border-gray-200 p-4 z-10">
         <h1 className="text-3xl font-bold mb-4">Explore</h1>
         <div className="flex gap-2">
           <input
@@ -118,18 +151,18 @@ export function ExplorePage() {
         </div>
       </div>
 
-      {/* Results */}
-      {results.length > 0 && (
-        <div className="grid grid-cols-3 gap-6 flex-1 overflow-hidden">
-          {/* Results list */}
-          <div className="overflow-y-auto">
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* Results list (shown only when searching) */}
+        {results.length > 0 && (
+          <div className="w-1/4 border-r border-gray-200 bg-white overflow-y-auto p-4">
             <h2 className="font-semibold text-lg mb-3">Results ({results.length})</h2>
             <div className="space-y-2">
               {results.map(result => (
                 <button
                   key={result.id}
                   onClick={() => handleNodeClick({ id: result.id, label: getNodeLabel(result), type: result.type })}
-                  className="w-full text-left p-3 bg-white rounded border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition-all"
+                  className="w-full text-left p-3 bg-gray-50 rounded border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition-all"
                 >
                   <p className="font-medium text-gray-900 line-clamp-2">{getNodeLabel(result)}</p>
                   <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${getNodeTypeColor(result.type)}`}>
@@ -139,39 +172,38 @@ export function ExplorePage() {
               ))}
             </div>
           </div>
+        )}
 
-          {/* Graph visualization */}
-          <div className="col-span-2">
-            <h2 className="font-semibold text-lg mb-3">Connection Map</h2>
-            {showGraph && graphNodes.length > 0 ? (
-              <GraphVisualizer
-                nodes={graphNodes}
-                edges={graphEdges}
-                onNodeClick={handleNodeClick}
-                height={500}
-              />
-            ) : (
-              <div className="bg-white rounded border border-gray-200 p-8 text-center">
-                <p className="text-gray-500">Building connection graph...</p>
+        {/* Graph visualization - full screen */}
+        <div className="flex-1 flex flex-col">
+          {initialLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-gray-600">Loading all connections...</p>
+            </div>
+          ) : showGraph && graphNodes.length > 0 ? (
+            <GraphVisualizer
+              nodes={graphNodes}
+              edges={graphEdges}
+              onNodeClick={handleNodeClick}
+              height={typeof window !== 'undefined' ? window.innerHeight - 100 : 800}
+              className="flex-1"
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-gray-600 mb-2">No nodes found</p>
+                <p className="text-gray-500 text-sm">Create some nodes to see the connection map</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {results.length === 0 && !loading && query && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-10 pointer-events-none">
+          <div className="text-center bg-white rounded-lg p-8">
             <p className="text-gray-600 mb-2">No results found for "{query}"</p>
             <p className="text-gray-500 text-sm">Try searching for different keywords</p>
-          </div>
-        </div>
-      )}
-
-      {!query && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-500 text-lg">Start searching to explore connections</p>
           </div>
         </div>
       )}
