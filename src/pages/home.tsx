@@ -26,21 +26,21 @@ export function Home() {
 
         setArticles(
           articlesData
-            .filter((a: any) => a.properties.status === 'published')
+            .filter((a: any) => a.type === 'ARTICLE' && a.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 10)
         );
 
         setTheories(
           theoriesData
-            .filter((t: any) => t.properties.status === 'published')
+            .filter((t: any) => t.type === 'THEORY' && t.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 10)
         );
 
         setChallenges(
           challengesData
-            .filter((c: any) => c.properties.status === 'open')
+            .filter((c: any) => c.type === 'CHALLENGE' && c.properties.status === 'open')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 10)
         );
