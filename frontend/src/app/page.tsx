@@ -137,35 +137,12 @@ export default function HomePage() {
 
   const handleAiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aiQuery.trim() || !selectedGraphId) return;
+    if (!aiQuery.trim()) return;
 
-    // Clear previous responses
-    setAiResponse(null);
-    setAiError(null);
-
-    try {
-      const { data } = await askAI({
-        variables: {
-          input: {
-            graphId: selectedGraphId,
-            question: aiQuery,
-            userId: (session?.user as any)?.id || '00000000-0000-0000-0000-000000000000',
-          },
-        },
-      });
-
-      if (data?.askAI?.success) {
-        setAiResponse(data.askAI.message);
-      } else {
-        setAiError(data?.askAI?.error || 'Failed to get AI response');
-      }
-    } catch (error: any) {
-      setAiError(error.message || 'An error occurred while querying AI');
-      console.error('AI Query Error:', error);
-    }
-
+    // Navigate to search page with query
+    router.push(`/search?q=${encodeURIComponent(aiQuery.trim())}`);
     setAiQuery('');
-    setShowSuggestions(false); // Hide suggestions after submitting
+    setShowSuggestions(false);
   };
 
   // Debounced search handler for autocomplete
