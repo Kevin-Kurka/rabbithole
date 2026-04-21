@@ -65,27 +65,25 @@ export function ProfilePage() {
 
   const renderArticles = () => {
     if (articles.length === 0) {
-      return (
-        <div className="text-center py-12 text-gray-400">
+      return (<div className="text-center py-12 text-crt-dim font-mono">
           <p className="text-lg">No articles published yet.</p>
         </div>
       );
     }
 
-    return (
-      <div className="space-y-4">
+    return (<div className="space-y-4 font-mono">
         {articles.map((a) => (
           <a
             key={a.id}
             href={`/article/${a.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{a.properties.title}</h3>
-                {a.properties.summary && <p className="text-gray-600 mt-1">{a.properties.summary}</p>}
+                <h3 className="text-lg font-semibold text-crt-fg">{a.properties.title}</h3>
+                {a.properties.summary && <p className="text-crt-muted mt-1">{a.properties.summary}</p>}
               </div>
-              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded flex-shrink-0 ml-4">
+              <span className="text-xs px-2 py-1 bg-black text-crt-fg  flex-shrink-0 ml-4">
                 Published
               </span>
             </div>
@@ -97,27 +95,25 @@ export function ProfilePage() {
 
   const renderTheories = () => {
     if (theories.length === 0) {
-      return (
-        <div className="text-center py-12 text-gray-400">
+      return (<div className="text-center py-12 text-crt-dim font-mono">
           <p className="text-lg">No theories published yet.</p>
         </div>
       );
     }
 
-    return (
-      <div className="space-y-4">
+    return (<div className="space-y-4 font-mono">
         {theories.map((t) => (
           <a
             key={t.id}
             href={`/theory/${t.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t.properties.title}</h3>
-                {t.properties.summary && <p className="text-gray-600 mt-1">{t.properties.summary}</p>}
+                <h3 className="text-lg font-semibold text-crt-fg">{t.properties.title}</h3>
+                {t.properties.summary && <p className="text-crt-muted mt-1">{t.properties.summary}</p>}
               </div>
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded flex-shrink-0 ml-4">
+              <span className="text-xs px-2 py-1 bg-black text-crt-info  flex-shrink-0 ml-4">
                 Theory
               </span>
             </div>
@@ -129,30 +125,28 @@ export function ProfilePage() {
 
   const renderChallenges = () => {
     if (challenges.length === 0) {
-      return (
-        <div className="text-center py-12 text-gray-400">
+      return (<div className="text-center py-12 text-crt-dim font-mono">
           <p className="text-lg">No challenges yet.</p>
         </div>
       );
     }
 
-    return (
-      <div className="space-y-4">
+    return (<div className="space-y-4 font-mono">
         {challenges.map((c) => (
           <a
             key={c.id}
             href={`/challenge/${c.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{c.properties.title}</h3>
-                <p className="text-gray-600 mt-1">{c.properties.rationale}</p>
+                <h3 className="text-lg font-semibold text-crt-fg">{c.properties.title}</h3>
+                <p className="text-crt-muted mt-1">{c.properties.rationale}</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded flex-shrink-0 ml-4 ${
+              <span className={`text-xs px-2 py-1  flex-shrink-0 ml-4 ${
                 c.properties.status === 'open'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-gray-100 text-gray-700'
+                  ? 'bg-black text-crt-warning'
+                  : 'bg-black border border-crt-muted text-crt-fg'
               }`}>
                 {c.properties.status === 'open' ? 'Open' : 'Resolved'}
               </span>
@@ -164,10 +158,9 @@ export function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
+    return (<div className="flex items-center justify-center py-20 font-mono">
         <Spinner />
-        <span className="ml-2 text-gray-600">Loading profile...</span>
+        <span className="ml-2 text-crt-muted">Loading profile...</span>
       </div>
     );
   }
@@ -175,44 +168,44 @@ export function ProfilePage() {
   return (
     <div>
       {/* Profile Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
+      <div className="bg-black  border border-crt-border p-8 mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="flex-grow">
-            <h1 className="text-3xl font-bold text-gray-900">{user?.display_name || user?.username || 'User'}</h1>
-            {user?.username && <p className="text-gray-600 mt-1">@{user.username}</p>}
+            <h1 className="text-3xl font-bold text-crt-fg">{user?.display_name || user?.username || 'User'}</h1>
+            {user?.username && <p className="text-crt-muted mt-1">@{user.username}</p>}
           </div>
           <div className="text-right">
-            <div className="text-4xl font-bold text-rabbit-600">{stats.reputationScore}</div>
-            <p className="text-gray-600 text-sm">Reputation Score</p>
+            <div className="text-4xl font-bold text-crt-fg">{stats.reputationScore}</div>
+            <p className="text-crt-muted text-sm">Reputation Score</p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-gray-200">
+        <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-crt-border">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.articlesCount}</div>
-            <p className="text-gray-600 text-sm">Articles</p>
+            <div className="text-2xl font-bold text-crt-fg">{stats.articlesCount}</div>
+            <p className="text-crt-muted text-sm">Articles</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.theoriesCount}</div>
-            <p className="text-gray-600 text-sm">Theories</p>
+            <div className="text-2xl font-bold text-crt-fg">{stats.theoriesCount}</div>
+            <p className="text-crt-muted text-sm">Theories</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.challengesCount}</div>
-            <p className="text-gray-600 text-sm">Challenges</p>
+            <div className="text-2xl font-bold text-crt-fg">{stats.challengesCount}</div>
+            <p className="text-crt-muted text-sm">Challenges</p>
           </div>
         </div>
       </div>
 
       {/* Content Tabs */}
       <div>
-        <div className="flex gap-4 mb-8 border-b border-gray-200">
+        <div className="flex gap-4 mb-8 border-b border-crt-border">
           <button
             onClick={() => setTab('articles')}
             className={`px-4 py-3 font-medium border-b-2 transition ${
               tab === 'articles'
-                ? 'border-rabbit-600 text-rabbit-600'
-                : 'border-transparent text-gray-600 hover:text-rabbit-600'
+                ? 'border-crt-fg text-crt-fg'
+                : 'border-transparent text-crt-muted hover:text-crt-fg'
             }`}
           >
             Articles ({stats.articlesCount})
@@ -221,8 +214,8 @@ export function ProfilePage() {
             onClick={() => setTab('theories')}
             className={`px-4 py-3 font-medium border-b-2 transition ${
               tab === 'theories'
-                ? 'border-rabbit-600 text-rabbit-600'
-                : 'border-transparent text-gray-600 hover:text-rabbit-600'
+                ? 'border-crt-fg text-crt-fg'
+                : 'border-transparent text-crt-muted hover:text-crt-fg'
             }`}
           >
             Theories ({stats.theoriesCount})
@@ -231,8 +224,8 @@ export function ProfilePage() {
             onClick={() => setTab('challenges')}
             className={`px-4 py-3 font-medium border-b-2 transition ${
               tab === 'challenges'
-                ? 'border-rabbit-600 text-rabbit-600'
-                : 'border-transparent text-gray-600 hover:text-rabbit-600'
+                ? 'border-crt-fg text-crt-fg'
+                : 'border-transparent text-crt-muted hover:text-crt-fg'
             }`}
           >
             Challenges ({stats.challengesCount})

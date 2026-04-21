@@ -154,17 +154,15 @@ export function TheoryPage() {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto">
+    return (<div className="max-w-7xl mx-auto font-mono">
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading theory...</p>
+          <p className="text-crt-dim">Loading theory...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto h-screen flex flex-col">
+  return (<div className="max-w-7xl mx-auto h-screen flex flex-col font-mono">
       {/* Header */}
       <div className="mb-4">
         <div className="mb-4">
@@ -178,7 +176,7 @@ export function TheoryPage() {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 mb-4">
+          <div className="p-3 bg-black border border-red-200  text-sm text-crt-error mb-4">
             {error}
           </div>
         )}
@@ -222,21 +220,21 @@ export function TheoryPage() {
           </div>
 
           {/* Nodes list */}
-          <div className="mt-4 bg-white border border-gray-200 rounded-lg p-3 max-h-32 overflow-y-auto">
-            <div className="text-sm font-medium text-gray-700 mb-2">
+          <div className="mt-4 bg-black border border-crt-border  p-3 max-h-32 overflow-y-auto">
+            <div className="text-sm font-medium text-crt-fg mb-2">
               Nodes in theory ({graphNodes.length})
             </div>
             <div className="space-y-1">
               {graphNodes.map(node => (
                 <div
                   key={node.id}
-                  className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm"
+                  className="flex items-center justify-between bg-black p-2  text-sm"
                 >
-                  <span className="text-gray-900 truncate">{node.label}</span>
+                  <span className="text-crt-fg truncate">{node.label}</span>
                   {node.id !== (id || 'theory-new') && (
                     <button
                       onClick={() => handleRemoveNode(node.id)}
-                      className="text-red-600 hover:text-red-800 font-medium text-xs"
+                      className="text-crt-error hover:text-crt-error font-medium text-xs"
                     >
                       Remove
                     </button>
@@ -249,11 +247,11 @@ export function TheoryPage() {
       </div>
 
       {/* Footer */}
-      <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+      <div className="flex gap-3 mt-6 pt-4 border-t border-crt-border">
         <button
           onClick={handlePublish}
           disabled={saving}
-          className="px-6 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+          className="px-6 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
         >
           {saving ? 'Publishing...' : 'Publish Theory'}
         </button>

@@ -117,20 +117,19 @@ export function ExplorePage() {
 
   const getNodeTypeColor = (type: string): string => {
     const colors: Record<string, string> = {
-      ARTICLE: 'bg-blue-100 text-blue-800',
-      CLAIM: 'bg-yellow-100 text-yellow-800',
-      EVIDENCE: 'bg-green-100 text-green-800',
-      THEORY: 'bg-purple-100 text-purple-800',
-      CHALLENGE: 'bg-orange-100 text-orange-800',
-      SOURCE: 'bg-gray-100 text-gray-800',
+      ARTICLE: 'bg-black text-crt-info',
+      CLAIM: 'bg-black text-crt-warning',
+      EVIDENCE: 'bg-black text-crt-fg',
+      THEORY: 'bg-black text-crt-fg',
+      CHALLENGE: 'bg-black text-crt-warning',
+      SOURCE: 'bg-black border border-crt-muted text-crt-fg',
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
+    return colors[type] || 'bg-black border border-crt-muted text-crt-fg';
   };
 
-  return (
-    <div className="h-screen flex flex-col bg-gray-50">
+  return (<div className="h-screen flex flex-col bg-black font-mono">
       {/* Header with search */}
-      <div className="bg-white border-b border-gray-200 p-4 z-10">
+      <div className="bg-black border-b border-crt-border p-4 z-10">
         <h1 className="text-3xl font-bold mb-4">Explore</h1>
         <div className="flex gap-2">
           <input
@@ -139,12 +138,12 @@ export function ExplorePage() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Search for connections..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+            className="flex-1 px-4 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
           />
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="px-6 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+            className="px-6 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
           >
             {loading ? 'Searching...' : 'Search'}
           </button>
@@ -155,17 +154,17 @@ export function ExplorePage() {
       <div className="flex-1 overflow-hidden flex">
         {/* Results list (shown only when searching) */}
         {results.length > 0 && (
-          <div className="w-1/4 border-r border-gray-200 bg-white overflow-y-auto p-4">
+          <div className="w-1/4 border-r border-crt-border bg-black overflow-y-auto p-4">
             <h2 className="font-semibold text-lg mb-3">Results ({results.length})</h2>
             <div className="space-y-2">
               {results.map(result => (
                 <button
                   key={result.id}
                   onClick={() => handleNodeClick({ id: result.id, label: getNodeLabel(result), type: result.type })}
-                  className="w-full text-left p-3 bg-gray-50 rounded border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition-all"
+                  className="w-full text-left p-3 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition-all"
                 >
-                  <p className="font-medium text-gray-900 line-clamp-2">{getNodeLabel(result)}</p>
-                  <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${getNodeTypeColor(result.type)}`}>
+                  <p className="font-medium text-crt-fg line-clamp-2">{getNodeLabel(result)}</p>
+                  <span className={`inline-block mt-2 px-2 py-1  text-xs font-medium ${getNodeTypeColor(result.type)}`}>
                     {result.type}
                   </span>
                 </button>
@@ -178,7 +177,7 @@ export function ExplorePage() {
         <div className="flex-1 flex flex-col">
           {initialLoading ? (
             <div className="h-full flex items-center justify-center">
-              <p className="text-gray-600">Loading all connections...</p>
+              <p className="text-crt-muted">Loading all connections...</p>
             </div>
           ) : showGraph && graphNodes.length > 0 ? (
             <GraphVisualizer
@@ -191,8 +190,8 @@ export function ExplorePage() {
           ) : (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <p className="text-gray-600 mb-2">No nodes found</p>
-                <p className="text-gray-500 text-sm">Create some nodes to see the connection map</p>
+                <p className="text-crt-muted mb-2">No nodes found</p>
+                <p className="text-crt-dim text-sm">Create some nodes to see the connection map</p>
               </div>
             </div>
           )}
@@ -201,9 +200,9 @@ export function ExplorePage() {
 
       {results.length === 0 && !loading && query && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-10 pointer-events-none">
-          <div className="text-center bg-white rounded-lg p-8">
-            <p className="text-gray-600 mb-2">No results found for "{query}"</p>
-            <p className="text-gray-500 text-sm">Try searching for different keywords</p>
+          <div className="text-center bg-black  p-8">
+            <p className="text-crt-muted mb-2">No results found for "{query}"</p>
+            <p className="text-crt-dim text-sm">Try searching for different keywords</p>
           </div>
         </div>
       )}

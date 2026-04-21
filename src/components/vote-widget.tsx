@@ -11,39 +11,39 @@ export function VoteWidget({ communityScore, userVote, onVote, loading = false }
   const totalVotes = forVotes + againstVotes;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-center gap-4">
+    <div className="bg-black border border-crt-border p-4 flex items-center justify-center gap-4 font-mono">
       <button
         disabled={userVote !== null || loading}
         onClick={() => onVote('for')}
-        className={`px-4 py-2 rounded font-medium transition-colors ${
+        className={`px-4 py-2 font-medium transition-colors text-sm ${
           userVote === 'for'
-            ? 'bg-green-100 text-green-700 cursor-not-allowed'
+            ? 'bg-crt-selection border border-crt-fg text-crt-fg cursor-not-allowed'
             : userVote || loading
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'bg-green-500 text-white hover:bg-green-600'
+            ? 'bg-black border border-crt-dim text-crt-dim cursor-not-allowed'
+            : 'bg-crt-selection border border-crt-fg text-crt-fg hover:bg-crt-border'
         }`}
       >
-        {userVote === 'for' ? '✓ Supported' : 'Support Challenge'}
+        {userVote === 'for' ? '[ + SUPPORTED ]' : '[ + SUPPORT ]'}
       </button>
 
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-2xl font-bold text-gray-800">{forVotes}</span>
-        <span className="text-xs text-gray-500">{totalVotes} votes</span>
-        <span className="text-2xl font-bold text-gray-800 mt-1">{againstVotes}</span>
+      <div className="flex flex-col items-center gap-1 text-crt-fg">
+        <span className="text-2xl font-bold">{forVotes}</span>
+        <span className="text-xs text-crt-muted">{totalVotes} votes</span>
+        <span className="text-2xl font-bold mt-1">{againstVotes}</span>
       </div>
 
       <button
         disabled={userVote !== null || loading}
         onClick={() => onVote('against')}
-        className={`px-4 py-2 rounded font-medium transition-colors ${
+        className={`px-4 py-2 font-medium transition-colors text-sm ${
           userVote === 'against'
-            ? 'bg-red-100 text-red-700 cursor-not-allowed'
+            ? 'bg-black border border-crt-error text-crt-error cursor-not-allowed'
             : userVote || loading
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'bg-red-500 text-white hover:bg-red-600'
+            ? 'bg-black border border-crt-dim text-crt-dim cursor-not-allowed'
+            : 'bg-black border border-crt-error text-crt-error hover:bg-black'
         }`}
       >
-        {userVote === 'against' ? '✕ Dismissed' : 'Dismiss Challenge'}
+        {userVote === 'against' ? '[ − DISMISSED ]' : '[ − DISMISS ]'}
       </button>
     </div>
   );

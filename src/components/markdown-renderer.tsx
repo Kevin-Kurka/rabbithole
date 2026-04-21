@@ -43,7 +43,7 @@ export function MarkdownRenderer({ content, claims = [], onClaimClick, className
               );
             }
             return (
-              <code className={`${codeClassName || ''} bg-gray-100 px-1.5 py-0.5 rounded text-sm`} {...props}>
+              <code className={`${codeClassName || ''} bg-black border border-crt-muted px-1.5 py-0.5  text-sm`} {...props}>
                 {children}
               </code>
             );
@@ -53,7 +53,7 @@ export function MarkdownRenderer({ content, claims = [], onClaimClick, className
             const claimId = claimMap.get(text);
             return (
               <mark
-                className="bg-yellow-200 cursor-pointer hover:bg-yellow-300 transition-colors px-1 rounded"
+                className="bg-yellow-200 cursor-pointer hover:bg-yellow-300 transition-colors px-1 "
                 onClick={() => claimId && onClaimClick?.(claimId)}
                 title={claimId ? 'Click to view claim details' : ''}
               >

@@ -206,20 +206,18 @@ export function ArticlePage() {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto">
+    return (<div className="max-w-6xl mx-auto font-mono">
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading article...</p>
+          <p className="text-crt-dim">Loading article...</p>
         </div>
       </div>
     );
   }
 
   if (!article) {
-    return (
-      <div className="max-w-6xl mx-auto">
+    return (<div className="max-w-6xl mx-auto font-mono">
         <div className="text-center py-12">
-          <p className="text-red-600">{error || 'Article not found'}</p>
+          <p className="text-crt-error">{error || 'Article not found'}</p>
         </div>
       </div>
     );
@@ -241,16 +239,15 @@ export function ArticlePage() {
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
+  return (<div className="max-w-6xl mx-auto font-mono">
       {/* Tab bar */}
-      <div className="mb-6 flex gap-2 border-b border-gray-200">
+      <div className="mb-6 flex gap-2 border-b border-crt-border">
         <button
           onClick={() => setActiveTab('read')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'read'
-              ? 'border-b-2 border-rabbit-600 text-rabbit-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'border-b-2 border-crt-fg text-crt-fg'
+              : 'text-crt-muted hover:text-crt-fg'
           }`}
         >
           📖 Read
@@ -259,8 +256,8 @@ export function ArticlePage() {
           onClick={() => setActiveTab('canvas')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'canvas'
-              ? 'border-b-2 border-rabbit-600 text-rabbit-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'border-b-2 border-crt-fg text-crt-fg'
+              : 'text-crt-muted hover:text-crt-fg'
           }`}
         >
           🕸️ Canvas
@@ -274,7 +271,7 @@ export function ArticlePage() {
           <div className="col-span-2">
             <article>
               <h1 className="text-4xl font-bold mb-2">{article.properties.title}</h1>
-              <p className="text-gray-600 text-sm mb-6">
+              <p className="text-crt-muted text-sm mb-6">
                 Published {new Date(article.properties.published_at || '').toLocaleDateString()}
               </p>
 
@@ -289,25 +286,25 @@ export function ArticlePage() {
 
               {/* Sources section */}
               {sources.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-gray-200">
+                <div className="mt-12 pt-8 border-t border-crt-border">
                   <h2 className="text-xl font-bold mb-4">Sources</h2>
                   <div className="space-y-4">
                     {sources.map((source, idx) => (
                       <div key={source.id} className="flex gap-3">
-                        <div className="flex-shrink-0 text-gray-500">
+                        <div className="flex-shrink-0 text-crt-dim">
                           <SourceCitation source={source} index={idx + 1} />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900">{source.properties.title}</p>
+                          <p className="font-medium text-crt-fg">{source.properties.title}</p>
                           {source.properties.publication && (
-                            <p className="text-sm text-gray-600">{source.properties.publication}</p>
+                            <p className="text-sm text-crt-muted">{source.properties.publication}</p>
                           )}
                           {source.properties.url && (
                             <a
                               href={source.properties.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-rabbit-600 hover:text-rabbit-700 underline"
+                              className="text-sm text-crt-fg hover:text-crt-accent underline"
                             >
                               Open source
                             </a>
@@ -328,15 +325,15 @@ export function ArticlePage() {
               <h3 className="font-bold text-lg mb-3">Claims ({claims.length})</h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {claims.length === 0 ? (
-                  <p className="text-sm text-gray-500">No claims yet</p>
+                  <p className="text-sm text-crt-dim">No claims yet</p>
                 ) : (
                   claims.map(claim => (
                     <div
                       key={claim.id}
-                      className="bg-white border border-gray-200 rounded p-3 hover:shadow-md transition-shadow cursor-pointer"
+                      className="bg-black border border-crt-border  p-3 hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => setSelectedClaim(claim.id)}
                     >
-                      <p className="text-sm text-gray-900 mb-2 line-clamp-2">{claim.properties.text}</p>
+                      <p className="text-sm text-crt-fg mb-2 line-clamp-2">{claim.properties.text}</p>
                       <div className="flex items-center justify-between gap-2">
                         <StatusBadge status={claim.properties.status} type="claim" className="text-xs" />
                         <button
@@ -344,7 +341,7 @@ export function ArticlePage() {
                             e.stopPropagation();
                             handleChallenge(claim.id);
                           }}
-                          className="text-xs text-rabbit-600 hover:text-rabbit-700 font-medium"
+                          className="text-xs text-crt-fg hover:text-crt-accent font-medium"
                         >
                           Challenge
                         </button>
@@ -363,8 +360,8 @@ export function ArticlePage() {
         <div className="w-full h-screen -mx-6 -my-6 flex flex-col">
           <div className="flex-1 overflow-hidden">
             {graphLoading ? (
-              <div className="h-full flex items-center justify-center bg-gray-50">
-                <p className="text-gray-600">Building connection graph...</p>
+              <div className="h-full flex items-center justify-center bg-black">
+                <p className="text-crt-muted">Building connection graph...</p>
               </div>
             ) : graphNodes.length > 0 ? (
               <GraphVisualizer
@@ -375,8 +372,8 @@ export function ArticlePage() {
                 className="w-full"
               />
             ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50">
-                <p className="text-gray-600">No connected nodes found</p>
+              <div className="h-full flex items-center justify-center bg-black">
+                <p className="text-crt-muted">No connected nodes found</p>
               </div>
             )}
           </div>
@@ -386,35 +383,35 @@ export function ArticlePage() {
       {/* Challenge Modal */}
       {showChallengeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+          <div className="bg-black  shadow-lg max-w-md w-full p-6">
             <h2 className="text-2xl font-bold mb-4">Challenge This Claim</h2>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Challenge Title</label>
+                <label className="block text-sm font-medium text-crt-fg mb-2">Challenge Title</label>
                 <input
                   type="text"
                   value={challengeForm.title}
                   onChange={(e) => setChallengeForm({ ...challengeForm, title: e.target.value })}
                   placeholder="What are you challenging?"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+                  className="w-full px-3 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rationale</label>
+                <label className="block text-sm font-medium text-crt-fg mb-2">Rationale</label>
                 <textarea
                   value={challengeForm.rationale}
                   onChange={(e) => setChallengeForm({ ...challengeForm, rationale: e.target.value })}
                   placeholder="Why do you think this is incorrect?"
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+                  className="w-full px-3 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+              <div className="mb-4 p-3 bg-black border border-red-200  text-sm text-crt-error">
                 {error}
               </div>
             )}
@@ -426,14 +423,14 @@ export function ArticlePage() {
                   setChallengeForm({ title: '', rationale: '' });
                   setError('');
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-crt-border  hover:bg-black font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={submitChallenge}
                 disabled={challengeLoading}
-                className="flex-1 px-4 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+                className="flex-1 px-4 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
               >
                 {challengeLoading ? 'Creating...' : 'Create Challenge'}
               </button>

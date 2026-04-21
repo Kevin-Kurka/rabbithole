@@ -50,24 +50,24 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8 font-mono">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">🕳️</h1>
-          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-          <p className="mt-2 text-gray-600">Join the rabbit hole</p>
+          <h1 className="text-4xl font-bold mb-2 text-crt-fg">&gt;</h1>
+          <h2 className="text-3xl font-bold text-crt-fg">[ create account ]</h2>
+          <p className="mt-2 text-crt-muted">join the rabbit hole</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-white p-8 rounded-lg border border-gray-200">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-black p-8 border border-crt-border">
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-              {error}
+            <div className="p-4 text-sm text-crt-error border border-crt-error bg-black">
+              [ ERROR ] {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
+            <label htmlFor="email" className="block text-sm font-medium text-crt-fg">
+              email address
             </label>
             <input
               id="email"
@@ -75,14 +75,14 @@ export function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 border px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-rabbit-500 focus:outline-none focus:ring-rabbit-500 sm:text-sm"
+              className="mt-1 block w-full border border-crt-border bg-black px-3 py-2 text-crt-fg placeholder-crt-dim focus:border-crt-fg focus:outline-none sm:text-sm"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
+            <label htmlFor="username" className="block text-sm font-medium text-crt-fg">
+              username
             </label>
             <input
               id="username"
@@ -90,14 +90,14 @@ export function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 border px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-rabbit-500 focus:outline-none focus:ring-rabbit-500 sm:text-sm"
+              className="mt-1 block w-full border border-crt-border bg-black px-3 py-2 text-crt-fg placeholder-crt-dim focus:border-crt-fg focus:outline-none sm:text-sm"
               placeholder="your_username"
             />
           </div>
 
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-              Display Name
+            <label htmlFor="displayName" className="block text-sm font-medium text-crt-fg">
+              display name
             </label>
             <input
               id="displayName"
@@ -105,14 +105,14 @@ export function RegisterPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 border px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-rabbit-500 focus:outline-none focus:ring-rabbit-500 sm:text-sm"
+              className="mt-1 block w-full border border-crt-border bg-black px-3 py-2 text-crt-fg placeholder-crt-dim focus:border-crt-fg focus:outline-none sm:text-sm"
               placeholder="Your Full Name"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
+            <label htmlFor="password" className="block text-sm font-medium text-crt-fg">
+              password
             </label>
             <input
               id="password"
@@ -120,14 +120,14 @@ export function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 border px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-rabbit-500 focus:outline-none focus:ring-rabbit-500 sm:text-sm"
+              className="mt-1 block w-full border border-crt-border bg-black px-3 py-2 text-crt-fg placeholder-crt-dim focus:border-crt-fg focus:outline-none sm:text-sm"
               placeholder="••••••••"
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm Password
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-crt-fg">
+              confirm password
             </label>
             <input
               id="confirmPassword"
@@ -135,7 +135,7 @@ export function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 border px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-rabbit-500 focus:outline-none focus:ring-rabbit-500 sm:text-sm"
+              className="mt-1 block w-full border border-crt-border bg-black px-3 py-2 text-crt-fg placeholder-crt-dim focus:border-crt-fg focus:outline-none sm:text-sm"
               placeholder="••••••••"
             />
           </div>
@@ -143,16 +143,16 @@ export function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rabbit-600 hover:bg-rabbit-700 focus:outline-none focus:ring-2 focus:ring-rabbit-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2 px-4 border border-crt-fg text-sm font-medium text-crt-fg bg-crt-selection hover:border-crt-accent focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? '[ creating account... ]' : '[ create account ]'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-rabbit-600 hover:text-rabbit-700 font-medium">
-            Sign in
+        <p className="text-center text-sm text-crt-muted">
+          already have an account?{' '}
+          <Link to="/login" className="text-crt-fg hover:text-crt-accent font-medium">
+            sign in
           </Link>
         </p>
       </div>

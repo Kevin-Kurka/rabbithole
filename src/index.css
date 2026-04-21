@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  border-radius: 0 !important;
+}
+
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
+  background-color: #000000;
+  color: #00ff00;
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', Menlo, Monaco, monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+::selection {
+  background-color: #083905;
+  color: #00ff00;
+}
+
+input, textarea, select, button {
+  border-radius: 0 !important;
+  font-family: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #0a3d0a;
+  border: 1px solid #00a600;
+}
+
+/* CRT scanline effect (subtle) */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 9999;
 }

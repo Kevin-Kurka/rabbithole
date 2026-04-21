@@ -90,10 +90,9 @@ export function NotificationsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
+    return (<div className="flex items-center justify-center py-20 font-mono">
         <Spinner />
-        <span className="ml-2 text-gray-600">Loading notifications...</span>
+        <span className="ml-2 text-crt-muted">Loading notifications...</span>
       </div>
     );
   }
@@ -103,13 +102,13 @@ export function NotificationsPage() {
       <h1 className="text-3xl font-bold mb-8">Notifications</h1>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700 mb-6">
+        <div className=" bg-black p-4 text-sm text-crt-error mb-6">
           {error}
         </div>
       )}
 
       {notifications.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-crt-dim">
           <p className="text-xl mb-2">No notifications yet.</p>
           <p>Stay tuned for updates on challenges and evidence.</p>
         </div>
@@ -123,24 +122,24 @@ export function NotificationsPage() {
                   ? `/challenge/${notif.targetId}`
                   : `#`
               }
-              className="block p-5 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+              className="block p-5 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-grow">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs px-2 py-1 rounded font-medium ${
+                    <span className={`text-xs px-2 py-1  font-medium ${
                       notif.type === 'challenge'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-blue-100 text-blue-700'
+                        ? 'bg-black text-crt-warning'
+                        : 'bg-black text-crt-info'
                     }`}>
                       {notif.type === 'challenge' ? 'Challenge' : 'Evidence'}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">{notif.title}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{notif.message}</p>
+                  <h3 className="text-lg font-semibold text-crt-fg">{notif.title}</h3>
+                  <p className="text-crt-muted text-sm mt-1">{notif.message}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-gray-500 whitespace-nowrap">
+                  <p className="text-xs text-crt-dim whitespace-nowrap">
                     {formatTime(notif.timestamp)}
                   </p>
                 </div>

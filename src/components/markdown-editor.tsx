@@ -12,7 +12,7 @@ export function MarkdownEditor({ value, onChange, placeholder = 'Enter markdown.
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={containerRef} className="w-full border rounded-lg overflow-hidden">
+    <div ref={containerRef} className="w-full border  overflow-hidden">
       <MDEditor
         value={value}
         onChange={(val) => onChange(val || '')}

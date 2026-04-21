@@ -33,14 +33,14 @@ export function GraphVisualizer({
 
   const getNodeColor = (type: string): string => {
     const colors: Record<string, string> = {
-      ARTICLE: '#3b82f6',      // blue
-      CLAIM: '#eab308',        // yellow
-      EVIDENCE: '#10b981',     // green
-      THEORY: '#a855f7',       // purple
-      SOURCE: '#6b7280',       // gray
-      CHALLENGE: '#f97316',    // orange
+      ARTICLE: '#00a6b2',      // crt-info
+      CLAIM: '#e5e500',        // crt-warning
+      EVIDENCE: '#00ff00',     // crt-fg
+      THEORY: '#00a600',       // crt-muted
+      SOURCE: '#666666',       // crt-dim
+      CHALLENGE: '#e50000',    // crt-error
     };
-    return colors[type] || '#6b7280';
+    return colors[type] || '#666666';
   };
 
   const nodeData = nodes.map(n => ({
@@ -56,7 +56,7 @@ export function GraphVisualizer({
   }));
 
   return (
-    <div className={`w-full rounded-lg border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`w-full border border-crt-border overflow-hidden bg-black ${className}`}>
       <ForceGraph2D
         ref={fgRef}
         graphData={{ nodes: nodeData, links: linkData }}
@@ -70,11 +70,13 @@ export function GraphVisualizer({
         height={height}
         linkDirectionalArrowLength={5}
         linkDirectionalArrowRelPos={1}
+        backgroundColor="#000000"
+        linkColor={() => '#00a600'}
         nodeCanvasObject={(node: any, ctx) => {
           const label = node.name;
           const fontSize = 12;
-          ctx.font = `${fontSize}px Sans-Serif`;
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.font = `${fontSize}px 'SF Mono', Menlo, Monaco, monospace`;
+          ctx.fillStyle = '#00ff00';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(label, node.x, node.y + node.val + 8);

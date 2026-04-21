@@ -159,20 +159,18 @@ export function ChallengePage() {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto">
+    return (<div className="max-w-6xl mx-auto font-mono">
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading challenge...</p>
+          <p className="text-crt-dim">Loading challenge...</p>
         </div>
       </div>
     );
   }
 
   if (!challenge) {
-    return (
-      <div className="max-w-6xl mx-auto">
+    return (<div className="max-w-6xl mx-auto font-mono">
         <div className="text-center py-12">
-          <p className="text-red-600">{error || 'Challenge not found'}</p>
+          <p className="text-crt-error">{error || 'Challenge not found'}</p>
         </div>
       </div>
     );
@@ -181,15 +179,14 @@ export function ChallengePage() {
   const allEvidence = [...supportingEvidence, ...refutingEvidence];
   const canRequestAI = allEvidence.length >= 3 && !challenge.properties.ai_score;
 
-  return (
-    <div className="max-w-6xl mx-auto">
+  return (<div className="max-w-6xl mx-auto font-mono">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-black  border border-crt-border p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">{challenge.properties.title}</h1>
             {targetClaim && (
-              <p className="text-gray-700 mb-2">
+              <p className="text-crt-fg mb-2">
                 <span className="font-medium">Claim:</span> {targetClaim.properties.text}
               </p>
             )}
@@ -211,7 +208,7 @@ export function ChallengePage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+        <div className="mb-6 p-4 bg-black border border-red-200  text-crt-error">
           {error}
         </div>
       )}
@@ -220,7 +217,7 @@ export function ChallengePage() {
       <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Supporting evidence */}
         <div>
-          <h2 className="text-xl font-bold mb-4 text-green-700">Supporting Evidence ({supportingEvidence.length})</h2>
+          <h2 className="text-xl font-bold mb-4 text-crt-fg">Supporting Evidence ({supportingEvidence.length})</h2>
           <div className="space-y-4 min-h-96">
             {supportingEvidence.map(evidence => (
               <EvidenceCard
@@ -231,33 +228,33 @@ export function ChallengePage() {
             ))}
 
             {showEvidenceForm === 'for' && (
-              <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-300  p-4">
                 <h3 className="font-semibold mb-3">Submit Supporting Evidence</h3>
                 <input
                   type="text"
                   placeholder="Evidence title"
                   value={evidenceForm.title}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <textarea
                   placeholder="Evidence description"
                   value={evidenceForm.body}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, body: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <input
                   type="url"
                   placeholder="Source URL (optional)"
                   value={evidenceForm.source_url || ''}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, source_url: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <select
                   value={evidenceForm.source_type}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, source_type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-3 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 >
                   <option value="primary_source">Primary Source</option>
                   <option value="document">Document</option>
@@ -271,13 +268,13 @@ export function ChallengePage() {
                   <button
                     onClick={() => handleSubmitEvidence('for')}
                     disabled={submittingEvidence}
-                    className="flex-1 px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 font-medium transition-colors"
+                    className="flex-1 px-3 py-2 bg-green-600 text-white  text-sm hover:bg-green-700 disabled:bg-gray-400 font-medium transition-colors"
                   >
                     Submit
                   </button>
                   <button
                     onClick={() => setShowEvidenceForm(null)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 font-medium transition-colors"
+                    className="flex-1 px-3 py-2 border border-crt-border  text-sm hover:bg-black font-medium transition-colors"
                   >
                     Cancel
                   </button>
@@ -288,7 +285,7 @@ export function ChallengePage() {
             {showEvidenceForm !== 'for' && (
               <button
                 onClick={() => setShowEvidenceForm('for')}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-green-500 hover:text-green-600 font-medium transition-colors"
+                className="w-full px-4 py-2 border-2 border-dashed border-crt-border  text-crt-muted hover:border-crt-fg hover:text-green-600 font-medium transition-colors"
               >
                 + Add Supporting Evidence
               </button>
@@ -298,7 +295,7 @@ export function ChallengePage() {
 
         {/* Refuting evidence */}
         <div>
-          <h2 className="text-xl font-bold mb-4 text-red-700">Refuting Evidence ({refutingEvidence.length})</h2>
+          <h2 className="text-xl font-bold mb-4 text-crt-error">Refuting Evidence ({refutingEvidence.length})</h2>
           <div className="space-y-4 min-h-96">
             {refutingEvidence.map(evidence => (
               <EvidenceCard
@@ -309,33 +306,33 @@ export function ChallengePage() {
             ))}
 
             {showEvidenceForm === 'against' && (
-              <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+              <div className="bg-black border border-red-300  p-4">
                 <h3 className="font-semibold mb-3">Submit Refuting Evidence</h3>
                 <input
                   type="text"
                   placeholder="Evidence title"
                   value={evidenceForm.title}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <textarea
                   placeholder="Evidence description"
                   value={evidenceForm.body}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, body: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <input
                   type="url"
                   placeholder="Source URL (optional)"
                   value={evidenceForm.source_url || ''}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, source_url: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-2 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 />
                 <select
                   value={evidenceForm.source_type}
                   onChange={(e) => setEvidenceForm({ ...evidenceForm, source_type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:ring-2 focus:ring-rabbit-500 text-sm"
+                  className="w-full px-3 py-2 border border-crt-border  mb-3 focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm"
                 >
                   <option value="primary_source">Primary Source</option>
                   <option value="document">Document</option>
@@ -349,13 +346,13 @@ export function ChallengePage() {
                   <button
                     onClick={() => handleSubmitEvidence('against')}
                     disabled={submittingEvidence}
-                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:bg-gray-400 font-medium transition-colors"
+                    className="flex-1 px-3 py-2 bg-red-600 text-white  text-sm hover:bg-red-700 disabled:bg-gray-400 font-medium transition-colors"
                   >
                     Submit
                   </button>
                   <button
                     onClick={() => setShowEvidenceForm(null)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 font-medium transition-colors"
+                    className="flex-1 px-3 py-2 border border-crt-border  text-sm hover:bg-black font-medium transition-colors"
                   >
                     Cancel
                   </button>
@@ -366,7 +363,7 @@ export function ChallengePage() {
             {showEvidenceForm !== 'against' && (
               <button
                 onClick={() => setShowEvidenceForm('against')}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-600 font-medium transition-colors"
+                className="w-full px-4 py-2 border-2 border-dashed border-crt-border  text-crt-muted hover:border-crt-error hover:text-crt-error font-medium transition-colors"
               >
                 + Add Refuting Evidence
               </button>
@@ -376,14 +373,14 @@ export function ChallengePage() {
       </div>
 
       {/* AI Analysis */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-black  border border-crt-border p-6">
         <h2 className="text-xl font-bold mb-4">AI Analysis</h2>
 
         {challenge.properties.ai_score ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-medium">Score</span>
-              <span className="text-2xl font-bold text-gray-900">{challenge.properties.ai_score}/100</span>
+              <span className="text-2xl font-bold text-crt-fg">{challenge.properties.ai_score}/100</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Verdict</span>
@@ -397,25 +394,25 @@ export function ChallengePage() {
                 }
               />
             </div>
-            <div className="bg-gray-50 rounded p-3">
-              <p className="text-sm text-gray-700">{challenge.properties.ai_analysis}</p>
+            <div className="bg-black  p-3">
+              <p className="text-sm text-crt-fg">{challenge.properties.ai_analysis}</p>
             </div>
           </div>
         ) : canRequestAI ? (
           <div className="text-center">
-            <p className="text-gray-600 mb-4">
+            <p className="text-crt-muted mb-4">
               {allEvidence.length} pieces of evidence submitted. AI analysis is ready.
             </p>
             <button
               onClick={handleRequestAIAnalysis}
               disabled={analyzingAI}
-              className="px-6 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+              className="px-6 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
             >
               {analyzingAI ? 'Analyzing...' : 'Request AI Analysis'}
             </button>
           </div>
         ) : (
-          <p className="text-gray-600">
+          <p className="text-crt-muted">
             Submit at least 3 pieces of evidence to trigger AI analysis.
           </p>
         )}

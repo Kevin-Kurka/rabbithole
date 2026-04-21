@@ -158,15 +158,14 @@ export function WritePage() {
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
+  return (<div className="max-w-6xl mx-auto font-mono">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Write Article</h1>
-        <p className="text-gray-600">Create and publish articles with claims and sources</p>
+        <p className="text-crt-muted">Create and publish articles with claims and sources</p>
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+        <div className="mb-4 p-4 bg-black border border-red-200  text-crt-error">
           {error}
         </div>
       )}
@@ -174,20 +173,20 @@ export function WritePage() {
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <label className="block text-sm font-medium text-crt-fg mb-2">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Article title..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rabbit-500"
+              className="w-full px-4 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
             />
           </div>
 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Content</label>
-              <span className="text-xs text-gray-500">Select text to mark as claim</span>
+              <label className="block text-sm font-medium text-crt-fg">Content</label>
+              <span className="text-xs text-crt-dim">Select text to mark as claim</span>
             </div>
             <MarkdownEditor value={body} onChange={setBody} height={400} />
           </div>
@@ -196,7 +195,7 @@ export function WritePage() {
             <button
               onClick={handlePublish}
               disabled={loading}
-              className="px-6 py-2 bg-rabbit-600 text-white rounded-lg hover:bg-rabbit-700 disabled:bg-gray-400 font-medium transition-colors"
+              className="px-6 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
             >
               {loading ? 'Publishing...' : 'Publish Article'}
             </button>
@@ -209,14 +208,14 @@ export function WritePage() {
             <h3 className="font-semibold text-lg mb-3">Claims ({claims.length})</h3>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {claims.length === 0 ? (
-                <p className="text-sm text-gray-500">No claims yet. Select text in the editor to mark claims.</p>
+                <p className="text-sm text-crt-dim">No claims yet. Select text in the editor to mark claims.</p>
               ) : (
                 claims.map(claim => (
-                  <div key={claim.id} className="bg-yellow-50 border border-yellow-200 rounded p-2">
-                    <p className="text-sm text-gray-700 mb-1 line-clamp-2">{claim.text}</p>
+                  <div key={claim.id} className="bg-yellow-50 border border-yellow-200  p-2">
+                    <p className="text-sm text-crt-fg mb-1 line-clamp-2">{claim.text}</p>
                     <button
                       onClick={() => removeClaim(claim.id)}
-                      className="text-xs text-red-600 hover:text-red-800"
+                      className="text-xs text-crt-error hover:text-crt-error"
                     >
                       Remove
                     </button>
@@ -232,46 +231,46 @@ export function WritePage() {
               <h3 className="font-semibold text-lg">Sources ({sources.length})</h3>
               <button
                 onClick={() => setShowSourceForm(!showSourceForm)}
-                className="text-sm text-rabbit-600 hover:text-rabbit-700 font-medium"
+                className="text-sm text-crt-fg hover:text-crt-accent font-medium"
               >
                 {showSourceForm ? 'Cancel' : '+ Add'}
               </button>
             </div>
 
             {showSourceForm && (
-              <div className="bg-gray-50 border border-gray-300 rounded p-3 mb-3 space-y-2">
+              <div className="bg-black border border-crt-border  p-3 mb-3 space-y-2">
                 <input
                   type="url"
                   placeholder="URL"
                   value={sourceForm.url || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-rabbit-500"
+                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
                 />
                 <input
                   type="text"
                   placeholder="Title"
                   value={sourceForm.title || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-rabbit-500"
+                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
                 />
                 <input
                   type="text"
                   placeholder="Publication (optional)"
                   value={sourceForm.publication || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, publication: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-rabbit-500"
+                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
                 />
                 <input
                   type="text"
                   placeholder="Author (optional)"
                   value={sourceForm.author || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, author: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-rabbit-500"
+                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
                 />
                 <select
                   value={sourceForm.source_type || 'other'}
                   onChange={(e) => setSourceForm({ ...sourceForm, source_type: e.target.value as any })}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-rabbit-500"
+                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
                 >
                   <option value="news">News</option>
                   <option value="academic">Academic</option>
@@ -281,7 +280,7 @@ export function WritePage() {
                 </select>
                 <button
                   onClick={handleAddSource}
-                  className="w-full px-3 py-1 bg-rabbit-600 text-white text-sm rounded hover:bg-rabbit-700 transition-colors"
+                  className="w-full px-3 py-1 bg-crt-selection text-white text-sm  hover:bg-crt-border transition-colors"
                 >
                   Add Source
                 </button>
@@ -290,17 +289,17 @@ export function WritePage() {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {sources.length === 0 ? (
-                <p className="text-sm text-gray-500">No sources yet. Add sources to cite evidence.</p>
+                <p className="text-sm text-crt-dim">No sources yet. Add sources to cite evidence.</p>
               ) : (
                 sources.map(source => (
-                  <div key={source.id} className="bg-blue-50 border border-blue-200 rounded p-2">
-                    <p className="text-sm font-medium text-gray-900 mb-1">{source.title}</p>
+                  <div key={source.id} className="bg-blue-50 border border-blue-200  p-2">
+                    <p className="text-sm font-medium text-crt-fg mb-1">{source.title}</p>
                     {source.publication && (
-                      <p className="text-xs text-gray-600">{source.publication}</p>
+                      <p className="text-xs text-crt-muted">{source.publication}</p>
                     )}
                     <button
                       onClick={() => removeSource(source.id)}
-                      className="text-xs text-red-600 hover:text-red-800 mt-1"
+                      className="text-xs text-crt-error hover:text-crt-error mt-1"
                     >
                       Remove
                     </button>

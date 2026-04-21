@@ -101,18 +101,18 @@ export function ClaimHighlighter({
 
       {toolbar.visible && (
         <div
-          className="fixed bg-white border border-gray-300 rounded-lg shadow-lg z-50 flex gap-2 p-2"
+          className="fixed bg-black border border-crt-border  shadow-lg z-50 flex gap-2 p-2"
           style={{ left: `${toolbar.x}px`, top: `${toolbar.y}px` }}
         >
           <button
             onClick={handleMarkClaim}
-            className="px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors"
+            className="px-3 py-1 bg-yellow-500 text-white text-sm  hover:bg-yellow-600 transition-colors"
           >
             Mark as Claim
           </button>
           <button
             onClick={handleChallenge}
-            className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+            className="px-3 py-1 bg-red-500 text-white text-sm  hover:bg-red-600 transition-colors"
           >
             Challenge
           </button>

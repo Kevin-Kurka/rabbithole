@@ -30,38 +30,38 @@ function NavBar() {
   return (
     <>
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-black border-b border-crt-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center text-2xl font-bold text-rabbit-600 flex-shrink-0">
-              🕳️ Rabbithole
+            <Link to="/" className="flex items-center text-2xl font-bold text-crt-fg flex-shrink-0 font-mono">
+              &gt; rabbithole
             </Link>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-8">
-              <Link to="/" className="text-gray-600 hover:text-rabbit-600 transition">Feed</Link>
+              <Link to="/" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Feed</Link>
               {isAuthenticated && (
                 <>
-                  <Link to="/write" className="text-gray-600 hover:text-rabbit-600 transition">Write</Link>
-                  <Link to="/notifications" className="text-gray-600 hover:text-rabbit-600 transition">Notifications</Link>
+                  <Link to="/write" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Write</Link>
+                  <Link to="/notifications" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Notifications</Link>
                 </>
               )}
-              <Link to="/explore" className="text-gray-600 hover:text-rabbit-600 transition">Explore</Link>
+              <Link to="/explore" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Explore</Link>
 
               {isAuthenticated ? (
                 <>
-                  <Link to="/profile" className="text-gray-600 hover:text-rabbit-600 transition">Profile</Link>
+                  <Link to="/profile" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Profile</Link>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded-md text-gray-600 hover:bg-gray-100 transition"
+                    className="px-4 py-2 text-crt-muted hover:text-crt-fg border border-crt-muted hover:border-crt-fg transition font-mono text-sm"
                   >
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-gray-600 hover:text-rabbit-600 transition">Login</Link>
-                  <Link to="/register" className="px-4 py-2 rounded-md bg-rabbit-600 text-white hover:bg-rabbit-700 transition">
+                  <Link to="/login" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Login</Link>
+                  <Link to="/register" className="px-4 py-2 bg-crt-selection text-crt-fg border border-crt-muted hover:border-crt-fg transition font-mono text-sm">
                     Register
                   </Link>
                 </>
@@ -72,7 +72,7 @@ function NavBar() {
             <div className="md:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:bg-gray-100"
+                className="inline-flex items-center justify-center p-2 text-crt-muted hover:text-crt-fg border border-crt-muted"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -83,41 +83,41 @@ function NavBar() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden pb-4 space-y-2">
-              <Link to="/" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+            <div className="md:hidden pb-4 space-y-2 bg-black border-t border-crt-border">
+              <Link to="/" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                 Feed
               </Link>
               {isAuthenticated && (
                 <>
-                  <Link to="/write" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+                  <Link to="/write" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                     Write
                   </Link>
-                  <Link to="/notifications" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+                  <Link to="/notifications" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                     Notifications
                   </Link>
                 </>
               )}
-              <Link to="/explore" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+              <Link to="/explore" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                 Explore
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link to="/profile" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+                  <Link to="/profile" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                     Profile
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100"
+                    className="w-full text-left px-3 py-2 text-crt-muted hover:text-crt-fg border border-crt-muted font-mono text-sm"
                   >
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="block px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">
+                  <Link to="/login" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                     Login
                   </Link>
-                  <Link to="/register" className="block px-3 py-2 rounded-md bg-rabbit-600 text-white hover:bg-rabbit-700">
+                  <Link to="/register" className="block px-3 py-2 bg-crt-selection text-crt-fg border border-crt-muted hover:border-crt-fg font-mono text-sm">
                     Register
                   </Link>
                 </>
@@ -134,7 +134,7 @@ function ProtectedRoute({ element }: { element: JSX.Element }) {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><p>Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-screen font-mono text-crt-fg"><p>[ Loading... ]</p></div>;
   }
 
   return isAuthenticated ? element : <Navigate to="/login" />;
@@ -144,15 +144,15 @@ function AppContent() {
   const { loading } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><p>Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-screen font-mono text-crt-fg"><p>[ Loading... ]</p></div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-black">
       <NavBar />
 
       {/* Main Content */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow w-full px-4 sm:px-6 lg:px-8 py-8">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
@@ -169,16 +169,16 @@ function AppContent() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
+      <footer className="bg-black border-t border-crt-border mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between">
-            <p className="text-gray-600 text-sm">
+            <p className="text-crt-muted text-sm font-mono">
               Built on{' '}
-              <a href="https://sentient.sh" target="_blank" rel="noopener noreferrer" className="text-rabbit-600 hover:text-rabbit-700 font-medium">
+              <a href="https://sentient.sh" target="_blank" rel="noopener noreferrer" className="text-crt-fg hover:text-crt-accent font-medium">
                 Sentient BaaS
               </a>
             </p>
-            <p className="text-gray-400 text-xs mt-4 sm:mt-0">
+            <p className="text-crt-dim text-xs mt-4 sm:mt-0 font-mono">
               Rabbithole MVP 2026
             </p>
           </div>

@@ -4,15 +4,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        rabbit: {
-          50: '#fdf4f3',
-          100: '#fce8e6',
-          500: '#e74c3c',
-          600: '#c0392b',
-          700: '#922b21',
-          900: '#641e16',
+        crt: {
+          bg: '#000000',
+          fg: '#00ff00',
+          accent: '#23ff18',
+          selection: '#083905',
+          muted: '#00a600',
+          dim: '#666666',
+          border: '#0a3d0a',
+          error: '#e50000',
+          warning: '#e5e500',
+          info: '#00a6b2',
         }
-      }
+      },
+      fontFamily: {
+        mono: ['"SF Mono"', '"Fira Code"', '"JetBrains Mono"', 'Menlo', 'Monaco', 'monospace'],
+      },
+      borderRadius: {
+        DEFAULT: '0',
+        none: '0',
+        sm: '0',
+        md: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
+        full: '0',
+      },
     },
   },
   plugins: [],

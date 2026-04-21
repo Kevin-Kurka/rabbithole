@@ -11,31 +11,34 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, type = 'claim', className = '' }: StatusBadgeProps) {
   const getColor = (): string => {
     // Claim statuses
-    if (status === 'verified') return 'bg-green-100 text-green-800';
-    if (status === 'debunked') return 'bg-red-100 text-red-800';
-    if (status === 'challenged' || status === 'contested') return 'bg-yellow-100 text-yellow-800';
-    if (status === 'unchallenged' || status === 'pending') return 'bg-gray-100 text-gray-800';
+    if (status === 'verified') return 'bg-black border border-crt-fg text-crt-fg';
+    if (status === 'debunked') return 'bg-black border border-crt-error text-crt-error';
+    if (status === 'challenged' || status === 'contested') return 'bg-black border border-crt-warning text-crt-warning';
+    if (status === 'unchallenged' || status === 'pending') return 'bg-black border border-crt-muted text-crt-muted';
 
     // Challenge statuses
-    if (status === 'open') return 'bg-blue-100 text-blue-800';
-    if (status === 'in_review') return 'bg-purple-100 text-purple-800';
-    if (status === 'resolved') return 'bg-green-100 text-green-800';
+    if (status === 'open') return 'bg-black border border-crt-info text-crt-info';
+    if (status === 'in_review') return 'bg-black border border-crt-muted text-crt-muted';
+    if (status === 'resolved') return 'bg-black border border-crt-fg text-crt-fg';
 
     // Verdict verdicts
-    if (status === 'insufficient_evidence') return 'bg-gray-100 text-gray-800';
+    if (status === 'insufficient_evidence') return 'bg-black border border-crt-muted text-crt-muted';
 
-    return 'bg-gray-100 text-gray-800';
+    return 'bg-black border border-crt-muted text-crt-muted';
   };
 
   const getLabel = (): string => {
-    if (status === 'unchallenged') return 'Unchallenged';
-    if (status === 'insufficient_evidence') return 'Insufficient Evidence';
-    if (status === 'in_review') return 'In Review';
-    return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
+    if (status === 'unchallenged') return '[UNCHALLENGED]';
+    if (status === 'insufficient_evidence') return '[INSUFFICIENT EVIDENCE]';
+    if (status === 'in_review') return '[IN REVIEW]';
+    if (status === 'verified') return '[VERIFIED]';
+    if (status === 'debunked') return '[DEBUNKED]';
+    if (status === 'challenged' || status === 'contested') return '[CHALLENGED]';
+    return '[' + status.toUpperCase().replace(/_/g, ' ') + ']';
   };
 
   return (
-    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${getColor()} ${className}`}>
+    <span className={`inline-block px-2.5 py-1 text-xs font-medium font-mono ${getColor()} ${className}`}>
       {getLabel()}
     </span>
   );

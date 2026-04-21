@@ -2,7 +2,7 @@ export function Spinner() {
   return (
     <div className="inline-block">
       <svg
-        className="animate-spin h-5 w-5 text-rabbit-600"
+        className="animate-spin h-5 w-5 text-crt-fg"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

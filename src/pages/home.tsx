@@ -55,9 +55,9 @@ export function Home() {
   const renderArticles = () => {
     if (articles.length === 0) {
       return (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-xl mb-2">No articles yet.</p>
-          <p>Be the first to contribute.</p>
+        <div className="text-center py-20 text-crt-dim font-mono">
+          <p className="text-xl mb-2">[ NO ARTICLES ]</p>
+          <p>be the first to contribute</p>
         </div>
       );
     }
@@ -68,15 +68,15 @@ export function Home() {
           <a
             key={a.id}
             href={`/article/${a.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
           >
-            <h2 className="text-xl font-semibold text-gray-900">{a.properties.title}</h2>
-            {a.properties.summary && <p className="text-gray-600 mt-2">{a.properties.summary}</p>}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <span className="text-xs text-gray-500">
+            <h2 className="text-xl font-semibold text-crt-fg">{a.properties.title}</h2>
+            {a.properties.summary && <p className="text-crt-muted mt-2">{a.properties.summary}</p>}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-crt-border">
+              <span className="text-xs text-crt-dim">
                 {new Date(a.created_at).toLocaleDateString()}
               </span>
-              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">Published</span>
+              <span className="text-xs px-2 py-1 bg-black border border-crt-fg text-crt-fg">[PUBLISHED]</span>
             </div>
           </a>
         ))}
@@ -87,9 +87,9 @@ export function Home() {
   const renderTheories = () => {
     if (theories.length === 0) {
       return (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-xl mb-2">No theories yet.</p>
-          <p>Build a theory and be the first.</p>
+        <div className="text-center py-20 text-crt-dim font-mono">
+          <p className="text-xl mb-2">[ NO THEORIES ]</p>
+          <p>build a theory and be the first</p>
         </div>
       );
     }
@@ -100,15 +100,15 @@ export function Home() {
           <a
             key={t.id}
             href={`/theory/${t.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
           >
-            <h2 className="text-xl font-semibold text-gray-900">{t.properties.title}</h2>
-            {t.properties.summary && <p className="text-gray-600 mt-2">{t.properties.summary}</p>}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <span className="text-xs text-gray-500">
+            <h2 className="text-xl font-semibold text-crt-fg">{t.properties.title}</h2>
+            {t.properties.summary && <p className="text-crt-muted mt-2">{t.properties.summary}</p>}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-crt-border">
+              <span className="text-xs text-crt-dim">
                 {new Date(t.created_at).toLocaleDateString()}
               </span>
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">Theory</span>
+              <span className="text-xs px-2 py-1 bg-black border border-crt-info text-crt-info">[THEORY]</span>
             </div>
           </a>
         ))}
@@ -119,9 +119,9 @@ export function Home() {
   const renderChallenges = () => {
     if (challenges.length === 0) {
       return (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-xl mb-2">No active challenges.</p>
-          <p>All claims are currently accepted.</p>
+        <div className="text-center py-20 text-crt-dim font-mono">
+          <p className="text-xl mb-2">[ NO CHALLENGES ]</p>
+          <p>all claims are currently accepted</p>
         </div>
       );
     }
@@ -132,22 +132,22 @@ export function Home() {
           <a
             key={c.id}
             href={`/challenge/${c.id}`}
-            className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-rabbit-500 hover:shadow-md transition"
+            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
           >
-            <h2 className="text-xl font-semibold text-gray-900">{c.properties.title}</h2>
-            <p className="text-gray-600 mt-2">{c.properties.rationale}</p>
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-100">
+            <h2 className="text-xl font-semibold text-crt-fg">{c.properties.title}</h2>
+            <p className="text-crt-muted mt-2">{c.properties.rationale}</p>
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-crt-border">
               <div className="text-sm">
-                <span className="text-gray-500">Community Score: </span>
-                <span className="font-semibold text-gray-900">{c.properties.community_score}</span>
+                <span className="text-crt-muted">community score: </span>
+                <span className="font-semibold text-crt-fg">{c.properties.community_score}</span>
               </div>
               <div className="text-sm">
-                <span className="text-gray-500">AI Score: </span>
-                <span className="font-semibold text-gray-900">{c.properties.ai_score}</span>
+                <span className="text-crt-muted">ai score: </span>
+                <span className="font-semibold text-crt-fg">{c.properties.ai_score}</span>
               </div>
               <div className="ml-auto">
-                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
-                  {c.properties.status === 'open' ? 'Open' : 'In Review'}
+                <span className="text-xs px-2 py-1 bg-black border border-crt-warning text-crt-warning">
+                  {c.properties.status === 'open' ? '[OPEN]' : '[IN REVIEW]'}
                 </span>
               </div>
             </div>
@@ -159,53 +159,53 @@ export function Home() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8">Discovery Feed</h1>
+      <h1 className="text-3xl font-bold mb-8 text-crt-fg font-mono">&gt; discovery feed</h1>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700 mb-6">
-          {error}
+        <div className="p-4 text-sm text-crt-error mb-6 border border-crt-error bg-black font-mono">
+          [ ERROR ] {error}
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="flex gap-4 mb-8 border-b border-gray-200">
+      <div className="flex gap-4 mb-8 border-b border-crt-border">
         <button
           onClick={() => setTab('articles')}
-          className={`px-4 py-3 font-medium border-b-2 transition ${
+          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
             tab === 'articles'
-              ? 'border-rabbit-600 text-rabbit-600'
-              : 'border-transparent text-gray-600 hover:text-rabbit-600'
+              ? 'border-crt-fg text-crt-fg'
+              : 'border-transparent text-crt-muted hover:text-crt-fg'
           }`}
         >
-          Articles
+          articles
         </button>
         <button
           onClick={() => setTab('theories')}
-          className={`px-4 py-3 font-medium border-b-2 transition ${
+          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
             tab === 'theories'
-              ? 'border-rabbit-600 text-rabbit-600'
-              : 'border-transparent text-gray-600 hover:text-rabbit-600'
+              ? 'border-crt-fg text-crt-fg'
+              : 'border-transparent text-crt-muted hover:text-crt-fg'
           }`}
         >
-          Theories
+          theories
         </button>
         <button
           onClick={() => setTab('challenges')}
-          className={`px-4 py-3 font-medium border-b-2 transition ${
+          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
             tab === 'challenges'
-              ? 'border-rabbit-600 text-rabbit-600'
-              : 'border-transparent text-gray-600 hover:text-rabbit-600'
+              ? 'border-crt-fg text-crt-fg'
+              : 'border-transparent text-crt-muted hover:text-crt-fg'
           }`}
         >
-          Active Challenges
+          challenges
         </button>
       </div>
 
       {/* Tab Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 font-mono">
           <Spinner />
-          <span className="ml-2 text-gray-600">Loading feed...</span>
+          <span className="ml-2 text-crt-muted">[ loading feed... ]</span>
         </div>
       ) : (
         <>
