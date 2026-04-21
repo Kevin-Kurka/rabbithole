@@ -147,8 +147,8 @@ export async function getArticleWithContext(articleId: string): Promise<any> {
   const traversed = await traverse(articleId, 2);
 
   // Extract claims and sources from traversed data
-  const claims = traversed.filter((n: any) => n.type === 'CLAIM');
-  const sources = traversed.filter((n: any) => n.type === 'SOURCE');
+  const claims = traversed.filter((n: any) => n.node_type === 'CLAIM');
+  const sources = traversed.filter((n: any) => n.node_type === 'SOURCE');
 
   return { article, claims, sources };
 }
@@ -157,9 +157,9 @@ export async function getChallengeWithContext(challengeId: string): Promise<any>
   const challenge = await getNode(challengeId);
   const traversed = await traverse(challengeId, 3);
 
-  const evidence = traversed.filter((n: any) => n.type === 'EVIDENCE');
-  const votes = traversed.filter((n: any) => n.type === 'VOTE');
-  const targetClaim = traversed.find((n: any) => n.type === 'CLAIM');
+  const evidence = traversed.filter((n: any) => n.node_type === 'EVIDENCE');
+  const votes = traversed.filter((n: any) => n.node_type === 'VOTE');
+  const targetClaim = traversed.find((n: any) => n.node_type === 'CLAIM');
 
   return { challenge, evidence, votes, targetClaim };
 }

@@ -11,7 +11,7 @@ export function ArticlePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
-  const [traversedNodes, setTraversedNodes] = useState<SentientNode[]>([]);
+  const [traversedNodes, setTraversedNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'article' | 'challenges' | 'evidence' | 'explore'>('article');
@@ -71,11 +71,11 @@ export function ArticlePage() {
             (node.properties as any).text ||
             (node.properties as any).title ||
             (node.properties as any).username ||
-            node.type;
+            node.node_type;
           nodes.push({
             id: node.id,
             label: label.substring(0, 30),
-            type: node.type,
+            type: node.node_type,
           });
           seenNodes.add(node.id);
         }
@@ -84,11 +84,11 @@ export function ArticlePage() {
       // Connect article to related nodes
       for (const node of traversedNodes) {
         if (
-          node.type === 'CLAIM' ||
-          node.type === 'SOURCE' ||
-          node.type === 'ARTICLE' ||
-          node.type === 'THEORY' ||
-          node.type === 'CHALLENGE'
+          node.node_type === 'CLAIM' ||
+          node.node_type === 'SOURCE' ||
+          node.node_type === 'ARTICLE' ||
+          node.node_type === 'THEORY' ||
+          node.node_type === 'CHALLENGE'
         ) {
           const edgeKey = [id, node.id].sort().join('-');
           if (!seenEdges.has(edgeKey)) {
@@ -101,9 +101,9 @@ export function ArticlePage() {
         }
 
         // Connect challenges to evidence
-        if (node.type === 'EVIDENCE') {
+        if (node.node_type === 'EVIDENCE') {
           for (const other of traversedNodes) {
-            if (other.type === 'CHALLENGE') {
+            if (other.node_type === 'CHALLENGE') {
               const edgeKey = [other.id, node.id].sort().join('-');
               if (!seenEdges.has(edgeKey)) {
                 edges.push({
@@ -140,11 +140,11 @@ export function ArticlePage() {
   };
 
   // Filter traversed nodes by type
-  const claims = traversedNodes.filter(n => n.type === 'CLAIM');
-  const challenges = traversedNodes.filter(n => n.type === 'CHALLENGE');
-  const evidence = traversedNodes.filter(n => n.type === 'EVIDENCE');
-  const sources = traversedNodes.filter(n => n.type === 'SOURCE');
-  const theories = traversedNodes.filter(n => n.type === 'THEORY');
+  const claims = traversedNodes.filter(n => n.node_type === 'CLAIM');
+  const challenges = traversedNodes.filter(n => n.node_type === 'CHALLENGE');
+  const evidence = traversedNodes.filter(n => n.node_type === 'EVIDENCE');
+  const sources = traversedNodes.filter(n => n.node_type === 'SOURCE');
+  const theories = traversedNodes.filter(n => n.node_type === 'THEORY');
 
   if (loading) {
     return (
