@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EvidenceCard } from '../components/evidence-card';
+import { EvidenceComparison } from '../components/evidence-comparison';
 import { VoteWidget } from '../components/vote-widget';
 import { StatusBadge } from '../components/status-badge';
 import {
@@ -12,7 +13,7 @@ import {
   requestAIAnalysis,
   getUserVote,
 } from '../lib/api';
-import type { SentientNode } from '../lib/types';
+import type { SentientNode, Evidence } from '../lib/types';
 
 interface EvidenceForm {
   title: string;
@@ -41,6 +42,9 @@ export function ChallengePage() {
   const [submittingEvidence, setSubmittingEvidence] = useState(false);
   const [votingLoading, setVotingLoading] = useState(false);
   const [analyzingAI, setAnalyzingAI] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonEvidenceA, setComparisonEvidenceA] = useState<Evidence | null>(null);
+  const [comparisonEvidenceB, setComparisonEvidenceB] = useState<Evidence | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -218,6 +222,79 @@ export function ChallengePage() {
       {error && (
         <div className="mb-6 p-4 bg-black border border-red-200  text-crt-error">
           {error}
+        </div>
+      )}
+
+      {/* Compare Evidence Button */}
+      {supportingEvidence.length >= 2 || refutingEvidence.length >= 2 ? (
+        <div className="mb-6 p-4 bg-black border border-crt-border flex items-center justify-between">
+          <span className="text-crt-fg font-medium">Compare two evidence items side-by-side</span>
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="px-4 py-2 bg-crt-selection text-white font-medium hover:bg-crt-border transition-colors font-mono"
+          >
+            {showComparison ? 'HIDE COMPARISON' : '[ COMPARE EVIDENCE ]'}
+          </button>
+        </div>
+      ) : null}
+
+      {/* Evidence Comparison View */}
+      {showComparison && (
+        <div className="mb-6 p-4 bg-black border border-crt-border">
+          <h2 className="text-xl font-bold mb-4 text-crt-fg">SELECT EVIDENCE TO COMPARE</h2>
+
+          <div className="grid grid-cols-2 gap-6 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-crt-fg mb-2">EVIDENCE A:</label>
+              <select
+                value={comparisonEvidenceA?.id || ''}
+                onChange={(e) => {
+                  const selected = [...supportingEvidence, ...refutingEvidence].find(
+                    (ev) => ev.id === e.target.value
+                  );
+                  setComparisonEvidenceA(selected as Evidence || null);
+                }}
+                className="w-full px-3 py-2 bg-black border border-crt-border text-crt-fg focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm font-mono"
+              >
+                <option value="">-- Select evidence --</option>
+                {[...supportingEvidence, ...refutingEvidence].map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {(ev.properties as any).title.substring(0, 40)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-crt-fg mb-2">EVIDENCE B:</label>
+              <select
+                value={comparisonEvidenceB?.id || ''}
+                onChange={(e) => {
+                  const selected = [...supportingEvidence, ...refutingEvidence].find(
+                    (ev) => ev.id === e.target.value
+                  );
+                  setComparisonEvidenceB(selected as Evidence || null);
+                }}
+                className="w-full px-3 py-2 bg-black border border-crt-border text-crt-fg focus:outline-none focus:ring-2 focus:ring-crt-fg text-sm font-mono"
+              >
+                <option value="">-- Select evidence --</option>
+                {[...supportingEvidence, ...refutingEvidence].map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {(ev.properties as any).title.substring(0, 40)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {comparisonEvidenceA && comparisonEvidenceB && (
+            <div className="mt-6 border-t border-crt-border pt-6">
+              <EvidenceComparison
+                evidenceA={comparisonEvidenceA}
+                evidenceB={comparisonEvidenceB}
+              />
+            </div>
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { semanticSearch, traverse, listNodes, listEdges } from '../lib/api';
 import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
+import { ConnectionFinder } from '../components/connection-finder';
 import type { SentientNode, SentientEdge } from '../lib/types';
 
 interface TraversedNode {
@@ -157,30 +158,37 @@ export function ExplorePage() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Results list (shown only when searching) */}
-        {results.length > 0 && (
-          <div className="w-1/4 border-r border-crt-border bg-black overflow-y-auto p-4">
-            <h2 className="font-semibold text-lg mb-3">Results ({results.length})</h2>
-            <div className="space-y-2">
-              {results.map(result => (
-                <button
-                  key={result.id}
-                  onClick={() => handleNodeClick(result)}
-                  className="w-full text-left p-3 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition-all"
-                >
-                  <p className="font-medium text-crt-fg line-clamp-2">{getNodeLabel(result)}</p>
-                  <span className={`inline-block mt-2 px-2 py-1  text-xs font-medium ${getNodeTypeColor(result.type)}`}>
-                    {result.type}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Connection Finder Tool */}
+        <div className="border-b border-crt-border bg-black">
+          <ConnectionFinder />
+        </div>
 
-        {/* Graph visualization - full screen */}
-        <div className="flex-1 flex flex-col">
+        {/* Results and Graph */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Results list (shown only when searching) */}
+          {results.length > 0 && (
+            <div className="w-1/4 border-r border-crt-border bg-black overflow-y-auto p-4">
+              <h2 className="font-semibold text-lg mb-3">Results ({results.length})</h2>
+              <div className="space-y-2">
+                {results.map(result => (
+                  <button
+                    key={result.id}
+                    onClick={() => handleNodeClick(result)}
+                    className="w-full text-left p-3 bg-black  border border-crt-border hover:border-crt-fg hover:shadow-md transition-all"
+                  >
+                    <p className="font-medium text-crt-fg line-clamp-2">{getNodeLabel(result)}</p>
+                    <span className={`inline-block mt-2 px-2 py-1  text-xs font-medium ${getNodeTypeColor(result.type)}`}>
+                      {result.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Graph visualization - full screen */}
+          <div className="flex-1 flex flex-col">
           {initialLoading ? (
             <div className="h-full flex items-center justify-center">
               <p className="text-crt-muted">Loading all connections...</p>
@@ -198,6 +206,7 @@ export function ExplorePage() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
