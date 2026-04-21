@@ -112,6 +112,23 @@ export async function listEdges(type?: string, limit = 50): Promise<SentientEdge
   return request(`/admin/edges`);
 }
 
+export async function getEdgeDetails(id: string): Promise<SentientEdge> {
+  return request(`/admin/edges/${id}`);
+}
+
+export async function updateEdge(id: string, properties: Record<string, unknown>): Promise<SentientEdge> {
+  return request(`/admin/edges/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ properties }),
+  });
+}
+
+export async function listEdgesForNode(nodeId: string): Promise<SentientEdge[]> {
+  // Get all edges and filter for those connected to this node
+  const allEdges = await listEdges();
+  return allEdges.filter(e => e.source_node_id === nodeId || e.target_node_id === nodeId);
+}
+
 export async function deleteEdge(id: string): Promise<void> {
   await request(`/admin/edges/${id}`, { method: 'DELETE' });
 }

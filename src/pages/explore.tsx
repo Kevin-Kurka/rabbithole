@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { semanticSearch, traverse, listNodes, listEdges } from '../lib/api';
 import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import { ConnectionFinder } from '../components/connection-finder';
+import { ConnectionEditor } from '../components/connection-editor';
 import type { SentientNode, SentientEdge } from '../lib/types';
 
 interface TraversedNode {
@@ -20,6 +21,7 @@ export function ExplorePage() {
   const [traversedNodes, setTraversedNodes] = useState<TraversedNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [showConnectionEditor, setShowConnectionEditor] = useState(false);
 
   // Load all nodes on mount
   useEffect(() => {
@@ -137,7 +139,15 @@ export function ExplorePage() {
   return (<div className="h-screen flex flex-col bg-black font-mono">
       {/* Header with search */}
       <div className="bg-black border-b border-crt-border p-4 z-10">
-        <h1 className="text-3xl font-bold mb-4">Explore</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold">Explore</h1>
+          <button
+            onClick={() => setShowConnectionEditor(true)}
+            className="px-4 py-2 bg-crt-border text-black font-medium hover:opacity-80 transition-opacity"
+          >
+            Create Connection
+          </button>
+        </div>
         <div className="flex gap-2">
           <input
             type="text"
@@ -218,6 +228,17 @@ export function ExplorePage() {
           </div>
         </div>
       )}
+
+      {/* Connection Editor Modal */}
+      <ConnectionEditor
+        isOpen={showConnectionEditor}
+        onClose={() => setShowConnectionEditor(false)}
+        onCreated={() => {
+          setShowConnectionEditor(false);
+          // Reload nodes
+          loadAllNodes();
+        }}
+      />
     </div>
   );
 }

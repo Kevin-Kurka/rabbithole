@@ -6,9 +6,9 @@ import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
 import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import { AiPanel } from '../components/ai-panel';
-import { getNode, createNode, createEdge, traverse } from '../lib/api';
+import { getNode, createNode, createEdge, traverse, listEdgesForNode } from '../lib/api';
 import { generateAutoEvidence } from '../lib/auto-evidence';
-import type { Article, SentientNode } from '../lib/types';
+import type { Article, SentientNode, SentientEdge } from '../lib/types';
 
 interface ExportState {
   isExporting: boolean;
@@ -20,6 +20,7 @@ export function ArticlePage() {
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [traversedNodes, setTraversedNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<SentientEdge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'article' | 'challenges' | 'evidence' | 'explore'>('article');
@@ -39,6 +40,10 @@ export function ArticlePage() {
 
         const traversed = await traverse(id, 3);
         setTraversedNodes(traversed);
+
+        // Fetch edges for the article and related nodes
+        const articleEdges = await listEdgesForNode(id);
+        setEdges(articleEdges);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load article');
       } finally {
@@ -467,6 +472,7 @@ export function ArticlePage() {
           {traversedNodes.length > 0 ? (
             <KnowledgeGraph
               traversedNodes={traversedNodes}
+              edges={edges}
               rootNodeId={id}
               height={600}
             />

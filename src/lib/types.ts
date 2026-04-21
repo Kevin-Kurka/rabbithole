@@ -127,3 +127,15 @@ export interface RelatedToEdgeProps {
   discovered_by: 'ai' | 'user';
   confidence?: number;
 }
+
+// ---- Rich Edge Properties (generic for all edge types) ----
+
+export interface RichEdgeProps {
+  label?: string;
+  relationship_type?: string;
+  confidence?: number;
+  evidence_basis?: string;
+  status?: 'active' | 'challenged' | 'verified' | 'debunked';
+  created_by?: 'user' | 'ai';
+  challenge_count?: number;
+}
