@@ -11,6 +11,9 @@ import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
 import { NotificationsPage } from './pages/notifications';
 import { SearchPage } from './pages/search';
+import { TimelinePage } from './pages/timeline';
+import { SourcesPage } from './pages/sources';
+import { ClaimsPage } from './pages/claims';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { ErrorBoundary } from './components/error-boundary';
 
@@ -42,6 +45,9 @@ function NavBar() {
             <div className="hidden md:flex items-center gap-8">
               <Link to="/write" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Write</Link>
               <Link to="/explore" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Explore</Link>
+              <Link to="/timeline" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Timeline</Link>
+              <Link to="/claims" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Claims</Link>
+              <Link to="/sources" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Sources</Link>
 
               {isAuthenticated ? (
                 <>
@@ -83,6 +89,15 @@ function NavBar() {
               </Link>
               <Link to="/explore" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                 Explore
+              </Link>
+              <Link to="/timeline" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
+                Timeline
+              </Link>
+              <Link to="/claims" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
+                Claims
+              </Link>
+              <Link to="/sources" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
+                Sources
               </Link>
               {isAuthenticated ? (
                 <>
@@ -147,6 +162,9 @@ function AppContent() {
           <Route path="/profile" element={<ProtectedRoute element={<ProfilePage />} />} />
           <Route path="/notifications" element={<ProtectedRoute element={<NotificationsPage />} />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/claims" element={<ClaimsPage />} />
+          <Route path="/sources" element={<SourcesPage />} />
         </Routes>
       </main>
 
