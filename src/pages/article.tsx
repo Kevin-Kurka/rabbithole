@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ClaimHighlighter } from '../components/claim-highlighter';
 import { ChallengeModal } from '../components/challenge-modal';
+import { QuickChallenge } from '../components/quick-challenge';
+import { EnhancementReview } from '../components/enhancement-review';
 import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
 import { KnowledgeGraph } from '../components/canvas/knowledge-graph';
 import { AiPanel } from '../components/ai-panel';
 import { getNode, createNode, createEdge, traverse, listEdgesForNode } from '../lib/api';
 import { generateAutoEvidence } from '../lib/auto-evidence';
+import { enhanceArticle, applyEnhancements } from '../lib/ai-enhance';
 import type { Article, SentientNode, SentientEdge, ChallengeFramework } from '../lib/types';
+import type { EnhancementData } from '../lib/ai-enhance';
+import type { StructuredChallenge } from '../components/quick-challenge';
 
 interface ExportState {
   isExporting: boolean;
@@ -25,9 +30,13 @@ export function ArticlePage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'article' | 'challenges' | 'evidence' | 'explore'>('article');
   const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [showQuickChallenge, setShowQuickChallenge] = useState(false);
   const [selectedClaimText, setSelectedClaimText] = useState('');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [exportState, setExportState] = useState<ExportState>({ isExporting: false, copied: false });
+  const [showEnhancementReview, setShowEnhancementReview] = useState(false);
+  const [enhancementData, setEnhancementData] = useState<EnhancementData | null>(null);
+  const [enhancingArticle, setEnhancingArticle] = useState(false);
 
   // Load article and traverse graph on mount
   useEffect(() => {
@@ -98,6 +107,113 @@ export function ArticlePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create challenge');
       setAiGenerating(false);
+    }
+  };
+
+  const handleQuickChallengeSubmit = async (structured: StructuredChallenge) => {
+    if (!id) return;
+
+    setAiGenerating(true);
+    try {
+      const tenantId = localStorage.getItem('sentient_tenant_id') || '00000000-0000-0000-0000-000000000001';
+
+      // Create the CHALLENGE node
+      const challengeNode = await createNode(
+        'CHALLENGE',
+        {
+          title: structured.title,
+          rationale: structured.rationale,
+          status: 'open',
+          community_score: 0,
+          ai_score: null,
+          ai_analysis: null,
+          framework: structured.framework,
+          checked_criteria: structured.relevant_criteria,
+          verdict_scale: undefined,
+        },
+        tenantId
+      );
+
+      // Link challenge to article
+      await createEdge(id, challengeNode.id, 'CHALLENGES', {}, tenantId);
+
+      // Trigger auto-evidence generation in background
+      setShowQuickChallenge(false);
+      try {
+        await generateAutoEvidence(
+          challengeNode.id,
+          selectedClaimText,
+          article?.properties.title || 'Article'
+        );
+      } catch (e) {
+        console.error('Auto-evidence generation failed (non-blocking):', e);
+      }
+
+      // Navigate to challenge page
+      navigate(`/challenge/${challengeNode.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create challenge');
+      setAiGenerating(false);
+    }
+  };
+
+  const handleEnhanceArticle = async () => {
+    if (!id || !article) return;
+
+    setEnhancingArticle(true);
+    try {
+      const result = await enhanceArticle(
+        id,
+        article.properties.title,
+        article.properties.body,
+        traversedNodes
+      );
+
+      if (result.success && result.data) {
+        setEnhancementData(result.data);
+        setShowEnhancementReview(true);
+      } else {
+        setError(result.error || 'Enhancement failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Enhancement failed');
+    } finally {
+      setEnhancingArticle(false);
+    }
+  };
+
+  const handleApplyEnhancements = async (approved: Partial<EnhancementData>) => {
+    if (!id) return;
+
+    try {
+      const tenantId = localStorage.getItem('sentient_tenant_id') || '00000000-0000-0000-0000-000000000001';
+      const result = await applyEnhancements(
+        id,
+        {
+          suggested_tags: approved.suggested_tags || [],
+          suggested_connections: approved.suggested_connections || [],
+          extracted_claims: approved.extracted_claims || [],
+          suggested_challenges: approved.suggested_challenges || [],
+          credibility_notes: approved.credibility_notes || '',
+        },
+        tenantId
+      );
+
+      setShowEnhancementReview(false);
+      setEnhancementData(null);
+
+      // Reload article data
+      const articleData = await getNode<any>(id);
+      setArticle(articleData);
+      const traversed = await traverse(id, 3);
+      setTraversedNodes(traversed);
+
+      // Show success message
+      alert(
+        `Enhancement applied: ${result.applied.connections} connections, ${result.applied.claims} claims created`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply enhancements');
     }
   };
 
@@ -233,14 +349,24 @@ export function ArticlePage() {
           </div>
 
           {activeTab === 'article' && (
-            <button
-              onClick={handleExportArticle}
-              disabled={exportState.isExporting}
-              className="px-4 py-2 bg-crt-selection text-white font-medium hover:bg-crt-border disabled:bg-crt-muted transition-colors font-mono text-sm -mb-0.5"
-              title="Export article as text"
-            >
-              {exportState.copied ? '[ COPIED! ]' : '[ EXPORT ]'}
-            </button>
+            <div className="flex gap-2 -mb-0.5">
+              <button
+                onClick={handleEnhanceArticle}
+                disabled={enhancingArticle}
+                className="px-4 py-2 bg-crt-selection text-white font-medium hover:bg-crt-border disabled:bg-crt-muted transition-colors font-mono text-sm"
+                title="Run AI enhancement on article"
+              >
+                {enhancingArticle ? '[ ENHANCING... ]' : '[ AI ENHANCE ]'}
+              </button>
+              <button
+                onClick={handleExportArticle}
+                disabled={exportState.isExporting}
+                className="px-4 py-2 bg-crt-selection text-white font-medium hover:bg-crt-border disabled:bg-crt-muted transition-colors font-mono text-sm"
+                title="Export article as text"
+              >
+                {exportState.copied ? '[ COPIED! ]' : '[ EXPORT ]'}
+              </button>
+            </div>
           )}
         </div>
 
@@ -274,7 +400,7 @@ export function ArticlePage() {
                 const selectedText = window.getSelection()?.toString() || '';
                 if (selectedText) {
                   setSelectedClaimText(selectedText);
-                  setShowChallengeModal(true);
+                  setShowQuickChallenge(true);
                 }
               }}
             />
@@ -514,6 +640,31 @@ export function ArticlePage() {
             <div className="mt-4 text-crt-accent animate-pulse font-mono">▓▓▓▓▓▓▓▓░░░░</div>
           </div>
         </div>
+      )}
+
+      {/* Quick Challenge Modal */}
+      {showQuickChallenge && id && (
+        <QuickChallenge
+          claimText={selectedClaimText}
+          articleId={id}
+          articleTitle={article?.properties.title || 'Article'}
+          existingChallenges={challenges}
+          onClose={() => setShowQuickChallenge(false)}
+          onSubmit={handleQuickChallengeSubmit}
+        />
+      )}
+
+      {/* Enhancement Review Modal */}
+      {showEnhancementReview && enhancementData && (
+        <EnhancementReview
+          enhancements={enhancementData}
+          onApprove={handleApplyEnhancements}
+          onCancel={() => {
+            setShowEnhancementReview(false);
+            setEnhancementData(null);
+          }}
+          isLoading={false}
+        />
       )}
 
       {/* AI Panel */}

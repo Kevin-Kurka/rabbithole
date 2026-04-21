@@ -28,6 +28,7 @@ export function ChallengePage() {
   const navigate = useNavigate();
   const [challenge, setChallenge] = useState<SentientNode<any> | null>(null);
   const [targetClaim, setTargetClaim] = useState<SentientNode<any> | null>(null);
+  const [otherChallenges, setOtherChallenges] = useState<SentientNode<any>[]>([]);
   const [supportingEvidence, setSupportingEvidence] = useState<SentientNode<any>[]>([]);
   const [refutingEvidence, setRefutingEvidence] = useState<SentientNode<any>[]>([]);
   const [userVote, setUserVote] = useState<'for' | 'against' | null>(null);
@@ -57,7 +58,7 @@ export function ChallengePage() {
         setChallenge(challengeNode);
 
         // Traverse to find connected evidence and claims
-        const traversed = await traverse(id, 2);
+        const traversed = await traverse(id, 3);
 
         // Extract evidence nodes (filter by type field, not node_type)
         const evidence = traversed.filter((n: any) => n.type === 'EVIDENCE');
@@ -71,6 +72,12 @@ export function ChallengePage() {
         const claim = traversed.find((n: any) => n.type === 'CLAIM');
         if (claim) {
           setTargetClaim(claim);
+
+          // Find other challenges on the same claim
+          const otherChalls = traversed.filter(
+            (n: any) => n.type === 'CHALLENGE' && n.id !== id
+          );
+          setOtherChallenges(otherChalls);
         }
 
         // Get user's vote
@@ -532,6 +539,43 @@ export function ChallengePage() {
           </div>
         </div>
       </div>
+
+      {/* Other Challenges on this Claim */}
+      {otherChallenges.length > 0 && (
+        <div className="bg-black border border-crt-border p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4 text-crt-fg">OTHER CHALLENGES ON THIS CLAIM</h2>
+          <div className="space-y-2">
+            {otherChallenges.map(otherChall => {
+              const framework = (otherChall.properties as any).framework || 'unknown';
+              const status = (otherChall.properties as any).status || 'open';
+              return (
+                <a
+                  key={otherChall.id}
+                  href={`/challenge/${otherChall.id}`}
+                  className="flex items-center justify-between p-3 bg-black border border-crt-border hover:border-crt-fg transition"
+                >
+                  <div className="flex-1">
+                    <p className="text-crt-fg font-bold text-sm">
+                      {(otherChall.properties as any).title}
+                    </p>
+                    <p className="text-xs text-crt-muted mt-1">
+                      {(otherChall.properties as any).rationale}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4 flex-shrink-0">
+                    <span className="px-2 py-1 bg-crt-selection text-black text-xs font-bold">
+                      {framework.toUpperCase()}
+                    </span>
+                    <span className="px-2 py-1 bg-black border border-crt-border text-crt-fg text-xs">
+                      {status.toUpperCase()}
+                    </span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* AI Analysis */}
       <div className="bg-black  border border-crt-border p-6">
