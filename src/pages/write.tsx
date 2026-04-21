@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarkdownEditor } from '../components/markdown-editor';
 import { createNode, createEdge } from '../lib/api';
-import type { ArticleProps, ClaimProps, SourceProps } from '../lib/types';
+import type { ArticleProps } from '../lib/types';
 
 interface Source {
   id: string;
@@ -84,13 +84,7 @@ export function WritePage() {
     setError('');
 
     try {
-      // Get user ID (from localStorage or token)
-      const token = localStorage.getItem('sentient_token');
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
-      // Create article node
+      // Create article node with properties
       const articleProps: ArticleProps = {
         title,
         body,
@@ -100,37 +94,64 @@ export function WritePage() {
 
       const article = await createNode('ARTICLE', articleProps);
 
-      // Create claim nodes and edges
-      for (const claim of claims) {
-        const claimProps: ClaimProps = {
-          text: claim.text,
-          highlight_start: claim.start,
-          highlight_end: claim.end,
-          status: 'unchallenged',
-        };
-
-        const claimNode = await createNode('CLAIM', claimProps);
-        await createEdge(article.id, claimNode.id, 'CONTAINS_CLAIM');
-      }
-
       // Create source nodes and edges
       for (const source of sources) {
-        const sourceProps: SourceProps = {
+        const sourceNode = await createNode('SOURCE', {
           url: source.url,
           title: source.title,
           publication: source.publication,
           author: source.author,
           date: source.date,
           source_type: source.source_type,
-        };
-
-        const sourceNode = await createNode('SOURCE', sourceProps);
+        });
         await createEdge(article.id, sourceNode.id, 'CITES');
       }
 
+      // Navigate to the published article
       navigate(`/article/${article.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish article');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!title.trim() || !body.trim()) {
+      setError('Title and body are required');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const articleProps: ArticleProps = {
+        title,
+        body,
+        status: 'draft',
+        published_at: new Date().toISOString(),
+      };
+
+      const article = await createNode('ARTICLE', articleProps);
+
+      // Create source nodes and edges
+      for (const source of sources) {
+        const sourceNode = await createNode('SOURCE', {
+          url: source.url,
+          title: source.title,
+          publication: source.publication,
+          author: source.author,
+          date: source.date,
+          source_type: source.source_type,
+        });
+        await createEdge(article.id, sourceNode.id, 'CITES');
+      }
+
+      // Navigate to the draft
+      navigate(`/article/${article.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save draft');
     } finally {
       setLoading(false);
     }
@@ -158,157 +179,148 @@ export function WritePage() {
     }
   };
 
-  return (<div className="max-w-6xl mx-auto font-mono">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Write Article</h1>
-        <p className="text-crt-muted">Create and publish articles with claims and sources</p>
+  return (
+    <div className="h-screen flex flex-col bg-black text-crt-fg font-mono">
+      {/* Header */}
+      <div className="border-b border-crt-border p-6">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="[ Article Title ]"
+          className="w-full text-3xl font-bold bg-black text-crt-fg placeholder-crt-dim focus:outline-none border-none p-0"
+        />
       </div>
 
+      {/* Error message */}
       {error && (
-        <div className="mb-4 p-4 bg-black border border-red-200  text-crt-error">
-          {error}
+        <div className="bg-black border-b border-crt-error p-4">
+          <p className="text-crt-error text-sm">{'>'} ERROR: {error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-crt-fg mb-2">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Article title..."
-              className="w-full px-4 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
-            />
+      {/* Content area */}
+      <div className="flex-1 flex gap-6 overflow-hidden p-6">
+        {/* Main editor */}
+        <div className="flex-1 flex flex-col border border-crt-border overflow-hidden">
+          <div className="bg-black p-3 border-b border-crt-border text-xs text-crt-dim">
+            $ nano article.md
           </div>
-
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-crt-fg">Content</label>
-              <span className="text-xs text-crt-dim">Select text to mark as claim</span>
-            </div>
-            <MarkdownEditor value={body} onChange={setBody} height={400} />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handlePublish}
-              disabled={loading}
-              className="px-6 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
-            >
-              {loading ? 'Publishing...' : 'Publish Article'}
-            </button>
+          <div className="flex-1 overflow-hidden">
+            <MarkdownEditor value={body} onChange={setBody} height={600} />
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Claims */}
-          <div>
-            <h3 className="font-semibold text-lg mb-3">Claims ({claims.length})</h3>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {claims.length === 0 ? (
-                <p className="text-sm text-crt-dim">No claims yet. Select text in the editor to mark claims.</p>
-              ) : (
-                claims.map(claim => (
-                  <div key={claim.id} className="bg-yellow-50 border border-yellow-200  p-2">
-                    <p className="text-sm text-crt-fg mb-1 line-clamp-2">{claim.text}</p>
-                    <button
-                      onClick={() => removeClaim(claim.id)}
-                      className="text-xs text-crt-error hover:text-crt-error"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* Sidebar: Sources */}
+        <div className="w-80 flex flex-col border border-crt-border overflow-hidden">
+          <div className="bg-black p-3 border-b border-crt-border text-xs text-crt-dim font-bold">
+            SOURCES ({sources.length})
           </div>
 
-          {/* Sources */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-lg">Sources ({sources.length})</h3>
-              <button
-                onClick={() => setShowSourceForm(!showSourceForm)}
-                className="text-sm text-crt-fg hover:text-crt-accent font-medium"
-              >
-                {showSourceForm ? 'Cancel' : '+ Add'}
-              </button>
-            </div>
+          {/* Sources list */}
+          <div className="flex-1 overflow-y-auto p-4 bg-black space-y-3">
+            {sources.length === 0 ? (
+              <p className="text-xs text-crt-muted">{'>'} no sources yet</p>
+            ) : (
+              sources.map(source => (
+                <div key={source.id} className="bg-black border border-crt-border p-2">
+                  <p className="text-xs font-medium text-crt-fg mb-1 truncate">{source.title}</p>
+                  {source.publication && (
+                    <p className="text-xs text-crt-muted truncate">{source.publication}</p>
+                  )}
+                  <button
+                    onClick={() => removeSource(source.id)}
+                    className="text-xs text-crt-error hover:text-crt-fg mt-2"
+                  >
+                    [remove]
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
 
-            {showSourceForm && (
-              <div className="bg-black border border-crt-border  p-3 mb-3 space-y-2">
+          {/* Source form */}
+          <div className="border-t border-crt-border bg-black">
+            {showSourceForm ? (
+              <div className="p-4 space-y-2 text-sm">
                 <input
                   type="url"
                   placeholder="URL"
                   value={sourceForm.url || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
+                  className="w-full px-2 py-1 bg-black border border-crt-border text-crt-fg text-xs focus:outline-none focus:border-crt-fg placeholder-crt-muted"
                 />
                 <input
                   type="text"
                   placeholder="Title"
                   value={sourceForm.title || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
+                  className="w-full px-2 py-1 bg-black border border-crt-border text-crt-fg text-xs focus:outline-none focus:border-crt-fg placeholder-crt-muted"
                 />
                 <input
                   type="text"
-                  placeholder="Publication (optional)"
+                  placeholder="Publication"
                   value={sourceForm.publication || ''}
                   onChange={(e) => setSourceForm({ ...sourceForm, publication: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
-                />
-                <input
-                  type="text"
-                  placeholder="Author (optional)"
-                  value={sourceForm.author || ''}
-                  onChange={(e) => setSourceForm({ ...sourceForm, author: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
+                  className="w-full px-2 py-1 bg-black border border-crt-border text-crt-fg text-xs focus:outline-none focus:border-crt-fg placeholder-crt-muted"
                 />
                 <select
                   value={sourceForm.source_type || 'other'}
                   onChange={(e) => setSourceForm({ ...sourceForm, source_type: e.target.value as any })}
-                  className="w-full px-2 py-1 text-sm border border-crt-border  focus:outline-none focus:ring-1 focus:ring-crt-fg"
+                  className="w-full px-2 py-1 bg-black border border-crt-border text-crt-fg text-xs focus:outline-none focus:border-crt-fg"
                 >
                   <option value="news">News</option>
                   <option value="academic">Academic</option>
                   <option value="government">Government</option>
-                  <option value="primary">Primary Source</option>
+                  <option value="primary">Primary</option>
                   <option value="other">Other</option>
                 </select>
-                <button
-                  onClick={handleAddSource}
-                  className="w-full px-3 py-1 bg-crt-selection text-white text-sm  hover:bg-crt-border transition-colors"
-                >
-                  Add Source
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddSource}
+                    className="flex-1 px-2 py-1 bg-crt-fg text-black text-xs font-bold hover:bg-white transition"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={() => setShowSourceForm(false)}
+                    className="flex-1 px-2 py-1 bg-crt-border text-crt-fg text-xs hover:bg-crt-fg hover:text-black transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
+            ) : (
+              <button
+                onClick={() => setShowSourceForm(true)}
+                className="w-full p-4 text-xs text-crt-fg hover:bg-crt-border transition text-left font-bold"
+              >
+                + Add Source
+              </button>
             )}
-
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {sources.length === 0 ? (
-                <p className="text-sm text-crt-dim">No sources yet. Add sources to cite evidence.</p>
-              ) : (
-                sources.map(source => (
-                  <div key={source.id} className="bg-blue-50 border border-blue-200  p-2">
-                    <p className="text-sm font-medium text-crt-fg mb-1">{source.title}</p>
-                    {source.publication && (
-                      <p className="text-xs text-crt-muted">{source.publication}</p>
-                    )}
-                    <button
-                      onClick={() => removeSource(source.id)}
-                      className="text-xs text-crt-error hover:text-crt-error mt-1"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         </div>
+      </div>
+
+      {/* Footer with buttons */}
+      <div className="border-t border-crt-border bg-black p-4 flex gap-3">
+        <button
+          onClick={handlePublish}
+          disabled={loading}
+          className="px-6 py-2 bg-crt-fg text-black font-bold hover:bg-white disabled:opacity-50 transition"
+        >
+          {loading ? '[ Publishing... ]' : '[ Publish ]'}
+        </button>
+        <button
+          onClick={handleSaveDraft}
+          disabled={loading}
+          className="px-6 py-2 bg-crt-border text-crt-fg font-bold hover:bg-crt-fg hover:text-black disabled:opacity-50 transition"
+        >
+          [ Save Draft ]
+        </button>
+        <span className="text-xs text-crt-dim ml-auto pt-2">
+          {title.length} chars | {body.split(/\s+/).filter(w => w).length} words | {sources.length} sources
+        </span>
       </div>
     </div>
   );

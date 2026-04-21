@@ -4,6 +4,7 @@ import { ClaimHighlighter } from '../components/claim-highlighter';
 import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
 import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
+import { AiPanel } from '../components/ai-panel';
 import { getNode, createNode, createEdge, traverse } from '../lib/api';
 import type { Article, SentientNode } from '../lib/types';
 
@@ -167,9 +168,10 @@ export function ArticlePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto font-mono">
-      {/* Tab bar */}
-      <div className="mb-6 flex gap-2 border-b border-crt-border flex-wrap">
+    <>
+      <div className="max-w-6xl mx-auto font-mono">
+        {/* Tab bar */}
+        <div className="mb-6 flex gap-2 border-b border-crt-border flex-wrap">
         {(['article', 'challenges', 'evidence', 'explore'] as const).map((tab) => (
           <button
             key={tab}
@@ -412,29 +414,67 @@ export function ArticlePage() {
 
       {/* Explore Tab */}
       {activeTab === 'explore' && (
-        <div className="w-full flex flex-col">
-          <h2 className="text-2xl font-bold mb-4 text-crt-fg">KNOWLEDGE GRAPH</h2>
-          <div className="w-full h-96 flex flex-col border border-crt-border overflow-hidden">
-            {graphLoading ? (
-              <div className="h-full flex items-center justify-center bg-black">
-                <p className="text-crt-muted">Building connection graph...</p>
+        <div className="w-full flex flex-col h-screen -m-6">
+          <div className="flex-1 flex flex-col px-6 pt-6">
+            <h2 className="text-2xl font-bold mb-4 text-crt-fg">KNOWLEDGE GRAPH</h2>
+            <div className="flex-1 border border-crt-border overflow-hidden bg-black rounded-none">
+              {graphLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-crt-muted">Building connection graph...</p>
+                </div>
+              ) : graphNodes.length > 0 ? (
+                <GraphVisualizer
+                  nodes={graphNodes}
+                  edges={graphEdges}
+                  onNodeClick={handleGraphNodeClick}
+                  height={400}
+                  className="w-full"
+                  rootNodeId={id}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-crt-muted">No connected nodes found</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="px-6 py-4 border-t border-crt-border bg-black">
+            <p className="text-sm text-crt-fg font-bold mb-3">NODE TYPES:</p>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00a6b2' }}></div>
+                <span className="text-crt-muted">ARTICLE</span>
               </div>
-            ) : graphNodes.length > 0 ? (
-              <GraphVisualizer
-                nodes={graphNodes}
-                edges={graphEdges}
-                onNodeClick={handleGraphNodeClick}
-                height={400}
-                className="w-full"
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center bg-black">
-                <p className="text-crt-muted">No connected nodes found</p>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#e5e500' }}></div>
+                <span className="text-crt-muted">CLAIM</span>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#e50000' }}></div>
+                <span className="text-crt-muted">CHALLENGE</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00d900' }}></div>
+                <span className="text-crt-muted">EVIDENCE</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b200b2' }}></div>
+                <span className="text-crt-muted">THEORY</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#666666' }}></div>
+                <span className="text-crt-muted">SOURCE</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* AI Panel */}
+      <AiPanel articleId={id!} articleTitle={article?.properties.title || 'Article'} />
+    </>
   );
 }
