@@ -1,218 +1,196 @@
 import { useEffect, useState } from 'react';
-import { listNodes, traverse } from '../lib/api';
-import type { Article, Theory, Challenge, SentientNode } from '../lib/types';
-import { Spinner } from '../components/spinner';
-
-type TabType = 'articles' | 'theories' | 'challenges';
+import { useNavigate } from 'react-router-dom';
+import { listNodes, semanticSearch } from '../lib/api';
+import type { Article, Theory, Challenge } from '../lib/types';
 
 export function Home() {
-  const [tab, setTab] = useState<TabType>('articles');
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
   const [articles, setArticles] = useState<Article[]>([]);
   const [theories, setTheories] = useState<Theory[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Load featured content on mount
   useEffect(() => {
-    const loadData = async () => {
+    const loadFeatured = async () => {
       setLoading(true);
       setError('');
       try {
         const [articlesData, theoriesData, challengesData] = await Promise.all([
-          listNodes<any>('ARTICLE', 20).catch(() => []),
-          listNodes<any>('THEORY', 20).catch(() => []),
-          listNodes<any>('CHALLENGE', 20).catch(() => []),
+          listNodes<any>('ARTICLE', 4).catch(() => []),
+          listNodes<any>('THEORY', 4).catch(() => []),
+          listNodes<any>('CHALLENGE', 4).catch(() => []),
         ]);
 
         setArticles(
           articlesData
             .filter((a: any) => a.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 4)
         );
 
         setTheories(
           theoriesData
             .filter((t: any) => t.properties.status === 'published')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 4)
         );
 
         setChallenges(
           challengesData
             .filter((c: any) => c.properties.status === 'open')
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 4)
         );
       } catch (err) {
-        console.error('Failed to load feed:', err);
-        setError('Failed to load feed');
+        console.error('Failed to load featured content:', err);
+        setError('Failed to load content');
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    loadFeatured();
   }, []);
 
-  const renderArticles = () => {
-    if (articles.length === 0) {
-      return (
-        <div className="text-center py-20 text-crt-dim font-mono">
-          <p className="text-xl mb-2">[ NO ARTICLES ]</p>
-          <p>be the first to contribute</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {articles.map((a) => (
-          <a
-            key={a.id}
-            href={`/article/${a.id}`}
-            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
-          >
-            <h2 className="text-xl font-semibold text-crt-fg">{a.properties.title}</h2>
-            {a.properties.summary && <p className="text-crt-muted mt-2">{a.properties.summary}</p>}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-crt-border">
-              <span className="text-xs text-crt-dim">
-                {new Date(a.created_at).toLocaleDateString()}
-              </span>
-              <span className="text-xs px-2 py-1 bg-black border border-crt-fg text-crt-fg">[PUBLISHED]</span>
-            </div>
-          </a>
-        ))}
-      </div>
-    );
-  };
-
-  const renderTheories = () => {
-    if (theories.length === 0) {
-      return (
-        <div className="text-center py-20 text-crt-dim font-mono">
-          <p className="text-xl mb-2">[ NO THEORIES ]</p>
-          <p>build a theory and be the first</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {theories.map((t) => (
-          <a
-            key={t.id}
-            href={`/theory/${t.id}`}
-            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
-          >
-            <h2 className="text-xl font-semibold text-crt-fg">{t.properties.title}</h2>
-            {t.properties.summary && <p className="text-crt-muted mt-2">{t.properties.summary}</p>}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-crt-border">
-              <span className="text-xs text-crt-dim">
-                {new Date(t.created_at).toLocaleDateString()}
-              </span>
-              <span className="text-xs px-2 py-1 bg-black border border-crt-info text-crt-info">[THEORY]</span>
-            </div>
-          </a>
-        ))}
-      </div>
-    );
-  };
-
-  const renderChallenges = () => {
-    if (challenges.length === 0) {
-      return (
-        <div className="text-center py-20 text-crt-dim font-mono">
-          <p className="text-xl mb-2">[ NO CHALLENGES ]</p>
-          <p>all claims are currently accepted</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {challenges.map((c) => (
-          <a
-            key={c.id}
-            href={`/challenge/${c.id}`}
-            className="block p-6 bg-black border border-crt-border hover:border-crt-fg transition font-mono"
-          >
-            <h2 className="text-xl font-semibold text-crt-fg">{c.properties.title}</h2>
-            <p className="text-crt-muted mt-2">{c.properties.rationale}</p>
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-crt-border">
-              <div className="text-sm">
-                <span className="text-crt-muted">community score: </span>
-                <span className="font-semibold text-crt-fg">{c.properties.community_score}</span>
-              </div>
-              <div className="text-sm">
-                <span className="text-crt-muted">ai score: </span>
-                <span className="font-semibold text-crt-fg">{c.properties.ai_score}</span>
-              </div>
-              <div className="ml-auto">
-                <span className="text-xs px-2 py-1 bg-black border border-crt-warning text-crt-warning">
-                  {c.properties.status === 'open' ? '[OPEN]' : '[IN REVIEW]'}
-                </span>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-    );
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8 text-crt-fg font-mono">&gt; discovery feed</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center py-20 px-4">
+      <style>{`
+        @keyframes blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+        .cursor-blink {
+          display: inline-block;
+          width: 12px;
+          height: 1em;
+          background-color: #00ff00;
+          margin-left: 4px;
+          animation: blink 1s infinite;
+        }
+      `}</style>
+
+      {/* CRT Title with blinking cursor */}
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-bold font-mono text-crt-fg mb-2 flex items-center justify-center">
+          &gt; rabbithole_
+          <span className="cursor-blink"></span>
+        </h1>
+        <p className="text-lg text-crt-muted font-mono">explore the rabbit hole. discover the truth.</p>
+      </div>
 
       {error && (
-        <div className="p-4 text-sm text-crt-error mb-6 border border-crt-error bg-black font-mono">
+        <div className="p-4 text-sm text-crt-error mb-8 border border-crt-error bg-black font-mono max-w-2xl w-full">
           [ ERROR ] {error}
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-4 mb-8 border-b border-crt-border">
-        <button
-          onClick={() => setTab('articles')}
-          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
-            tab === 'articles'
-              ? 'border-crt-fg text-crt-fg'
-              : 'border-transparent text-crt-muted hover:text-crt-fg'
-          }`}
-        >
-          articles
-        </button>
-        <button
-          onClick={() => setTab('theories')}
-          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
-            tab === 'theories'
-              ? 'border-crt-fg text-crt-fg'
-              : 'border-transparent text-crt-muted hover:text-crt-fg'
-          }`}
-        >
-          theories
-        </button>
-        <button
-          onClick={() => setTab('challenges')}
-          className={`px-4 py-3 font-medium border-b-2 transition font-mono ${
-            tab === 'challenges'
-              ? 'border-crt-fg text-crt-fg'
-              : 'border-transparent text-crt-muted hover:text-crt-fg'
-          }`}
-        >
-          challenges
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20 font-mono">
-          <Spinner />
-          <span className="ml-2 text-crt-muted">[ loading feed... ]</span>
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="w-full max-w-2xl mb-20">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search articles, claims, evidence..."
+            className="flex-1 px-4 py-3 bg-black border border-crt-border text-crt-fg placeholder-crt-dim font-mono focus:outline-none focus:border-crt-fg"
+          />
+          <button
+            type="submit"
+            className="px-6 py-3 border border-crt-border text-crt-fg hover:bg-crt-selection transition font-mono font-bold"
+          >
+            🔍
+          </button>
         </div>
-      ) : (
-        <>
-          {tab === 'articles' && renderArticles()}
-          {tab === 'theories' && renderTheories()}
-          {tab === 'challenges' && renderChallenges()}
-        </>
+      </form>
+
+      {/* Featured Sections */}
+      {!loading && (
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Active Investigations */}
+          <div>
+            <h2 className="text-lg font-bold text-crt-fg font-mono mb-4 border-b border-crt-border pb-2">
+              ACTIVE INVESTIGATIONS
+            </h2>
+            <div className="space-y-3">
+              {challenges.length === 0 ? (
+                <p className="text-sm text-crt-dim font-mono">[ no active challenges ]</p>
+              ) : (
+                challenges.map((c) => (
+                  <a
+                    key={c.id}
+                    href={`/challenge/${c.id}`}
+                    className="block p-3 bg-black border border-crt-border hover:border-crt-fg transition text-sm"
+                  >
+                    <p className="text-crt-fg font-mono font-bold mb-1 line-clamp-2">{c.properties.title}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-crt-dim">[CHALLENGED]</span>
+                      <span className="text-xs text-crt-warning font-bold">{c.properties.community_score}v</span>
+                    </div>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Articles */}
+          <div>
+            <h2 className="text-lg font-bold text-crt-fg font-mono mb-4 border-b border-crt-border pb-2">
+              RECENT ARTICLES
+            </h2>
+            <div className="space-y-3">
+              {articles.length === 0 ? (
+                <p className="text-sm text-crt-dim font-mono">[ no articles ]</p>
+              ) : (
+                articles.map((a) => (
+                  <a
+                    key={a.id}
+                    href={`/article/${a.id}`}
+                    className="block p-3 bg-black border border-crt-border hover:border-crt-fg transition text-sm"
+                  >
+                    <p className="text-crt-fg font-mono font-bold mb-1 line-clamp-2">{a.properties.title}</p>
+                    <p className="text-xs text-crt-dim">
+                      {new Date(a.created_at).toLocaleDateString()}
+                    </p>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Theories */}
+          <div>
+            <h2 className="text-lg font-bold text-crt-fg font-mono mb-4 border-b border-crt-border pb-2">
+              THEORIES
+            </h2>
+            <div className="space-y-3">
+              {theories.length === 0 ? (
+                <p className="text-sm text-crt-dim font-mono">[ no theories ]</p>
+              ) : (
+                theories.map((t) => (
+                  <a
+                    key={t.id}
+                    href={`/theory/${t.id}`}
+                    className="block p-3 bg-black border border-crt-border hover:border-crt-fg transition text-sm"
+                  >
+                    <p className="text-crt-fg font-mono font-bold mb-1 line-clamp-2">{t.properties.title}</p>
+                    <p className="text-xs text-crt-dim">
+                      {new Date(t.created_at).toLocaleDateString()}
+                    </p>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

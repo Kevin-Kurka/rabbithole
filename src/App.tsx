@@ -10,6 +10,7 @@ import { ProfilePage } from './pages/profile';
 import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
 import { NotificationsPage } from './pages/notifications';
+import { SearchPage } from './pages/search';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { ErrorBoundary } from './components/error-boundary';
 
@@ -39,18 +40,11 @@ function NavBar() {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-8">
-              <Link to="/" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Feed</Link>
-              {isAuthenticated && (
-                <>
-                  <Link to="/write" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Write</Link>
-                  <Link to="/notifications" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Notifications</Link>
-                </>
-              )}
+              <Link to="/write" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Write</Link>
               <Link to="/explore" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Explore</Link>
 
               {isAuthenticated ? (
                 <>
-                  <Link to="/profile" className="text-crt-muted hover:text-crt-fg transition font-mono text-sm">Profile</Link>
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 text-crt-muted hover:text-crt-fg border border-crt-muted hover:border-crt-fg transition font-mono text-sm"
@@ -84,27 +78,14 @@ function NavBar() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden pb-4 space-y-2 bg-black border-t border-crt-border">
-              <Link to="/" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
-                Feed
+              <Link to="/write" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
+                Write
               </Link>
-              {isAuthenticated && (
-                <>
-                  <Link to="/write" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
-                    Write
-                  </Link>
-                  <Link to="/notifications" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
-                    Notifications
-                  </Link>
-                </>
-              )}
               <Link to="/explore" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
                 Explore
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link to="/profile" className="block px-3 py-2 text-crt-muted hover:text-crt-fg font-mono text-sm">
-                    Profile
-                  </Link>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-crt-muted hover:text-crt-fg border border-crt-muted font-mono text-sm"
@@ -165,6 +146,7 @@ function AppContent() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/profile" element={<ProtectedRoute element={<ProfilePage />} />} />
           <Route path="/notifications" element={<ProtectedRoute element={<NotificationsPage />} />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </main>
 

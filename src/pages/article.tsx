@@ -4,37 +4,32 @@ import { ClaimHighlighter } from '../components/claim-highlighter';
 import { StatusBadge } from '../components/status-badge';
 import { SourceCitation } from '../components/source-citation';
 import { GraphVisualizer, type GraphNode, type GraphEdge } from '../components/graph-visualizer';
-import { getArticleWithContext, createNode, createEdge, traverse } from '../lib/api';
-import type { Article, Claim, Source } from '../lib/types';
+import { getNode, createNode, createEdge, traverse } from '../lib/api';
+import type { Article, SentientNode } from '../lib/types';
 
 export function ArticlePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
-  const [claims, setClaims] = useState<any[]>([]);
-  const [sources, setSources] = useState<any[]>([]);
+  const [traversedNodes, setTraversedNodes] = useState<SentientNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedClaim, setSelectedClaim] = useState<string | null>(null);
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [challengeForm, setChallengeForm] = useState({ title: '', rationale: '' });
-  const [challengeLoading, setChallengeLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'read' | 'canvas'>('read');
+  const [activeTab, setActiveTab] = useState<'article' | 'challenges' | 'evidence' | 'explore'>('article');
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
   const [graphLoading, setGraphLoading] = useState(false);
 
+  // Load article and traverse graph on mount
   useEffect(() => {
     if (!id) return;
 
     const load = async () => {
       try {
-        const data = await getArticleWithContext(id);
-        setArticle(data.article);
-        // @ts-ignore
-        setClaims(data.claims);
-        // @ts-ignore
-        setSources(data.sources);
+        const articleData = await getNode<any>(id);
+        setArticle(articleData);
+
+        const traversed = await traverse(id, 3);
+        setTraversedNodes(traversed);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load article');
       } finally {
@@ -45,8 +40,9 @@ export function ArticlePage() {
     load();
   }, [id]);
 
+  // Load graph data when Explore tab is opened
   useEffect(() => {
-    if (activeTab === 'canvas' && id && graphNodes.length === 0 && !graphLoading) {
+    if (activeTab === 'explore' && id && graphNodes.length === 0 && !graphLoading) {
       loadGraphData();
     }
   }, [activeTab, id]);
@@ -55,9 +51,6 @@ export function ArticlePage() {
     if (!id) return;
     setGraphLoading(true);
     try {
-      const traversed = await traverse(id, 3);
-
-      // Build nodes: article as central, then claims, sources, articles, theories, challenges, evidence
       const nodes: GraphNode[] = [];
       const edges: GraphEdge[] = [];
       const seenNodes = new Set<string>();
@@ -71,8 +64,8 @@ export function ArticlePage() {
       });
       seenNodes.add(id);
 
-      // Process traversed nodes and edges
-      for (const node of traversed) {
+      // Process traversed nodes
+      for (const node of traversedNodes) {
         if (!seenNodes.has(node.id)) {
           const label =
             (node.properties as any).text ||
@@ -81,21 +74,15 @@ export function ArticlePage() {
             node.type;
           nodes.push({
             id: node.id,
-            label,
+            label: label.substring(0, 30),
             type: node.type,
           });
           seenNodes.add(node.id);
         }
       }
 
-      // Find edges in the traversed data
-      // The traversal response should include edge information
-      // If not available directly, we can infer from the structure
-      const traversedMap = new Map(traversed.map(n => [n.id, n]));
-
-      // Connect article to related nodes based on common patterns
-      for (const node of traversed) {
-        // Create edge from article to this node if it's a direct child type
+      // Connect article to related nodes
+      for (const node of traversedNodes) {
         if (
           node.type === 'CLAIM' ||
           node.type === 'SOURCE' ||
@@ -115,7 +102,7 @@ export function ArticlePage() {
 
         // Connect challenges to evidence
         if (node.type === 'EVIDENCE') {
-          for (const other of traversed) {
+          for (const other of traversedNodes) {
             if (other.type === 'CHALLENGE') {
               const edgeKey = [other.id, node.id].sort().join('-');
               if (!seenEdges.has(edgeKey)) {
@@ -139,98 +126,11 @@ export function ArticlePage() {
     }
   };
 
-  const handleMarkClaim = async (text: string, start: number, end: number) => {
-    if (!id) return;
-
-    try {
-      const claimNode = await createNode('CLAIM', {
-        text,
-        highlight_start: start,
-        highlight_end: end,
-        status: 'unchallenged',
-      });
-
-      await createEdge(id, claimNode.id, 'CONTAINS_CLAIM');
-      setClaims([...claims, claimNode]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create claim');
-    }
-  };
-
-  const handleChallenge = async (claimId?: string) => {
-    if (!claimId) {
-      // Create claim first if no ID provided
-      setShowChallengeModal(true);
-      return;
-    }
-
-    setSelectedClaim(claimId);
-    setShowChallengeModal(true);
-  };
-
-  const submitChallenge = async () => {
-    if (!challengeForm.title || !challengeForm.rationale || !selectedClaim) {
-      setError('Title and rationale are required');
-      return;
-    }
-
-    setChallengeLoading(true);
-    try {
-      const challenge = await createNode('CHALLENGE', {
-        title: challengeForm.title,
-        rationale: challengeForm.rationale,
-        target_type: 'claim',
-        status: 'open',
-        community_score: 0,
-        ai_score: 0,
-        verdict: 'pending',
-        opened_at: new Date().toISOString(),
-      });
-
-      await createEdge(selectedClaim, challenge.id, 'CHALLENGES');
-
-      // Update claim status
-      const claim = claims.find(c => c.id === selectedClaim);
-      if (claim) {
-        claim.properties.status = 'challenged';
-      }
-
-      navigate(`/challenge/${challenge.id}`);
-      setShowChallengeModal(false);
-      setChallengeForm({ title: '', rationale: '' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create challenge');
-    } finally {
-      setChallengeLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (<div className="max-w-6xl mx-auto font-mono">
-        <div className="text-center py-12">
-          <p className="text-crt-dim">Loading article...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!article) {
-    return (<div className="max-w-6xl mx-auto font-mono">
-        <div className="text-center py-12">
-          <p className="text-crt-error">{error || 'Article not found'}</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleGraphNodeClick = (node: GraphNode) => {
     const routeMap: Record<string, string> = {
       ARTICLE: '/article',
-      CLAIM: '/claim',
       THEORY: '/theory',
       CHALLENGE: '/challenge',
-      EVIDENCE: '/evidence',
-      SOURCE: '/source',
     };
 
     const route = routeMap[node.type];
@@ -239,126 +139,282 @@ export function ArticlePage() {
     }
   };
 
-  return (<div className="max-w-6xl mx-auto font-mono">
+  // Filter traversed nodes by type
+  const claims = traversedNodes.filter(n => n.type === 'CLAIM');
+  const challenges = traversedNodes.filter(n => n.type === 'CHALLENGE');
+  const evidence = traversedNodes.filter(n => n.type === 'EVIDENCE');
+  const sources = traversedNodes.filter(n => n.type === 'SOURCE');
+  const theories = traversedNodes.filter(n => n.type === 'THEORY');
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto font-mono">
+        <div className="text-center py-12">
+          <p className="text-crt-dim">Loading article...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="max-w-6xl mx-auto font-mono">
+        <div className="text-center py-12">
+          <p className="text-crt-error">{error || 'Article not found'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto font-mono">
       {/* Tab bar */}
-      <div className="mb-6 flex gap-2 border-b border-crt-border">
-        <button
-          onClick={() => setActiveTab('read')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'read'
-              ? 'border-b-2 border-crt-fg text-crt-fg'
-              : 'text-crt-muted hover:text-crt-fg'
-          }`}
-        >
-          📖 Read
-        </button>
-        <button
-          onClick={() => setActiveTab('canvas')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'canvas'
-              ? 'border-b-2 border-crt-fg text-crt-fg'
-              : 'text-crt-muted hover:text-crt-fg'
-          }`}
-        >
-          🕸️ Canvas
-        </button>
+      <div className="mb-6 flex gap-2 border-b border-crt-border flex-wrap">
+        {(['article', 'challenges', 'evidence', 'explore'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === tab
+                ? 'border-b-2 border-crt-fg text-crt-fg -mb-0.5'
+                : 'text-crt-muted hover:text-crt-fg border-b-2 border-transparent'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
       </div>
 
-      {/* Read Tab */}
-      {activeTab === 'read' && (
-        <div className="grid grid-cols-3 gap-6">
-          {/* Main content */}
-          <div className="col-span-2">
-            <article>
-              <h1 className="text-4xl font-bold mb-2">{article.properties.title}</h1>
-              <p className="text-crt-muted text-sm mb-6">
-                Published {new Date(article.properties.published_at || '').toLocaleDateString()}
-              </p>
+      {/* Article Tab */}
+      {activeTab === 'article' && (
+        <article>
+          <h1 className="text-4xl font-bold mb-2 text-crt-fg">{article.properties.title}</h1>
+          <p className="text-crt-muted text-sm mb-6">
+            Published {new Date(article.properties.published_at || article.created_at).toLocaleDateString()}
+          </p>
 
-              <div className="prose prose-sm max-w-none">
-                <ClaimHighlighter
-                  body={article.properties.body}
-                  claims={claims}
-                  onMarkClaim={handleMarkClaim}
-                  onChallenge={handleChallenge}
-                />
+          <div className="prose prose-sm max-w-none mb-12">
+            <ClaimHighlighter
+              body={article.properties.body}
+              claims={claims as any}
+              onMarkClaim={async (text, start, end) => {
+                try {
+                  const claimNode = await createNode('CLAIM', {
+                    text,
+                    highlight_start: start,
+                    highlight_end: end,
+                    status: 'unchallenged',
+                  });
+                  await createEdge(id!, claimNode.id, 'CONTAINS_CLAIM');
+                  setTraversedNodes([...traversedNodes, claimNode]);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Failed to create claim');
+                }
+              }}
+              onChallenge={() => {
+                // Placeholder for challenge action
+              }}
+            />
+          </div>
+
+          {/* Sources section */}
+          {sources.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-crt-border">
+              <h2 className="text-xl font-bold mb-4 text-crt-fg">SOURCES</h2>
+              <div className="space-y-4">
+                {sources.map((source, idx) => (
+                  <div key={source.id} className="flex gap-3">
+                    <div className="flex-shrink-0 text-crt-dim">
+                      <SourceCitation source={source as any} index={idx + 1} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-crt-fg">{(source.properties as any).title}</p>
+                      {(source.properties as any).publication && (
+                        <p className="text-sm text-crt-muted">{(source.properties as any).publication}</p>
+                      )}
+                      {(source.properties as any).url && (
+                        <a
+                          href={(source.properties as any).url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-crt-fg hover:text-crt-accent underline"
+                        >
+                          Open source
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
+        </article>
+      )}
 
-              {/* Sources section */}
+      {/* Challenges Tab */}
+      {activeTab === 'challenges' && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-crt-fg">CHALLENGES & REFERENCES</h2>
+          {challenges.length === 0 && theories.length === 0 ? (
+            <div className="text-center py-12 text-crt-dim">
+              <p className="text-xl mb-2">[ NO CHALLENGES ]</p>
+              <p>no open investigations on this article</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Challenges */}
+              {challenges.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-bold text-crt-fg mb-3 pb-2 border-b border-crt-border">
+                    Challenges ({challenges.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {challenges.map((c) => (
+                      <a
+                        key={c.id}
+                        href={`/challenge/${c.id}`}
+                        className="block p-4 bg-black border border-crt-border hover:border-crt-fg transition"
+                      >
+                        <h4 className="text-crt-fg font-bold mb-2">{(c.properties as any).title}</h4>
+                        <p className="text-sm text-crt-muted mb-2">{(c.properties as any).rationale}</p>
+                        <div className="flex gap-4 text-xs text-crt-dim">
+                          <span>Community: {(c.properties as any).community_score}</span>
+                          <span>AI Score: {(c.properties as any).ai_score}</span>
+                          <span className="text-crt-warning">Status: {(c.properties as any).status}</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Theories */}
+              {theories.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-bold text-crt-fg mb-3 pb-2 border-b border-crt-border">
+                    Referenced by Theories ({theories.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {theories.map((t) => (
+                      <a
+                        key={t.id}
+                        href={`/theory/${t.id}`}
+                        className="block p-4 bg-black border border-crt-border hover:border-crt-fg transition"
+                      >
+                        <h4 className="text-crt-fg font-bold mb-1">{(t.properties as any).title}</h4>
+                        {(t.properties as any).summary && (
+                          <p className="text-sm text-crt-muted">{(t.properties as any).summary}</p>
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Evidence Tab */}
+      {activeTab === 'evidence' && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-crt-fg">EVIDENCE & SOURCES</h2>
+          {evidence.length === 0 && sources.length === 0 ? (
+            <div className="text-center py-12 text-crt-dim">
+              <p className="text-xl mb-2">[ NO EVIDENCE ]</p>
+              <p>no supporting evidence indexed</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Primary Sources */}
               {sources.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-crt-border">
-                  <h2 className="text-xl font-bold mb-4">Sources</h2>
-                  <div className="space-y-4">
-                    {sources.map((source, idx) => (
-                      <div key={source.id} className="flex gap-3">
-                        <div className="flex-shrink-0 text-crt-dim">
-                          <SourceCitation source={source} index={idx + 1} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-crt-fg">{source.properties.title}</p>
-                          {source.properties.publication && (
-                            <p className="text-sm text-crt-muted">{source.properties.publication}</p>
-                          )}
-                          {source.properties.url && (
-                            <a
-                              href={source.properties.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-crt-fg hover:text-crt-accent underline"
-                            >
-                              Open source
-                            </a>
-                          )}
-                        </div>
+                <div>
+                  <h3 className="text-lg font-bold text-crt-fg mb-3 pb-2 border-b border-crt-border">
+                    Primary Sources ({sources.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {sources.map((s) => (
+                      <div key={s.id} className="p-4 bg-black border border-crt-border">
+                        <h4 className="text-crt-fg font-bold mb-1">{(s.properties as any).title}</h4>
+                        {(s.properties as any).publication && (
+                          <p className="text-sm text-crt-muted mb-1">{(s.properties as any).publication}</p>
+                        )}
+                        {(s.properties as any).url && (
+                          <a
+                            href={(s.properties as any).url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-crt-fg hover:text-crt-accent underline"
+                          >
+                            Visit source
+                          </a>
+                        )}
+                        {(s.properties as any).credibility_rating && (
+                          <p className="text-xs text-crt-dim mt-1">
+                            Credibility: {(s.properties as any).credibility_rating}/5
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-            </article>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Claims list */}
-            <div>
-              <h3 className="font-bold text-lg mb-3">Claims ({claims.length})</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {claims.length === 0 ? (
-                  <p className="text-sm text-crt-dim">No claims yet</p>
-                ) : (
-                  claims.map(claim => (
-                    <div
-                      key={claim.id}
-                      className="bg-black border border-crt-border  p-3 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedClaim(claim.id)}
-                    >
-                      <p className="text-sm text-crt-fg mb-2 line-clamp-2">{claim.properties.text}</p>
-                      <div className="flex items-center justify-between gap-2">
-                        <StatusBadge status={claim.properties.status} type="claim" className="text-xs" />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleChallenge(claim.id);
-                          }}
-                          className="text-xs text-crt-fg hover:text-crt-accent font-medium"
-                        >
-                          Challenge
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              {/* Supporting Evidence */}
+              {evidence.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-bold text-crt-fg mb-3 pb-2 border-b border-crt-border">
+                    Supporting Evidence ({evidence.filter((e: any) => e.properties.side === 'for').length})
+                  </h3>
+                  <div className="space-y-3">
+                    {evidence
+                      .filter((e: any) => e.properties.side === 'for')
+                      .map((e) => (
+                        <div key={e.id} className="p-4 bg-black border border-crt-border">
+                          <h4 className="text-crt-fg font-bold mb-1">{(e.properties as any).title}</h4>
+                          <p className="text-sm text-crt-muted mb-2 line-clamp-2">{(e.properties as any).body}</p>
+                          <div className="flex gap-4 text-xs text-crt-dim">
+                            <span>Type: {(e.properties as any).source_type}</span>
+                            <span>Relevance: {(e.properties as any).relevance_score}%</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Counter Evidence */}
+              {evidence.filter((e: any) => e.properties.side === 'against').length > 0 && (
+                <div>
+                  <h3 className="text-lg font-bold text-crt-error mb-3 pb-2 border-b border-crt-border">
+                    Counter Evidence ({evidence.filter((e: any) => e.properties.side === 'against').length})
+                  </h3>
+                  <div className="space-y-3">
+                    {evidence
+                      .filter((e: any) => e.properties.side === 'against')
+                      .map((e) => (
+                        <div key={e.id} className="p-4 bg-black border border-crt-error">
+                          <h4 className="text-crt-error font-bold mb-1">{(e.properties as any).title}</h4>
+                          <p className="text-sm text-crt-muted mb-2 line-clamp-2">{(e.properties as any).body}</p>
+                          <div className="flex gap-4 text-xs text-crt-dim">
+                            <span>Type: {(e.properties as any).source_type}</span>
+                            <span>Relevance: {(e.properties as any).relevance_score}%</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Canvas Tab */}
-      {activeTab === 'canvas' && (
-        <div className="w-full h-screen -mx-6 -my-6 flex flex-col">
-          <div className="flex-1 overflow-hidden">
+      {/* Explore Tab */}
+      {activeTab === 'explore' && (
+        <div className="w-full flex flex-col">
+          <h2 className="text-2xl font-bold mb-4 text-crt-fg">KNOWLEDGE GRAPH</h2>
+          <div className="w-full h-96 flex flex-col border border-crt-border overflow-hidden">
             {graphLoading ? (
               <div className="h-full flex items-center justify-center bg-black">
                 <p className="text-crt-muted">Building connection graph...</p>
@@ -368,7 +424,7 @@ export function ArticlePage() {
                 nodes={graphNodes}
                 edges={graphEdges}
                 onNodeClick={handleGraphNodeClick}
-                height={typeof window !== 'undefined' ? window.innerHeight - 100 : 800}
+                height={400}
                 className="w-full"
               />
             ) : (
@@ -376,65 +432,6 @@ export function ArticlePage() {
                 <p className="text-crt-muted">No connected nodes found</p>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Challenge Modal */}
-      {showChallengeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-black  shadow-lg max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-4">Challenge This Claim</h2>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-crt-fg mb-2">Challenge Title</label>
-                <input
-                  type="text"
-                  value={challengeForm.title}
-                  onChange={(e) => setChallengeForm({ ...challengeForm, title: e.target.value })}
-                  placeholder="What are you challenging?"
-                  className="w-full px-3 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-crt-fg mb-2">Rationale</label>
-                <textarea
-                  value={challengeForm.rationale}
-                  onChange={(e) => setChallengeForm({ ...challengeForm, rationale: e.target.value })}
-                  placeholder="Why do you think this is incorrect?"
-                  rows={4}
-                  className="w-full px-3 py-2 border border-crt-border  focus:outline-none focus:ring-2 focus:ring-crt-fg"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-black border border-red-200  text-sm text-crt-error">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowChallengeModal(false);
-                  setChallengeForm({ title: '', rationale: '' });
-                  setError('');
-                }}
-                className="flex-1 px-4 py-2 border border-crt-border  hover:bg-black font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitChallenge}
-                disabled={challengeLoading}
-                className="flex-1 px-4 py-2 bg-crt-selection text-white  hover:bg-crt-border disabled:bg-gray-400 font-medium transition-colors"
-              >
-                {challengeLoading ? 'Creating...' : 'Create Challenge'}
-              </button>
-            </div>
           </div>
         </div>
       )}
